@@ -1810,20 +1810,22 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     <!-- Mode 2: Instagram handle search -->
     <div id="search-mode-ig" class="search-mode-wrap" style="display:none">
 
-      <!-- OAuth info banner — shown immediately on entering IG mode -->
+      <!-- OAuth info banner -->
       <div class="ig-oauth-note">
         <div class="ig-oauth-note-icon">IG</div>
         <div class="ig-oauth-note-body">
-          <div class="ig-oauth-note-title">Connect via Facebook to unlock live Instagram data</div>
-          <div class="ig-oauth-note-sub">Works with Business and Creator accounts only. After your audit runs, you'll be prompted to connect — 10 seconds, read-only access.</div>
+          <div class="ig-oauth-note-title">Connects directly to your Instagram account</div>
+          <div class="ig-oauth-note-sub">Enter your handle + city, then click "Connect & Audit". We pull your real followers, engagement, and post data. Read-only, 10 seconds.</div>
         </div>
       </div>
 
       <div class="search-wrap">
         <div class="ig-handle-prefix">@</div>
-        <input id="ig-handle-input" type="text" class="ig-handle-field" placeholder="yourhandle  —  OR  —  your artist / studio name" autocomplete="off">
-        <input id="ig-city-input" type="text" class="ig-city-field" placeholder="City, State  (e.g. Orlando, FL)" autocomplete="off">
-        <button class="search-btn" onclick="startIGSearch()">Find My Profile</button>
+        <input id="ig-handle-input" type="text" class="ig-handle-field" placeholder="yourhandle" autocomplete="off"
+          onkeydown="if(event.key==='Enter') startIGModeOAuth()">
+        <input id="ig-city-input" type="text" class="ig-city-field" placeholder="City, State  (e.g. Orlando, FL)" autocomplete="off"
+          onkeydown="if(event.key==='Enter') startIGModeOAuth()">
+        <button class="search-btn" onclick="startIGModeOAuth()">Connect & Audit</button>
       </div>
       <div id="ig-search-error" class="search-error-banner"></div>
       <div id="ig-results-list" class="ig-results" style="display:none"></div>
@@ -2667,6 +2669,11 @@ let fbAppId           = '';
 let oauthEnabled      = false;
 let pendingReportData = null;  // holds API response while interstitial is shown
 let oiConnecting      = false; // true while interstitial OAuth popup is open
+// IG mode globals
+let igSearchMode    = false;  // true when artist is in IG handle tab flow
+let pendingIGHandle = '';     // stored while OAuth popup is open
+let pendingIGCity   = '';
+let pendingIGToken  = null;   // stored after OAuth while page-selector is shown
 
 // ── HLS VIDEO BACKGROUND ──────────────────────────────────────────
 (function initHeroVideo() {
@@ -2711,8 +2718,8 @@ function switchSearchMode(mode) {
 function switchToIGMode()  { switchSearchMode('ig'); }
 function switchToGMBMode() { switchSearchMode('gmb'); }
 
-// ── INSTAGRAM HANDLE SEARCH ───────────────────────────────────────
-async function startIGSearch() {
+// ── INSTAGRAM OAUTH-FIRST SEARCH ─────────────────────────────────
+function startIGModeOAuth() {
   const handle = document.getElementById('ig-handle-input').value.trim().replace(/^@/, '');
   const city   = document.getElementById('ig-city-input').value.trim();
   const errEl  = document.getElementById('ig-search-error');
@@ -2722,66 +2729,163 @@ async function startIGSearch() {
   resEl.style.display = 'none';
 
   if (!handle) {
-    errEl.textContent = 'Enter your Instagram handle (without the @)';
+    errEl.textContent = 'Enter your Instagram handle first (without the @).';
     errEl.style.display = 'block';
     return;
   }
 
-  try {
-    const r = await fetch(`${API}/api/find-tattoo-by-name?name=${encodeURIComponent(handle)}&city=${encodeURIComponent(city)}`);
-    const data = await r.json();
-    const results = data.results || [];
-
-    if (results.length === 0) {
-      resEl.innerHTML = `
-        <div class="ig-no-gmb-banner">
-          <div class="ig-no-gmb-banner-icon">⚠</div>
-          <div>
-            <strong style="color:rgba(255,200,80,.9)">No profile found for "@${handle}".</strong><br>
-            <span style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.6;display:block;margin-top:4px">
-              Google Business Profiles are listed under your <strong style="color:rgba(255,200,80,.7)">studio name or real name</strong>, not your Instagram handle.
-              Try typing your studio or artist name in the field above instead of your handle.<br><br>
-              If you don't have a Google Business listing, clients searching "tattoo near me" cannot find you — this is directly costing you bookings.
-              JRZ Ink Systems can set up and verify your profile in 48 hours.
-            </span>
-          </div>
-        </div>
-      `;
-      resEl.style.display = 'block';
-      return;
-    }
-
-    resEl.innerHTML = `
-      <div style="padding:14px 18px 4px">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Select your studio to run the full audit</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.35);line-height:1.55">Your Google Business listing uses your <strong style="color:rgba(255,200,80,.7)">studio or real name</strong>, not your Instagram handle. Look for your studio below.</div>
-      </div>
-      ${results.map(r => `
-        <div class="ig-result-item" onclick="selectIGResult('${r.place_id}','${r.name.replace(/'/g,"\\'")}','${r.address.replace(/'/g,"\\'")}')">
-          <div>
-            <div class="ig-result-name">${r.name}</div>
-            <div class="ig-result-addr">${r.address}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="ig-result-meta">★ ${r.rating || '—'} · ${r.reviews || 0} reviews</div>
-            <button class="ig-result-select-btn">Run Audit</button>
-          </div>
-        </div>
-      `).join('')}
-    `;
-    resEl.style.display = 'block';
-  } catch(e) {
-    errEl.textContent = 'Search failed. Check your connection and try again.';
+  if (!oauthEnabled || !fbAppId) {
+    // OAuth not configured — show clear error
+    errEl.innerHTML = '<strong>Instagram connection not available.</strong> Please search by business name instead, or contact JRZ.';
     errEl.style.display = 'block';
+    return;
+  }
+
+  // Store handle + city, flag we're in IG mode, open OAuth popup
+  pendingIGHandle = handle;
+  pendingIGCity   = city;
+  igSearchMode    = true;
+
+  // Show connecting state in the results area
+  resEl.innerHTML = `
+    <div style="padding:18px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;flex-shrink:0">IG</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85);margin-bottom:3px">Opening Instagram login...</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.38)">A Facebook/Instagram window is opening. Log in and authorize read-only access.</div>
+      </div>
+    </div>
+  `;
+  resEl.style.display = 'block';
+
+  const redirectUri = encodeURIComponent(`${API}/oauth-callback`);
+  const scope       = encodeURIComponent('instagram_basic,pages_show_list,pages_read_engagement');
+  const oauthUrl    = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&display=popup`;
+
+  const popup = window.open(oauthUrl, 'meta_oauth', 'width=580,height=640,left=200,top=100');
+  if (!popup) {
+    igSearchMode = false;
+    errEl.textContent = 'Popup blocked. Please allow popups for this page and try again.';
+    errEl.style.display = 'block';
+    resEl.style.display = 'none';
   }
 }
 
-function selectIGResult(placeId, name, addr) {
-  selectedPlaceId = placeId;
-  selectedName    = name;
-  selectedAddr    = addr;
+// ── PAGE SELECTOR — shown when artist has multiple FB pages ───────
+async function showIGPageSelector(token, pages) {
+  // Filter pages that have a connected IG Business Account
+  const pagesWithIG = pages.filter(p => p.ig_id);
+  const allPages    = pages; // show all, some may not have IG
+
+  const resEl = document.getElementById('ig-results-list');
+  const errEl = document.getElementById('ig-search-error');
+
+  if (pagesWithIG.length === 0) {
+    // No pages have IG connected
+    errEl.innerHTML = `
+      <strong style="color:rgba(255,200,80,.9)">No Instagram Business Account found.</strong><br>
+      <span style="font-size:12px;line-height:1.6;display:block;margin-top:4px">
+        Make sure your Instagram account is:<br>
+        1. Converted to a <strong>Business or Creator account</strong><br>
+        2. Connected to a <strong>Facebook Page</strong> you manage<br><br>
+        You can do this in Instagram Settings → Account → Switch to Professional Account.
+      </span>
+    `;
+    errEl.style.display = 'block';
+    resEl.style.display = 'none';
+    igSearchMode = false;
+    return;
+  }
+
+  if (pagesWithIG.length === 1) {
+    // Only one option — auto-select, no need to show selector
+    await gradeByIGPage(token, pagesWithIG[0]);
+    return;
+  }
+
+  // Multiple pages — let artist pick
+  resEl.innerHTML = `
+    <div style="padding:14px 18px 8px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">Select your account to audit</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.35);line-height:1.5">We found multiple accounts. Pick the one you want to audit.</div>
+    </div>
+    ${pagesWithIG.map(p => `
+      <div class="ig-result-item" onclick="gradeByIGPageFromSelector(${JSON.stringify(p).replace(/'/g, "&apos;")})">
+        <div>
+          <div class="ig-result-name">${p.ig_username ? '@' + p.ig_username : p.page_name}</div>
+          <div class="ig-result-addr">${p.page_name}${p.ig_followers ? ' · ' + p.ig_followers.toLocaleString() + ' followers' : ''}</div>
+        </div>
+        <button class="ig-result-select-btn">Audit This</button>
+      </div>
+    `).join('')}
+  `;
+  resEl.style.display = 'block';
+  // Store token for when they click
+  pendingIGToken = token;
+}
+
+// Called from the inline onclick in the page selector
+function gradeByIGPageFromSelector(pageData) {
+  if (!pendingIGToken) return;
+  gradeByIGPage(pendingIGToken, pageData);
+}
+
+// Called with a single selected page — runs the full IG audit
+async function gradeByIGPage(token, pageData) {
   document.getElementById('ig-results-list').style.display = 'none';
-  startGrade(); // runs the full audit
+  document.getElementById('ig-search-error').style.display = 'none';
+  igSearchMode   = false;
+  pendingIGToken = null;
+
+  selectedName = pageData.ig_username ? '@' + pageData.ig_username : pageData.page_name;
+
+  showLoading();
+  // IG-specific loading steps
+  const stepsEl = document.querySelector('.loading-steps');
+  if (stepsEl) stepsEl.innerHTML = `
+    <div class="l-step active" id="ls-0"><div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="l-step-text">Pulling your Instagram posts + engagement<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-1"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="l-step-text">Analyzing your follower count and bio<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-2"><div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="l-step-text">Searching for your Google Business listing<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-3"><div class="l-step-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="l-step-text">Pulling reviews and reputation data<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-4"><div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div><div class="l-step-text">Checking local map pack visibility<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-5"><div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="l-step-text">Running keyword and competitor analysis<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-6"><div class="l-step-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="l-step-text">Calculating revenue opportunity<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-7"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="l-step-text">Building your Ink Systems report<span class="dot-anim"></span></div></div>
+  `;
+  document.getElementById('loading-biz-tag').textContent = 'JRZ INK SYSTEMS · INSTAGRAM AUDIT';
+  document.getElementById('loading-h').innerHTML = `Auditing<br><em style="font-style:normal;color:rgba(255,255,255,.55)">@${pageData.ig_username || pageData.page_name}</em>`;
+  startStepAnimation();
+
+  try {
+    const r = await fetch(`${API}/api/grade-tattoo-by-ig`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        page_id: pageData.page_id,
+        city:    pendingIGCity,
+        handle:  pendingIGHandle
+      })
+    });
+    const data = await r.json();
+
+    stopStepAnimation();
+
+    if (!r.ok || data.error) {
+      showSearch();
+      showError(data.message || data.error || 'Something went wrong. Please try again.');
+      return;
+    }
+
+    pendingReportData = data;
+    oiConnecting      = false;
+    showLeadGate();
+
+  } catch(e) {
+    stopStepAnimation();
+    showSearch();
+    showError('Connection error. Please try again in a moment.');
+  }
 }
 
 // ── AUTOCOMPLETE ─────────────────────────────────────────────────
@@ -2799,7 +2903,7 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter') startGrade();
 });
 document.getElementById('ig-handle-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') startIGSearch();
+  if (e.key === 'Enter') startIGModeOAuth();
 });
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) acList.style.display = 'none';
@@ -3031,7 +3135,15 @@ function runAgain() {
   currentReport     = null;
   pendingReportData = null;
   oiConnecting      = false;
+  igSearchMode      = false;
+  pendingIGHandle   = '';
+  pendingIGCity     = '';
+  pendingIGToken    = null;
   input.value = '';
+  document.getElementById('ig-handle-input').value = '';
+  document.getElementById('ig-city-input').value   = '';
+  document.getElementById('ig-results-list').style.display = 'none';
+  document.getElementById('ig-search-error').style.display = 'none';
   clearError();
   clearOAuthData();
   // no biz-preview in new loading style
@@ -3068,16 +3180,23 @@ function showLeadGate() {
 
   // Populate score/grade teaser
   if (pendingReportData) {
-    const grade = pendingReportData.grade || '—';
-    const score = pendingReportData.overall_score ?? '—';
+    const isIGOnly = pendingReportData.ig_only || pendingReportData.no_gmb;
+    const grade    = isIGOnly ? 'IG' : (pendingReportData.grade || (pendingReportData.scores?.grade) || '—');
+    const score    = isIGOnly ? '—'  : (pendingReportData.overall_score ?? pendingReportData.scores?.overall ?? '—');
     document.getElementById('lg-grade-letter').textContent = grade;
     document.getElementById('lg-score-num').textContent    = score;
-    // Color grade circle by score
+    // Color grade circle
     const circle = document.getElementById('lg-grade-circle');
-    const s = pendingReportData.overall_score || 0;
-    circle.style.borderColor = s >= 75 ? '#00cc66' : s >= 50 ? '#ff9900' : '#ff4444';
-    document.getElementById('lg-grade-letter').style.color =
-      s >= 75 ? '#00cc66' : s >= 50 ? '#ff9900' : '#ff4444';
+    if (isIGOnly) {
+      circle.style.borderColor = 'rgba(131,58,180,.7)'; // IG purple
+      document.getElementById('lg-grade-letter').style.color = 'rgba(131,58,180,.9)';
+      document.getElementById('lg-grade-letter').style.fontSize = '20px';
+    } else {
+      const s = pendingReportData.overall_score || pendingReportData.scores?.overall || 0;
+      circle.style.borderColor = s >= 75 ? '#00cc66' : s >= 50 ? '#ff9900' : '#ff4444';
+      document.getElementById('lg-grade-letter').style.color =
+        s >= 75 ? '#00cc66' : s >= 50 ? '#ff9900' : '#ff4444';
+    }
   }
 
   const lg = document.getElementById('lead-gate-section');
@@ -3245,34 +3364,83 @@ async function submitManualToken() {
   }
 }
 
-function handleOAuthMessage(event) {
+async function handleOAuthMessage(event) {
   if (event.origin !== window.location.origin && !event.origin.includes('onrender.com')) return;
   const msg = event.data;
-  if (!msg || msg.type !== 'meta_token') return;
+  if (!msg || (msg.type !== 'meta_token' && msg.type !== 'meta_error')) return;
 
-  if (msg.token) {
-    metaToken = msg.token;
-    if (oiConnecting) {
-      // Came from the interstitial — render report with live data overlay
-      oiConnecting = false;
-      fetchEnhancedDataThenRender(msg.token);
-    } else {
-      // Came from the in-report OAuth modal
-      setModalStatus('Connected. Fetching your real data...', 'success');
-      fetchEnhancedData(msg.token);
-    }
-  } else if (msg.type === 'meta_error') {
+  if (msg.type === 'meta_error') {
+    igSearchMode = false;
     oiConnecting = false;
-    if (document.getElementById('oauth-interstitial').style.display !== 'none') {
-      document.getElementById('oi-status').textContent = msg.error || 'Authorization failed. Try again or skip.';
+    const errMsg = msg.error || 'Authorization failed. Please try again.';
+    if (document.getElementById('oauth-interstitial')?.style.display !== 'none') {
+      document.getElementById('oi-status').textContent = errMsg;
       const btn = document.getElementById('oi-connect-btn');
       if (btn) { btn.disabled = false; btn.textContent = 'Connect Instagram + Facebook'; }
+    } else if (igSearchMode) {
+      const errEl = document.getElementById('ig-search-error');
+      errEl.textContent = errMsg;
+      errEl.style.display = 'block';
+      document.getElementById('ig-results-list').style.display = 'none';
     } else {
-      setModalStatus(msg.error || 'Authorization failed. Please try again.', 'error');
+      setModalStatus(errMsg, 'error');
       const btn = document.getElementById('connect-btn');
-      btn.disabled = false;
-      document.getElementById('connect-btn-text').textContent = 'Connect Instagram + Facebook';
+      if (btn) { btn.disabled = false; }
+      const btnTxt = document.getElementById('connect-btn-text');
+      if (btnTxt) btnTxt.textContent = 'Connect Instagram + Facebook';
     }
+    return;
+  }
+
+  if (!msg.token) return;
+  metaToken = msg.token;
+
+  if (igSearchMode) {
+    // ── IG Mode: fetch page list → show selector ─────────────────
+    igSearchMode = false;
+    const resEl  = document.getElementById('ig-results-list');
+    resEl.innerHTML = `
+      <div style="padding:16px 20px;display:flex;align-items:center;gap:10px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#00cc66;animation:pulse-crimson 1.2s infinite"></div>
+        <div style="font-size:13px;color:rgba(255,255,255,.65)">Connected. Loading your accounts...</div>
+      </div>
+    `;
+    resEl.style.display = 'block';
+
+    try {
+      const r = await fetch(`${API}/api/list-ig-pages`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: msg.token })
+      });
+      const pagesData = await r.json();
+      const pages = pagesData.pages || [];
+
+      if (!r.ok || pagesData.error) {
+        const errEl = document.getElementById('ig-search-error');
+        errEl.textContent = pagesData.error || pagesData.message || 'Could not load your accounts. Try again.';
+        errEl.style.display = 'block';
+        resEl.style.display = 'none';
+        return;
+      }
+
+      await showIGPageSelector(msg.token, pages);
+
+    } catch(e) {
+      const errEl = document.getElementById('ig-search-error');
+      errEl.textContent = 'Network error loading your accounts. Please try again.';
+      errEl.style.display = 'block';
+      resEl.style.display = 'none';
+    }
+
+  } else if (oiConnecting) {
+    // Came from the interstitial — render report with live data overlay
+    oiConnecting = false;
+    fetchEnhancedDataThenRender(msg.token);
+  } else {
+    // Came from the in-report OAuth modal
+    setModalStatus('Connected. Fetching your real data...', 'success');
+    fetchEnhancedData(msg.token);
   }
 }
 

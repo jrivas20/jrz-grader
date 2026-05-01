@@ -79,27 +79,268 @@ def oauth_callback():
 </body></html>'''
 
 
+def analyze_ig_competitive(ig_profile, media_list, competitors=None):
+    """
+    Deep Instagram competitive analysis from Graph API data.
+    Returns posting frequency, engagement rate, content breakdown,
+    bio quality score, gap analysis, and action plan.
+    """
+    followers = ig_profile.get('followers_count', 0) or 0
+
+    # ── Posting frequency ─────────────────────────────────────────────
+    posts_per_week = 0.0
+    if len(media_list) >= 2:
+        try:
+            timestamps = []
+            for m in media_list:
+                ts_str = m.get('timestamp', '')
+                if ts_str:
+                    ts = datetime.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                    timestamps.append(ts)
+            if len(timestamps) >= 2:
+                timestamps.sort(reverse=True)
+                days_span = max((timestamps[0] - timestamps[-1]).days, 1)
+                posts_per_week = round(len(timestamps) / (days_span / 7), 1)
+        except Exception:
+            pass
+
+    # ── Content type breakdown ────────────────────────────────────────
+    types          = [m.get('media_type', 'IMAGE') for m in media_list]
+    reel_count     = types.count('VIDEO')          # Reels come back as VIDEO
+    photo_count    = types.count('IMAGE')
+    carousel_count = types.count('CAROUSEL_ALBUM')
+    total_typed    = len(types) or 1
+    reel_pct       = round((reel_count / total_typed) * 100)
+
+    # Last post date
+    last_post_days = None
+    if media_list:
+        try:
+            ts_str = media_list[0].get('timestamp', '')
+            if ts_str:
+                ts = datetime.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                now = datetime.datetime.now(datetime.timezone.utc)
+                last_post_days = (now - ts).days
+        except Exception:
+            pass
+
+    # ── Engagement metrics ────────────────────────────────────────────
+    total_likes    = sum((m.get('like_count')    or 0) for m in media_list)
+    total_comments = sum((m.get('comments_count') or 0) for m in media_list)
+    n           = len(media_list) or 1
+    avg_likes   = round(total_likes / n, 1)
+    avg_comments = round(total_comments / n, 1)
+    eng_rate    = round(((avg_likes + avg_comments) / followers) * 100, 2) if followers > 0 else 0
+
+    # ── Best performing post ──────────────────────────────────────────
+    best_post = None
+    if media_list:
+        best_post = max(
+            media_list,
+            key=lambda m: (m.get('like_count') or 0) + (m.get('comments_count') or 0)
+        )
+
+    # ── Bio quality analysis ──────────────────────────────────────────
+    bio       = ig_profile.get('biography', '') or ''
+    bio_lower = bio.lower()
+
+    BOOKING_KW = ['book', 'calendly', 'vagaro', 'booksy', 'schedule', 'appointment',
+                  'dm to book', 'link in bio', 'linktree', 'contact', 'inquiry',
+                  'commission', 'available', 'slots', 'dms open']
+    CITY_KW    = ['miami', 'orlando', 'kissimmee', 'florida', ' fl ', 'new york', ' ny ',
+                  'chicago', 'houston', 'dallas', 'atlanta', 'denver', 'phoenix', ' la ',
+                  'los angeles', 'austin', 'nashville', 'charlotte', 'tampa', 'jacksonville',
+                  'las vegas', 'seattle', 'boston', 'san diego', 'san francisco']
+    STYLE_KW   = ['realism', 'realistic', 'traditional', 'neo-trad', 'blackwork',
+                  'fine line', 'fineline', 'japanese', 'geometric', 'watercolor',
+                  'custom', 'portrait', 'color', 'black and grey', 'black & grey',
+                  'chicano', 'tribal', 'illustrative', 'dotwork', 'minimalist', 'new school']
+
+    bio_has_booking = any(kw in bio_lower for kw in BOOKING_KW)
+    bio_has_city    = any(kw in bio_lower for kw in CITY_KW)
+    bio_has_style   = any(kw in bio_lower for kw in STYLE_KW)
+    bio_has_link    = bool(ig_profile.get('website', ''))
+    bio_score       = (bio_has_booking * 35 + bio_has_link * 25 +
+                       bio_has_city * 20 + bio_has_style * 20)
+
+    # ── Gap analysis ──────────────────────────────────────────────────
+    gaps = []
+
+    if posts_per_week < 3:
+        gaps.append({
+            'category': 'Post Frequency',
+            'artist_val': f'{posts_per_week}×/week',
+            'benchmark':  '5–7×/week',
+            'impact':     'critical',
+            'action': (
+                f'You\'re posting {posts_per_week}×/week — below the minimum for algorithm growth. '
+                'Top booked artists post 5–7×/week. Batch-shoot this weekend: film 5 process Reels '
+                '(15–30 sec each) and schedule them Mon–Fri. Consistency beats perfection.'
+            )
+        })
+    elif posts_per_week < 5:
+        gaps.append({
+            'category': 'Post Frequency',
+            'artist_val': f'{posts_per_week}×/week',
+            'benchmark':  '5–7×/week',
+            'impact':     'warning',
+            'action': (
+                f'Posting {posts_per_week}×/week is a start but below the top-artist benchmark. '
+                'Add 2 more posts per week — prioritize Reels and before/after carousels.'
+            )
+        })
+
+    if reel_pct < 40:
+        gaps.append({
+            'category': 'Reel Volume',
+            'artist_val': f'{reel_pct}% of posts',
+            'benchmark':  '60%+ Reels',
+            'impact':     'critical',
+            'action': (
+                'Instagram sends Reels to non-followers — photos only reach people who already follow you. '
+                'A 20-second tattoo process video reaches 5–10× more new clients than a photo. '
+                'Start with one Reel per session: needle in, outline, shading, final reveal.'
+            )
+        })
+    elif reel_pct < 60:
+        gaps.append({
+            'category': 'Reel Volume',
+            'artist_val': f'{reel_pct}% of posts',
+            'benchmark':  '60%+ Reels',
+            'impact':     'warning',
+            'action': (
+                f'{reel_pct}% Reels is close — push past 60% and reach will increase within 2 weeks. '
+                'Film before/after reveals as Reels, not just photo posts.'
+            )
+        })
+
+    if eng_rate < 1.5 and followers > 300:
+        gaps.append({
+            'category': 'Engagement Rate',
+            'artist_val': f'{eng_rate}%',
+            'benchmark':  '2–5% (tattoo industry)',
+            'impact':     'warning',
+            'action': (
+                f'Your {eng_rate}% engagement is below industry average (2–5%). '
+                'Reply to every comment within the first hour of posting — this signals high activity '
+                'to the algorithm. End captions with a question to drive responses.'
+            )
+        })
+
+    if not bio_has_booking:
+        gaps.append({
+            'category': 'Booking Link in Bio',
+            'artist_val': 'Missing',
+            'benchmark':  '100% of top artists',
+            'impact':     'critical',
+            'action': (
+                'Every visitor who can\'t find how to book you is a lost client. '
+                'Add your booking link as the FIRST item in your bio right now — '
+                'Calendly, Vagaro, Booksy, or Linktree. Test it on mobile to confirm it works.'
+            )
+        })
+
+    if not bio_has_city:
+        gaps.append({
+            'category': 'City in Bio',
+            'artist_val': 'Missing',
+            'benchmark':  'Top artists include city',
+            'impact':     'warning',
+            'action': (
+                'Local clients search Instagram by location. Add your city to your bio '
+                '(e.g., "📍 Kissimmee, FL" or "Orlando-based tattoo artist"). '
+                'This directly affects Instagram local search results.'
+            )
+        })
+
+    if not bio_has_style:
+        gaps.append({
+            'category': 'Style in Bio',
+            'artist_val': 'Missing',
+            'benchmark':  'Top artists list specialty',
+            'impact':     'warning',
+            'action': (
+                'Style-seeking clients search "fine line tattoo artist" or "realism tattoo Orlando." '
+                'Add your specialty (e.g., "Fine Line Specialist" or "Realism & Black & Grey") '
+                'to attract higher-value clients who specifically want your style.'
+            )
+        })
+
+    # Recent posts (last 8) for display
+    recent = []
+    for m in media_list[:8]:
+        ts_str = m.get('timestamp', '')
+        ts_display = ''
+        try:
+            ts     = datetime.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+            days   = (datetime.datetime.now(datetime.timezone.utc) - ts).days
+            ts_display = f'{days}d ago'
+        except Exception:
+            pass
+        recent.append({
+            'type':            m.get('media_type', 'IMAGE'),
+            'likes':           m.get('like_count')    or 0,
+            'comments':        m.get('comments_count') or 0,
+            'link':            m.get('permalink', ''),
+            'ts':              ts_display,
+            'caption_preview': (m.get('caption') or '')[:80],
+        })
+
+    return {
+        'followers':        followers,
+        'following':        ig_profile.get('follows_count', 0),
+        'posts_total':      ig_profile.get('media_count', 0),
+        'posts_per_week':   posts_per_week,
+        'last_post_days':   last_post_days,
+        'reel_count':       reel_count,
+        'photo_count':      photo_count,
+        'carousel_count':   carousel_count,
+        'reel_pct':         reel_pct,
+        'avg_likes':        avg_likes,
+        'avg_comments':     avg_comments,
+        'engagement_rate':  eng_rate,
+        'bio':              bio,
+        'bio_has_booking':  bio_has_booking,
+        'bio_has_city':     bio_has_city,
+        'bio_has_style':    bio_has_style,
+        'bio_has_link':     bio_has_link,
+        'bio_score':        bio_score,
+        'best_post': {
+            'type':    best_post.get('media_type', '') if best_post else '',
+            'likes':   (best_post.get('like_count')    or 0) if best_post else 0,
+            'comments':(best_post.get('comments_count') or 0) if best_post else 0,
+            'link':    best_post.get('permalink', '')  if best_post else '',
+            'caption_preview': (best_post.get('caption') or '')[:100] if best_post else '',
+        } if best_post else None,
+        'gaps':          gaps,
+        'recent_posts':  recent,
+        'competitors':   competitors or [],
+    }
+
+
 @app.route('/api/enhance-tattoo', methods=['POST'])
 def enhance_tattoo():
     """
     Accepts a short-lived user access token from the artist's Meta OAuth.
-    Returns real Instagram data — followers, media count, IG username, post recency.
+    Returns real Instagram data + full competitive analysis.
     Token is NEVER stored. Read-only. Used in-session only.
     Required scope: instagram_basic, pages_show_list, pages_read_engagement
     """
     data = request.get_json(silent=True) or {}
-    user_token = (data.get('token') or '').strip()
+    user_token  = (data.get('token') or '').strip()
+    competitors = data.get('competitors', [])   # competitor list from report data
     if not user_token:
         return jsonify({'error': 'No token provided'}), 400
 
     enhanced = {
-        'source': 'live',
-        'instagram': None,
-        'facebook': None,
+        'source':        'live',
+        'instagram':     None,
+        'facebook':      None,
+        'ig_competitive': None,
     }
 
     try:
-        # Step 1: Get the user's Facebook Pages (needed to find linked IG Business Account)
+        # Step 1: Facebook Pages → find linked IG Business Account
         pages_resp = requests.get(
             'https://graph.facebook.com/v19.0/me/accounts',
             params={
@@ -108,24 +349,22 @@ def enhance_tattoo():
             },
             timeout=8
         )
-        pages_data = pages_resp.json()
-        pages = pages_data.get('data', [])
+        pages = pages_resp.json().get('data', [])
 
         ig_id = None
         for page in pages:
             ig_acct = page.get('instagram_business_account', {})
             if ig_acct and ig_acct.get('id'):
                 ig_id = ig_acct['id']
-                # Facebook Page social data
                 enhanced['facebook'] = {
-                    'page_name':  page.get('name', ''),
-                    'fans':       page.get('fan_count'),
-                    'followers':  page.get('followers_count'),
-                    'source':     'live'
+                    'page_name': page.get('name', ''),
+                    'fans':      page.get('fan_count'),
+                    'followers': page.get('followers_count'),
+                    'source':    'live'
                 }
                 break
 
-        # Step 2: Get Instagram Business Account details
+        # Step 2: IG Business Account profile + 25 recent posts
         if ig_id:
             ig_resp = requests.get(
                 f'https://graph.facebook.com/v19.0/{ig_id}',
@@ -140,51 +379,35 @@ def enhance_tattoo():
             )
             ig_info = ig_resp.json()
 
-            # Step 3: Get recent media (last post date)
+            # Step 3: Get last 25 posts with full engagement + type data
             media_resp = requests.get(
                 f'https://graph.facebook.com/v19.0/{ig_id}/media',
                 params={
                     'access_token': user_token,
-                    'fields': 'id,timestamp,media_type,like_count,comments_count',
-                    'limit': 12
+                    'fields': 'id,timestamp,media_type,like_count,comments_count,permalink,caption',
+                    'limit': 25
                 },
                 timeout=8
             )
-            media = media_resp.json().get('data', [])
+            media_list = media_resp.json().get('data', [])
 
-            last_post_days = None
-            avg_likes = None
-            avg_comments = None
-            if media:
-                try:
-                    import datetime as dt
-                    ts_str = media[0].get('timestamp', '')
-                    if ts_str:
-                        ts = dt.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
-                        now = dt.datetime.now(dt.timezone.utc)
-                        last_post_days = (now - ts).days
-                except Exception:
-                    pass
-                try:
-                    likes = [m.get('like_count', 0) for m in media if 'like_count' in m]
-                    comms = [m.get('comments_count', 0) for m in media if 'comments_count' in m]
-                    avg_likes    = int(sum(likes) / len(likes)) if likes else None
-                    avg_comments = int(sum(comms) / len(comms)) if comms else None
-                except Exception:
-                    pass
+            # Step 4: Run deep competitive analysis
+            ig_competitive = analyze_ig_competitive(ig_info, media_list, competitors)
 
+            # Basic backwards-compatible instagram block
             enhanced['instagram'] = {
-                'username':        ig_info.get('username', ''),
-                'followers':       ig_info.get('followers_count'),
-                'following':       ig_info.get('follows_count'),
-                'media_count':     ig_info.get('media_count'),
-                'bio':             ig_info.get('biography', ''),
-                'website':         ig_info.get('website', ''),
-                'last_post_days':  last_post_days,
-                'avg_likes':       avg_likes,
-                'avg_comments':    avg_comments,
-                'source':          'live'
+                'username':       ig_info.get('username', ''),
+                'followers':      ig_info.get('followers_count'),
+                'following':      ig_info.get('follows_count'),
+                'media_count':    ig_info.get('media_count'),
+                'bio':            ig_info.get('biography', ''),
+                'website':        ig_info.get('website', ''),
+                'last_post_days': ig_competitive.get('last_post_days'),
+                'avg_likes':      ig_competitive.get('avg_likes'),
+                'avg_comments':   ig_competitive.get('avg_comments'),
+                'source':         'live'
             }
+            enhanced['ig_competitive'] = ig_competitive
 
         if not enhanced['instagram'] and not enhanced['facebook']:
             return jsonify({'error': 'No connected Instagram Business Account found. Make sure your IG is linked to a Facebook Page.'}), 404
@@ -2646,6 +2869,12 @@ GHL_INK_WEBHOOK = os.environ.get(
     'https://services.leadconnectorhq.com/hooks/d7iUPfamAaPlSBNj6IhT/webhook-trigger/jrz-ink-grader'
 )
 
+# ── CITY AUDIT LOG ───────────────────────────────────────────────────
+# In-memory city audit log. Accumulates real market data as artists
+# run Guest City Audits. Resets on server restart — view at /api/city-insights.
+# Over 50+ audits this data updates TATTOO_CITY_BENCHMARKS with live figures.
+CITY_AUDIT_LOG = []   # [{city, state, artist_count, avg_reviews, avg_price, opp_score, ts}]
+
 
 # ── ROUTES ───────────────────────────────────────────────────────────
 
@@ -2749,15 +2978,15 @@ def find_tattoo_by_name():
     return jsonify({'results': filtered})
 
 
-@app.route('/api/grade-tattoo')
-def grade_tattoo():
-    place_id = request.args.get('place_id', '').strip()
-    if not place_id:
-        return jsonify({'error': 'place_id is required'}), 400
-
+def _grade_tattoo_internal(place_id):
+    """
+    Core tattoo audit logic — shared by /api/grade-tattoo and /api/grade-tattoo-by-ig.
+    Returns (report_dict, None, None) on success,
+    or (None, error_dict, http_status) on failure.
+    """
     cache_key = hashlib.md5(('tattoo:' + place_id).encode()).hexdigest()
     if cache_key in CACHE and time.time() - CACHE[cache_key]['ts'] < 600:
-        return jsonify(CACHE[cache_key]['data'])
+        return CACHE[cache_key]['data'], None, None
 
     # 1. Place Details
     try:
@@ -2775,10 +3004,10 @@ def grade_tattoo():
         )
         place = pr.json().get('result', {})
     except Exception as e:
-        return jsonify({'error': f'Google Places error: {e}'}), 502
+        return None, {'error': f'Google Places error: {e}'}, 502
 
     if not place:
-        return jsonify({'error': 'Business not found'}), 404
+        return None, {'error': 'Business not found'}, 404
 
     # ── TATTOO-ONLY GATE ─────────────────────────────────────────────
     raw_types = place.get('types', [])
@@ -2788,14 +3017,14 @@ def grade_tattoo():
         any(kw in biz_name_lower for kw in TATTOO_NAME_KEYWORDS)
     )
     if not is_tattoo:
-        return jsonify({
+        return None, {
             'error': 'not_tattoo',
             'message': (
                 f"{place.get('name', 'This business')} does not appear to be a "
                 "tattoo studio or artist. This audit is built exclusively for "
                 "tattoo artists and private studios."
             )
-        }), 422
+        }, 422
 
     city, state = parse_city_state(place.get('formatted_address', ''))
 
@@ -2804,10 +3033,6 @@ def grade_tattoo():
     loc = place.get('geometry', {}).get('location', {})
     if loc:
         try:
-            # keyword=tattoo is the hard gate — Google only returns places
-            # where "tattoo" appears in name, description, or reviews.
-            # type=tattoo_parlor further restricts the category.
-            # The post-filter is the third safety layer.
             nr = requests.get(
                 'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
                 params={
@@ -2927,7 +3152,295 @@ def grade_tattoo():
     except Exception:
         pass
 
+    return report, None, None
+
+
+@app.route('/api/grade-tattoo')
+def grade_tattoo():
+    place_id = request.args.get('place_id', '').strip()
+    if not place_id:
+        return jsonify({'error': 'place_id is required'}), 400
+    report, err, status = _grade_tattoo_internal(place_id)
+    if err:
+        return jsonify(err), status
     return jsonify(report)
+
+
+@app.route('/api/list-ig-pages', methods=['POST'])
+def list_ig_pages():
+    """
+    Returns a list of Facebook Pages managed by this token,
+    each enriched with the connected Instagram Business Account info.
+    Used by the IG-mode page selector in the frontend.
+    """
+    data  = request.get_json(silent=True) or {}
+    token = (data.get('token') or '').strip()
+    if not token:
+        return jsonify({'error': 'No token provided'}), 400
+
+    try:
+        resp = requests.get(
+            'https://graph.facebook.com/v19.0/me/accounts',
+            params={
+                'access_token': token,
+                'fields': 'id,name,fan_count,followers_count,instagram_business_account'
+            },
+            timeout=8
+        )
+        raw_pages = resp.json().get('data', [])
+    except Exception as e:
+        return jsonify({'error': f'Could not fetch pages: {e}'}), 502
+
+    pages = []
+    for page in raw_pages:
+        ig_acct = page.get('instagram_business_account', {}) or {}
+        ig_id   = ig_acct.get('id', '')
+
+        ig_info = {}
+        if ig_id:
+            try:
+                ig_r = requests.get(
+                    f'https://graph.facebook.com/v19.0/{ig_id}',
+                    params={
+                        'access_token': token,
+                        'fields': 'id,username,name,biography,followers_count,media_count,profile_picture_url'
+                    },
+                    timeout=6
+                )
+                ig_info = ig_r.json()
+            except Exception:
+                ig_info = {}
+
+        pages.append({
+            'page_id':      page.get('id', ''),
+            'page_name':    page.get('name', ''),
+            'page_fans':    page.get('fan_count'),
+            'page_followers': page.get('followers_count'),
+            'ig_id':        ig_id or None,
+            'ig_username':  ig_info.get('username', ''),
+            'ig_name':      ig_info.get('name', ''),
+            'ig_followers': ig_info.get('followers_count'),
+            'ig_bio':       ig_info.get('biography', ''),
+        })
+
+    if not pages:
+        return jsonify({
+            'error': 'no_pages',
+            'message': (
+                'No Facebook Pages found for this account. '
+                'You need at least one Facebook Page to connect Instagram. '
+                'Create a Facebook Page and link your Instagram account to it.'
+            )
+        }), 404
+
+    # If none have IG connected, still return them all with a flag
+    has_ig = any(p['ig_id'] for p in pages)
+    return jsonify({
+        'pages':  pages,
+        'has_ig': has_ig
+    })
+
+
+@app.route('/api/grade-tattoo-by-ig', methods=['POST'])
+def grade_tattoo_by_ig():
+    """
+    Instagram-first audit path. Artist authenticates via Meta OAuth.
+    We pull their real IG profile + media, find their Google listing
+    using their real name, run the full audit, and inject live IG data.
+    No need for the artist to know their GMB listing name.
+    """
+    data    = request.get_json(silent=True) or {}
+    token   = (data.get('token')   or '').strip()
+    city    = (data.get('city')    or '').strip()
+    handle  = (data.get('handle')  or '').strip().lstrip('@')
+    page_id = (data.get('page_id') or '').strip()  # specific page selected by artist
+
+    if not token:
+        return jsonify({'error': 'No token provided'}), 400
+
+    try:
+        # ── Step 1: Find the correct IG Business Account ──────────────
+        # If page_id is supplied (artist selected from page list), use it directly.
+        # Otherwise fall back to first page with IG connected.
+        ig_id   = None
+        fb_page = {}
+
+        pages_resp = requests.get(
+            'https://graph.facebook.com/v19.0/me/accounts',
+            params={
+                'access_token': token,
+                'fields': 'id,name,fan_count,followers_count,instagram_business_account'
+            },
+            timeout=8
+        )
+        pages = pages_resp.json().get('data', [])
+
+        for page in pages:
+            # If artist picked a specific page, only use that one
+            if page_id and page.get('id') != page_id:
+                continue
+            ig_acct = page.get('instagram_business_account', {})
+            if ig_acct and ig_acct.get('id'):
+                ig_id = ig_acct['id']
+                fb_page = {
+                    'page_name': page.get('name', ''),
+                    'fans':      page.get('fan_count'),
+                    'followers': page.get('followers_count'),
+                    'source':    'live'
+                }
+                break
+
+        if not ig_id:
+            return jsonify({
+                'error': 'no_ig_account',
+                'message': (
+                    'No Instagram Business Account found on this page. '
+                    'Make sure your IG account is linked to a Facebook Page and '
+                    'converted to a Business or Creator account.'
+                )
+            }), 404
+
+        # ── Step 2: IG Profile + 25 recent posts ─────────────────────
+        ig_resp = requests.get(
+            f'https://graph.facebook.com/v19.0/{ig_id}',
+            params={
+                'access_token': token,
+                'fields': (
+                    'id,username,name,biography,website,'
+                    'profile_picture_url,followers_count,follows_count,media_count'
+                )
+            },
+            timeout=8
+        )
+        ig_info = ig_resp.json()
+
+        media_resp = requests.get(
+            f'https://graph.facebook.com/v19.0/{ig_id}/media',
+            params={
+                'access_token': token,
+                'fields': 'id,timestamp,media_type,like_count,comments_count,permalink,caption',
+                'limit': 25
+            },
+            timeout=8
+        )
+        media_list = media_resp.json().get('data', [])
+
+        # Deep competitive analysis from real IG data
+        ig_competitive = analyze_ig_competitive(ig_info, media_list, [])
+
+        # ── Step 3: Find their Google listing via real name ───────────
+        ig_real_name = ig_info.get('name', '').strip()
+        ig_username  = ig_info.get('username', '').strip() or handle
+
+        TATTOO_KW = {'tattoo', 'ink', 'piercing', 'tattooing'}
+
+        # Build ordered search queries — most specific first
+        search_queries = []
+        if ig_real_name and city:
+            search_queries.append(f'{ig_real_name} tattoo {city}')
+        if ig_username and city:
+            clean = re.sub(r'[._\-]', ' ', ig_username).strip()
+            search_queries.append(f'{clean} tattoo {city}')
+            if handle and handle != ig_username:
+                search_queries.append(f'{re.sub(r"[._-]", " ", handle).strip()} tattoo {city}')
+        if ig_real_name:
+            search_queries.append(f'{ig_real_name} tattoo')
+        if city:
+            search_queries.append(f'tattoo artist {city}')
+
+        place_id = None
+        for q in search_queries:
+            if place_id:
+                break
+            try:
+                r = requests.get(
+                    'https://maps.googleapis.com/maps/api/place/textsearch/json',
+                    params={'query': q, 'key': GOOGLE_KEY},
+                    timeout=8
+                )
+                for res in r.json().get('results', []):
+                    pid  = res.get('place_id', '')
+                    if not pid:
+                        continue
+                    types      = res.get('types', [])
+                    name_lower = res.get('name', '').lower()
+                    is_tattoo  = (
+                        'tattoo_parlor' in types or
+                        any(kw in name_lower for kw in TATTOO_KW) or
+                        'art_studio' in types
+                    )
+                    if is_tattoo:
+                        place_id = pid
+                        break
+            except Exception:
+                pass
+
+        # ── Step 4: Full report + inject live IG data ─────────────────
+        if place_id:
+            report, err, status = _grade_tattoo_internal(place_id)
+            if report:
+                # Override social_presence with real live IG data
+                sp = report.setdefault('social_presence', {})
+                sp['instagram_followers']    = ig_info.get('followers_count')
+                sp['instagram_media_count']  = ig_info.get('media_count')
+                sp['instagram_username']     = ig_info.get('username', '')
+                sp['instagram_last_post_days'] = ig_competitive.get('last_post_days')
+                sp['instagram_bio']          = ig_info.get('biography', '')
+                sp['instagram_website']      = ig_info.get('website', '')
+                sp['instagram_source']       = 'live'
+                # Facebook data from the linked page
+                if fb_page:
+                    sp['facebook_page_name'] = fb_page.get('page_name', '')
+                    sp['facebook_fans']      = fb_page.get('fans')
+                    sp['facebook_followers'] = fb_page.get('followers')
+                    sp['facebook_source']    = 'live'
+                report['ig_competitive'] = ig_competitive
+                report['ig_mode']        = True   # tells frontend data is live, no enhance needed
+                return jsonify(report)
+
+        # ── Step 5: No Google listing found — IG-only partial report ──
+        # Artist has IG but no GMB. Still give them a partial audit.
+        followers = ig_info.get('followers_count', 0) or 0
+        return jsonify({
+            'ig_only':  True,
+            'ig_mode':  True,
+            'business': {
+                'name':    ig_info.get('name', '') or f'@{ig_username}',
+                'address': city or 'Location unknown',
+                'rating':  None, 'reviews': 0,
+                'website': ig_info.get('website', ''),
+                'phone':   None, 'photos': 0, 'has_hours': False
+            },
+            'instagram': {
+                'username':       ig_username,
+                'followers':      followers,
+                'following':      ig_info.get('follows_count', 0),
+                'media_count':    ig_info.get('media_count', 0),
+                'bio':            ig_info.get('biography', ''),
+                'website':        ig_info.get('website', ''),
+                'source':         'live'
+            },
+            'ig_competitive':  ig_competitive,
+            'facebook':        fb_page,
+            'social_presence': {
+                'instagram_followers':     followers,
+                'instagram_username':      ig_username,
+                'instagram_media_count':   ig_info.get('media_count', 0),
+                'instagram_last_post_days': ig_competitive.get('last_post_days'),
+                'instagram_source':        'live',
+                'facebook_page_name':      fb_page.get('page_name', ''),
+                'facebook_fans':           fb_page.get('fans'),
+                'facebook_source':         'live',
+            },
+            'no_gmb':  True,
+            'message': (
+                f'No Google Business listing found for @{ig_username}. '
+                'Your Instagram data is live — Google presence is not yet set up.'
+            )
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Instagram grade failed: {str(e)}'}), 502
 
 
 # ── TATTOO EXTRAS SCRAPER ─────────────────────────────────────────────
@@ -4129,7 +4642,7 @@ def grade_guest_city():
         return jsonify({'error': f'Could not locate "{city_display}". Try including the state abbreviation.'}), 400
 
     # 2. Find tattoo artists in city
-    artists = find_tattoo_artists_in_city(lat, lng)
+    artists, artist_count_capped = find_tattoo_artists_in_city(lat, lng)
 
     # 3. Map pack — who owns the 3-pack for "tattoo artist [city]"?
     map_pack = []
@@ -4160,8 +4673,28 @@ def grade_guest_city():
 
     # 7. Build and return report
     report = build_guest_city_report(city, state, style, artists, map_pack, ads,
-                                      benchmarks, serp_data, lat, lng)
+                                      benchmarks, serp_data, lat, lng,
+                                      artist_count_capped=artist_count_capped)
     CACHE[cache_key] = {'ts': time.time(), 'data': report}
+
+    # ── Log this audit for city benchmarking ─────────────────────────
+    try:
+        opp_score = report.get('opportunity', {}).get('total', 0)
+        avg_rev   = report.get('competition', {}).get('avg_reviews', 0)
+        CITY_AUDIT_LOG.append({
+            'city':          city,
+            'state':         state,
+            'style':         style or 'all',
+            'artist_count':  len(artists),
+            'avg_reviews':   avg_rev,
+            'avg_price':     benchmarks.get('avg_price', 0),
+            'opp_score':     opp_score,
+            'ts':            datetime.datetime.utcnow().isoformat(),
+        })
+        if len(CITY_AUDIT_LOG) > 500:
+            CITY_AUDIT_LOG.pop(0)
+    except Exception:
+        pass
 
     try:
         fire_ghl_guest_city(report)
@@ -4213,7 +4746,11 @@ def geocode_city(city, state):
 
 
 def find_tattoo_artists_in_city(lat, lng):
-    """Nearby Search for tattoo artists within 15 km of city center."""
+    """
+    Nearby Search for tattoo artists within 15 km of city center.
+    Returns (artists_list, count_capped) — capped=True means Google hit its
+    20-result-per-page ceiling and the real count is likely higher.
+    """
     try:
         r = requests.get(
             'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
@@ -4246,9 +4783,11 @@ def find_tattoo_artists_in_city(lat, lng):
                 'grocery_or_supermarket', 'bank', 'hospital',
             ])
         ]
-        return artists[:20]
+        # Google Nearby Search caps at 20 per page — flag so UI can show "20+"
+        capped = len(artists) >= 20
+        return artists[:20], capped
     except Exception:
-        return []
+        return [], False
 
 
 def check_city_map_pack(city, state):
@@ -4421,7 +4960,8 @@ def get_opportunity_verdict(score):
 
 
 def build_guest_city_report(city, state, style, artists, map_pack, ads,
-                              benchmarks, serp_data, lat, lng):
+                              benchmarks, serp_data, lat, lng,
+                              artist_count_capped=False):
     opp     = calculate_opportunity_score(artists, map_pack, ads, benchmarks)
     verdict = get_opportunity_verdict(opp['total'])
 
@@ -4465,10 +5005,11 @@ def build_guest_city_report(city, state, style, artists, map_pack, ads,
             'note':      f'Based on {city} market benchmarks for a 2-week guest stint',
         },
         'competition': {
-            'artist_count': opp['artist_count'],
-            'avg_reviews':  opp['avg_reviews'],
-            'avg_rating':   opp['avg_rating'],
-            'top_artists':  top_artists,
+            'artist_count':        opp['artist_count'],
+            'artist_count_capped': artist_count_capped,   # True = Google hit 20-result cap; real count is higher
+            'avg_reviews':         opp['avg_reviews'],
+            'avg_rating':          opp['avg_rating'],
+            'top_artists':         top_artists,
         },
         'map_pack':     map_pack,
         'ad_activity':  {'count': len(ads), 'ads': ads[:4]},
@@ -4494,6 +5035,45 @@ def fire_ghl_guest_city(report):
         }, timeout=5)
     except Exception:
         pass
+
+
+@app.route('/api/city-insights')
+def city_insights():
+    """
+    Real market data accumulated from Guest City Audits run on this server instance.
+    Resets on server restart — data grows as more artists run audits.
+    Use this to progressively improve TATTOO_CITY_BENCHMARKS with real-world figures.
+    """
+    if not CITY_AUDIT_LOG:
+        return jsonify({
+            'message': 'No data yet. City insights accumulate as artists run Guest City Audits.',
+            'total_audits': 0,
+            'cities_tracked': 0
+        })
+
+    from collections import defaultdict
+    city_data = defaultdict(list)
+    for entry in CITY_AUDIT_LOG:
+        key = f"{entry['city'].lower()}, {entry.get('state', '').upper()}".strip(', ')
+        city_data[key].append(entry)
+
+    insights = {}
+    for city_key, entries in sorted(city_data.items()):
+        insights[city_key] = {
+            'audit_count':          len(entries),
+            'avg_artist_count':     round(sum(e['artist_count'] for e in entries) / len(entries), 1),
+            'avg_reviews_market':   round(sum(e['avg_reviews']  for e in entries) / len(entries), 1),
+            'avg_price_benchmark':  round(sum(e['avg_price']    for e in entries) / len(entries), 0),
+            'avg_opp_score':        round(sum(e['opp_score']    for e in entries) / len(entries), 1),
+            'last_audited':         max(e['ts'] for e in entries),
+        }
+
+    return jsonify({
+        'total_audits':   len(CITY_AUDIT_LOG),
+        'cities_tracked': len(insights),
+        'city_insights':  insights,
+        'note':           'Data accumulates in-memory. Resets on server restart. 50+ audits per city unlocks reliable real-world benchmark updates.',
+    })
 
 
 if __name__ == '__main__':
