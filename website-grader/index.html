@@ -730,6 +730,103 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   padding-left: 4px;
 }
 
+/* ── MAP PACK ── */
+.map-pack-section { margin-bottom: 52px; }
+.map-pack-grid { display: flex; flex-direction: column; gap: 16px; }
+.map-pack-card {
+  background: var(--bg2);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.mpc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--b);
+  gap: 12px;
+}
+.mpc-kw    { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.8); flex: 1; }
+.mpc-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.mpc-badge.in-pack  { background: rgba(0,204,102,.1);  color: var(--green); border: 1px solid rgba(0,204,102,.2); }
+.mpc-badge.not-pack { background: rgba(255,68,68,.1);  color: #ff7777;      border: 1px solid rgba(255,68,68,.2); }
+.mpc-position { font-size: 12px; color: var(--muted); }
+.mpc-businesses { display: flex; flex-direction: column; }
+.mpc-biz-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 13px;
+}
+.mpc-biz-row:last-child { border-bottom: none; }
+.mpc-biz-row.is-target  { background: rgba(0,204,102,.04); }
+.mpc-biz-rank {
+  font-size: 10px;
+  font-weight: 800;
+  width: 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.mpc-biz-name  { flex: 1; font-weight: 500; color: rgba(255,255,255,.75); }
+.mpc-biz-meta  { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.mpc-no-data   { padding: 16px 20px; font-size: 13px; color: var(--muted); }
+
+/* ── REVIEW INTELLIGENCE ── */
+.ri-card {
+  background: var(--bg2);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.ri-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width:500px){ .ri-grid { grid-template-columns: 1fr; } }
+.ri-item { text-align: center; }
+.ri-num   { font-size: 32px; font-weight: 800; line-height: 1; }
+.ri-num.active   { color: var(--green); }
+.ri-num.moderate { color: #4da6ff; }
+.ri-num.slow     { color: var(--orange); }
+.ri-num.stagnant { color: #ff5555; }
+.ri-num.good     { color: var(--green); }
+.ri-num.warn     { color: var(--orange); }
+.ri-num.bad      { color: #ff5555; }
+.ri-label { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* ── DIRECTORY CITATIONS ── */
+.dir-card {
+  background: var(--bg2);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.dir-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dir-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 100px;
+}
+.dir-chip.present { background: rgba(0,204,102,.1);  color: var(--green); border: 1px solid rgba(0,204,102,.2); }
+.dir-chip.missing { background: rgba(255,255,255,.04); color: rgba(255,255,255,.3); border: 1px solid rgba(255,255,255,.08); }
+.dir-note  { font-size: 11px; color: rgba(255,255,255,.25); margin-top: 12px; }
+
 /* ── SEO AUDIT ── */
 .seo-audit-section { margin-bottom: 52px; }
 .seo-audit-grid {
@@ -1381,6 +1478,55 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="rankings-note">Rankings checked against top 30 Google organic results in your local market.</div>
       </div>
 
+      <!-- Map Pack Visibility -->
+      <div class="map-pack-section" id="map-pack-section" style="display:none">
+        <div class="report-sec-label">
+          <div class="rsl-line"></div>
+          <div class="rsl-txt">Google Map Pack Visibility</div>
+        </div>
+        <div class="map-pack-grid" id="map-pack-grid"></div>
+      </div>
+
+      <!-- Review Intelligence -->
+      <div id="review-intel-section" style="display:none">
+        <div class="report-sec-label">
+          <div class="rsl-line"></div>
+          <div class="rsl-txt">Review Intelligence</div>
+        </div>
+        <div class="ri-card">
+          <div class="ri-grid">
+            <div class="ri-item">
+              <div class="ri-num" id="ri-velocity-val">—</div>
+              <div class="ri-label">Review Velocity</div>
+            </div>
+            <div class="ri-item">
+              <div class="ri-num" id="ri-response-val">—</div>
+              <div class="ri-label">Owner Response Rate</div>
+            </div>
+            <div class="ri-item">
+              <div class="ri-num" id="ri-recent-val">—</div>
+              <div class="ri-label">Reviews in Last 30 Days</div>
+            </div>
+            <div class="ri-item">
+              <div class="ri-num" id="ri-lastday-val">—</div>
+              <div class="ri-label">Days Since Last Review</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Directory Citations -->
+      <div id="directory-section" style="display:none">
+        <div class="report-sec-label">
+          <div class="rsl-line"></div>
+          <div class="rsl-txt">Directory &amp; Platform Presence</div>
+        </div>
+        <div class="dir-card">
+          <div class="dir-grid" id="dir-grid"></div>
+          <div class="dir-note" id="dir-delivery-note"></div>
+        </div>
+      </div>
+
       <!-- SEO Audit -->
       <div class="seo-audit-section" id="seo-audit-section" style="display:none">
         <div class="report-sec-label">
@@ -1893,6 +2039,80 @@ function renderReport(d) {
         </div>
       </div>`
     ).join('');
+  }
+
+  // Map Pack Visibility
+  const mp = d.map_pack || [];
+  if (mp.length) {
+    document.getElementById('map-pack-section').style.display = 'block';
+    document.getElementById('map-pack-grid').innerHTML = mp.map(m => {
+      const bizRows = (m.pack_businesses || []).map((b, idx) => `
+        <div class="mpc-biz-row ${b.is_target ? 'is-target' : ''}">
+          <div class="mpc-biz-rank">${idx + 1}</div>
+          <div class="mpc-biz-name">${esc(b.name)}${b.is_target ? ' &larr; You' : ''}</div>
+          <div class="mpc-biz-meta">
+            ${b.rating ? b.rating + ' stars' : ''}
+            ${b.reviews ? ' &middot; ' + b.reviews + ' reviews' : ''}
+          </div>
+        </div>`).join('');
+
+      return `
+        <div class="map-pack-card">
+          <div class="mpc-header">
+            <div class="mpc-kw">${esc(m.keyword)}</div>
+            <div class="mpc-badge ${m.in_pack ? 'in-pack' : 'not-pack'}">
+              ${m.in_pack ? 'In Map Pack' : 'Not in Map Pack'}
+            </div>
+          </div>
+          ${m.pack_businesses && m.pack_businesses.length
+            ? `<div class="mpc-businesses">${bizRows}</div>`
+            : `<div class="mpc-no-data">Map pack data unavailable for this query.</div>`
+          }
+        </div>`;
+    }).join('');
+  }
+
+  // Review Intelligence
+  const ri = d.review_intel || {};
+  if (ri.total_sampled > 0) {
+    document.getElementById('review-intel-section').style.display = 'block';
+
+    const velEl = document.getElementById('ri-velocity-val');
+    velEl.textContent = ri.velocity || '—';
+    const velCls = { Active: 'active', Moderate: 'moderate', Slow: 'slow', Stagnant: 'stagnant' };
+    velEl.className = 'ri-num ' + (velCls[ri.velocity] || '');
+
+    const rrEl = document.getElementById('ri-response-val');
+    rrEl.textContent = (ri.response_rate ?? '—') + '%';
+    rrEl.className   = 'ri-num ' + (ri.response_rate >= 75 ? 'good' : ri.response_rate >= 50 ? 'warn' : 'bad');
+
+    const recEl = document.getElementById('ri-recent-val');
+    recEl.textContent = ri.recent_30 ?? '—';
+    recEl.className   = 'ri-num ' + (ri.recent_30 >= 3 ? 'good' : ri.recent_30 >= 1 ? 'warn' : 'bad');
+
+    const ldEl = document.getElementById('ri-lastday-val');
+    ldEl.textContent = ri.newest_review_days != null ? ri.newest_review_days + 'd' : '—';
+    ldEl.className   = 'ri-num ' + (ri.newest_review_days != null && ri.newest_review_days <= 14 ? 'good'
+                                  : ri.newest_review_days != null && ri.newest_review_days <= 60 ? 'warn' : 'bad');
+  }
+
+  // Directory & Platform Presence
+  const dirLinks      = d.directory_links || [];
+  const deliveryLinks = d.delivery_links  || [];
+  const ALL_DIRS = ['Yelp','TripAdvisor','BBB','Angi','HomeAdvisor','Houzz','Thumbtack','Yellow Pages'];
+
+  if (dirLinks.length || deliveryLinks.length || (d.business && d.business.website)) {
+    document.getElementById('directory-section').style.display = 'block';
+    const chips = ALL_DIRS.map(name => {
+      const found = dirLinks.includes(name);
+      return `<div class="dir-chip ${found ? 'present' : 'missing'}">${name}</div>`;
+    }).join('');
+    document.getElementById('dir-grid').innerHTML = chips;
+
+    if (deliveryLinks.length) {
+      document.getElementById('dir-delivery-note').textContent =
+        'Delivery/ordering platforms linked: ' + deliveryLinks.join(', ');
+    }
   }
 
   // SEO Audit

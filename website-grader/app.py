@@ -66,7 +66,8 @@ def grade():
                 'place_id': place_id,
                 'fields': ('name,rating,user_ratings_total,formatted_address,'
                            'website,formatted_phone_number,opening_hours,'
-                           'photos,types,geometry,business_status,price_level'),
+                           'photos,types,geometry,business_status,price_level,'
+                           'reviews,editorial_summary'),
                 'key': GOOGLE_KEY
             },
             timeout=8
@@ -128,6 +129,11 @@ def grade():
         except Exception:
             pagespeed = {}
 
+    # Review intelligence — from Places API review objects (up to 5)
+    raw_reviews    = place.get('reviews', []) or []
+    review_intel   = analyze_reviews(raw_reviews)
+    gbp_description = (place.get('editorial_summary') or {}).get('overview', '')
+
     # Parse city/state once — reused by scrape and keyword ranking
     city, state = parse_city_state(place.get('formatted_address', ''))
 
@@ -155,9 +161,20 @@ def grade():
         except Exception:
             backlink_data = {}
 
-    # 7. Build Report
+    # 7. Map Pack Visibility (Phase 2 — DataForSEO)
+    map_pack_data = []
+    if DFS_LOGIN and DFS_PASSWORD and city:
+        try:
+            map_pack_data = check_map_pack(
+                place.get('name', ''), type_label, city, state
+            )
+        except Exception:
+            map_pack_data = []
+
+    # 8. Build Report
     report = build_report(place, pagespeed, site_data, competitors, keyword_rankings,
-                          place_id, type_label, backlink_data)
+                          place_id, type_label, backlink_data,
+                          review_intel, gbp_description, map_pack_data)
 
     CACHE[cache_key] = {'ts': time.time(), 'data': report}
 
@@ -181,6 +198,122 @@ def parse_city_state(address):
         state_zip = parts[-2].strip()
         state     = state_zip.split()[0] if state_zip else ''
     return city, state
+
+
+# ─────────────────────────────────────────────────────────────────
+#  REVIEW INTELLIGENCE
+# ─────────────────────────────────────────────────────────────────
+
+def analyze_reviews(reviews):
+    """Compute review velocity + owner response rate from Places API review objects."""
+    if not reviews:
+        return {
+            'velocity': 'No data', 'velocity_score': 0,
+            'recent_30': 0, 'recent_90': 0,
+            'response_rate': 0, 'responded': 0,
+            'total_sampled': 0, 'newest_review_days': None,
+        }
+
+    now   = time.time()
+    d30   = 30  * 86400
+    d90   = 90  * 86400
+
+    recent_30 = sum(1 for r in reviews if (now - r.get('time', 0)) < d30)
+    recent_90 = sum(1 for r in reviews if (now - r.get('time', 0)) < d90)
+
+    newest_ts   = max((r.get('time', 0) for r in reviews), default=0)
+    newest_days = int((now - newest_ts) / 86400) if newest_ts else None
+
+    responded     = sum(1 for r in reviews if r.get('author_reply'))
+    total         = len(reviews)
+    response_rate = int(responded / total * 100) if total else 0
+
+    if newest_days is not None and newest_days <= 14:
+        velocity = 'Active';       velocity_score = 100
+    elif newest_days is not None and newest_days <= 60:
+        velocity = 'Moderate';     velocity_score = 65
+    elif newest_days is not None and newest_days <= 180:
+        velocity = 'Slow';         velocity_score = 35
+    else:
+        velocity = 'Stagnant';     velocity_score = 10
+
+    return {
+        'velocity': velocity, 'velocity_score': velocity_score,
+        'recent_30': recent_30, 'recent_90': recent_90,
+        'response_rate': response_rate, 'responded': responded,
+        'total_sampled': total, 'newest_review_days': newest_days,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────
+#  MAP PACK VISIBILITY  (Phase 2 — DataForSEO)
+# ─────────────────────────────────────────────────────────────────
+
+def check_map_pack(biz_name, type_label, city, state):
+    """Check if the business appears in the Google Local 3-Pack for key queries."""
+    if not (DFS_LOGIN and DFS_PASSWORD):
+        return []
+
+    keywords  = [
+        f'{type_label} {city}',
+        f'best {type_label} in {city}',
+    ]
+    biz_words = [w for w in biz_name.lower().split() if len(w) > 3]
+    results   = []
+
+    for kw in keywords:
+        try:
+            resp = requests.post(
+                'https://api.dataforseo.com/v3/serp/google/local_pack/live/advanced',
+                auth=(DFS_LOGIN, DFS_PASSWORD),
+                json=[{
+                    'keyword':       kw,
+                    'location_name': f'{city},{state},United States' if state else f'{city},United States',
+                    'language_name': 'English',
+                }],
+                timeout=15
+            )
+            data       = resp.json()
+            result_obj = (((data.get('tasks') or [{}])[0].get('result') or [{}])[0])
+            items      = result_obj.get('items') or []
+            pack_items = [i for i in items if i.get('type') == 'local_pack']
+
+            in_pack    = False
+            position   = None
+            pack_biz   = []
+
+            for item in pack_items:
+                title_lower = (item.get('title') or '').lower()
+                rank        = item.get('rank_group') or item.get('rank_absolute')
+                rating_obj  = item.get('rating') or {}
+                rating_val  = rating_obj.get('value')    if isinstance(rating_obj, dict) else None
+                review_cnt  = rating_obj.get('votes_count') if isinstance(rating_obj, dict) else None
+
+                pack_biz.append({
+                    'name':    item.get('title', ''),
+                    'rating':  rating_val,
+                    'reviews': review_cnt,
+                    'address': item.get('address', ''),
+                    'is_target': any(w in title_lower for w in biz_words),
+                })
+                if any(w in title_lower for w in biz_words):
+                    in_pack  = True
+                    position = rank
+
+            results.append({
+                'keyword':          kw,
+                'in_pack':          in_pack,
+                'position':         position,
+                'pack_size':        len(pack_items),
+                'pack_businesses':  pack_biz,
+            })
+        except Exception:
+            results.append({
+                'keyword': kw, 'in_pack': False,
+                'position': None, 'pack_size': 0, 'pack_businesses': []
+            })
+
+    return results
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -363,6 +496,7 @@ def scrape_website(url, biz_name='', biz_city=''):
         'has_booking_widget': False, 'has_online_menu': False,
         'has_live_chat': False, 'has_ssl': False,
         'city_in_content': False, 'name_in_title': False,
+        'directory_links': [], 'delivery_links': [],
         # SEO audit fields
         'h1_count': 0, 'h2_count': 0, 'h3_count': 0,
         'h2_texts': [], 'h3_texts': [],
@@ -458,14 +592,52 @@ def scrape_website(url, biz_name='', biz_city=''):
             'linkedin.com':  'LinkedIn',
             'tiktok.com':    'TikTok',
             'youtube.com':   'YouTube',
-            'yelp.com':      'Yelp',
+            'pinterest.com': 'Pinterest',
         }
-        found_social = {}
+        # Directory platforms
+        directory_map = {
+            'yelp.com':         'Yelp',
+            'tripadvisor.com':  'TripAdvisor',
+            'bbb.org':          'BBB',
+            'angi.com':         'Angi',
+            'angieslist.com':   'Angi',
+            'homeadvisor.com':  'HomeAdvisor',
+            'houzz.com':        'Houzz',
+            'thumbtack.com':    'Thumbtack',
+            'yellowpages.com':  'Yellow Pages',
+            'google.com/maps':  'Google Maps',
+        }
+        # Delivery / ordering platforms
+        delivery_map = {
+            'doordash.com':  'DoorDash',
+            'grubhub.com':   'Grubhub',
+            'ubereats.com':  'Uber Eats',
+            'postmates.com': 'Postmates',
+            'chownow.com':   'ChowNow',
+            'toasttab.com':  'Toast',
+            'opentable.com': 'OpenTable',
+            'resy.com':      'Resy',
+        }
+
+        found_social    = {}
+        found_directory = {}
+        found_delivery  = {}
+
         for a in soup.find_all('a', href=True):
+            href = a.get('href', '')
             for domain, label in social_map.items():
-                if domain in a['href']:
+                if domain in href:
                     found_social[label] = True
-        r['social_links'] = list(found_social.keys())
+            for domain, label in directory_map.items():
+                if domain in href:
+                    found_directory[label] = True
+            for domain, label in delivery_map.items():
+                if domain in href:
+                    found_delivery[label] = True
+
+        r['social_links']    = list(found_social.keys())
+        r['directory_links'] = list(found_directory.keys())
+        r['delivery_links']  = list(found_delivery.keys())
 
         # Contact form
         r['has_contact_form'] = bool(soup.find('form'))
@@ -812,7 +984,7 @@ def estimate_revenue_loss(issues, place, overall_score=50):
 #  SCORING ENGINE
 # ─────────────────────────────────────────────────────────────────
 
-def score_google_presence(place, checklist):
+def score_google_presence(place, checklist, review_intel=None, gbp_description=''):
     s        = 0
     items    = []
     has_web  = bool(place.get('website'))
@@ -821,31 +993,56 @@ def score_google_presence(place, checklist):
     photos   = len(place.get('photos', []))
     reviews  = place.get('user_ratings_total', 0)
     has_price = 'price_level' in place
+    ri        = review_intel or {}
 
-    items.append({'label': 'Website linked to profile',              'pass': has_web})
-    if has_web:   s += 15
+    items.append({'label': 'Website linked to profile', 'pass': has_web})
+    if has_web:   s += 12
 
-    items.append({'label': 'Phone number listed',                    'pass': has_ph})
-    if has_ph:    s += 12
+    items.append({'label': 'Phone number listed', 'pass': has_ph})
+    if has_ph:    s += 10
 
-    items.append({'label': 'Business hours published',               'pass': has_hrs})
-    if has_hrs:   s += 15
+    items.append({'label': 'Business hours published', 'pass': has_hrs})
+    if has_hrs:   s += 10
 
-    items.append({'label': 'Price range configured',                 'pass': has_price})
-    if has_price: s += 8
+    items.append({'label': 'Price range configured', 'pass': has_price})
+    if has_price: s += 6
+
+    # Business description (editorial_summary)
+    has_desc = bool(gbp_description)
+    items.append({'label': 'Business description written', 'pass': has_desc})
+    if has_desc: s += 10
 
     photos_ok = photos >= 10
     items.append({'label': f'10 or more photos ({photos} uploaded)', 'pass': photos_ok})
-    if photos >= 10: s += 20
-    elif photos >= 5:  s += 13
-    elif photos >= 1:  s += 6
+    if photos >= 10: s += 16
+    elif photos >= 5:  s += 10
+    elif photos >= 1:  s += 5
 
     reviews_ok = reviews >= 50
     items.append({'label': f'50 or more reviews ({reviews} total)', 'pass': reviews_ok})
-    if reviews >= 100: s += 20
-    elif reviews >= 50:  s += 15
-    elif reviews >= 20:  s += 10
-    elif reviews >= 5:   s += 5
+    if reviews >= 100: s += 18
+    elif reviews >= 50:  s += 14
+    elif reviews >= 20:  s += 9
+    elif reviews >= 5:   s += 4
+
+    # Review response rate
+    rr  = ri.get('response_rate', 0)
+    rr_ok = rr >= 50
+    items.append({'label': f'Review response rate ({rr}% of reviews replied to)', 'pass': rr_ok})
+    if rr >= 75: s += 10
+    elif rr >= 50: s += 7
+    elif rr >= 25: s += 3
+
+    # Review velocity
+    vel   = ri.get('velocity', '')
+    vel_s = ri.get('velocity_score', 0)
+    vel_ok = vel_s >= 65
+    vel_days = ri.get('newest_review_days')
+    vel_label = (f'{vel} — last review {vel_days}d ago' if vel_days is not None else vel) if vel else 'No data'
+    items.append({'label': f'Review velocity: {vel_label}', 'pass': vel_ok})
+    if vel_s >= 100: s += 8
+    elif vel_s >= 65: s += 5
+    elif vel_s >= 35: s += 2
 
     checklist['google_profile'] = items
     return min(s, 100)
@@ -1287,6 +1484,70 @@ def get_jrz_action(issue, site_data, pagespeed, place):
             'service':  'Local SEO Content'
         }
 
+    if 'business description' in title or 'no business description' in title:
+        return {
+            'fix':      ('JRZ writes a keyword-optimized 750-character Google Business Profile '
+                         'description covering your primary services, city and service area, '
+                         'years in business, and unique differentiators. Published directly to '
+                         'your GBP within 24 hours after your review and approval.'),
+            'timeline': '24 hours',
+            'result':   ('Description appears in Google search results on your profile card. '
+                         'Improves relevance for service + city keyword combinations.'),
+            'service':  'GBP Optimization'
+        }
+
+    if 'response rate' in title or 'owner replies' in title:
+        return {
+            'fix':      ('JRZ sets up a weekly review monitoring dashboard and response workflow. '
+                         'Every new review — positive or negative — receives a professionally '
+                         'written, personalized reply within 48 hours that includes your business '
+                         'name, city, and service naturally for local SEO benefit.'),
+            'timeline': '3 to 5 business days to configure',
+            'result':   ('Review response rate reaches 100 percent. Google ranks active '
+                         'responders higher. 89 percent of consumers prefer businesses that '
+                         'respond to all reviews.'),
+            'service':  'Reputation Management'
+        }
+
+    if 'velocity' in title or 'stagnant' in title:
+        return {
+            'fix':      ('JRZ deploys automated post-visit review requests via SMS or email — '
+                         'sent exactly 24 hours after every customer transaction. Each message '
+                         'is personalized, includes a direct Google review link, and is timed '
+                         'to maximize response rate based on your business type.'),
+            'timeline': '3 to 5 business days to activate',
+            'result':   ('Clients average 30 to 50 new reviews within 90 days of activation. '
+                         'Consistent review velocity signals active business to Google and '
+                         'improves local map pack position over 60 to 90 days.'),
+            'service':  'Review Automation'
+        }
+
+    if 'map pack' in title or 'local 3-pack' in title or 'not appearing' in title:
+        return {
+            'fix':      ('JRZ runs a full Local SEO audit identifying the specific gaps '
+                         'preventing map pack entry: schema markup, NAP citation consistency, '
+                         'GBP completeness, review velocity, and on-page city signals. '
+                         'We implement all required changes and monitor ranking shifts weekly.'),
+            'timeline': '2 to 4 weeks for initial movement; 60 to 90 days for stable placement',
+            'result':   ('Map pack placement captures 44 percent of all local search clicks. '
+                         'A single top-3 position for a primary keyword can add 15 to 40 '
+                         'qualified leads per month depending on search volume.'),
+            'service':  'Local SEO'
+        }
+
+    if 'directory' in title or 'citation' in title or 'yelp' in title:
+        return {
+            'fix':      ('JRZ builds and verifies your business citation profile across 40+ '
+                         'directories: Yelp, Apple Maps, Bing Places, TripAdvisor, Yellow Pages, '
+                         'BBB, Angi, HomeAdvisor, and more. Every listing is standardized with '
+                         'identical NAP data and linked back to your primary website.'),
+            'timeline': '5 to 7 business days',
+            'result':   ('Citation consistency is one of the top 5 local ranking factors. '
+                         'Businesses with complete citation profiles rank on average 1.8 positions '
+                         'higher in map pack results than those without.'),
+            'service':  'Citation Building'
+        }
+
     if 'noindex' in title or 'blocking google' in title:
         return {
             'fix':      ('JRZ locates the noindex tag, removes it from production, and forces '
@@ -1400,7 +1661,8 @@ def build_roadmap(issues, site_data, pagespeed, place):
 # ─────────────────────────────────────────────────────────────────
 
 def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
-                 place_id, type_label='business', backlink_data=None):
+                 place_id, type_label='business', backlink_data=None,
+                 review_intel=None, gbp_description='', map_pack_data=None):
     name    = place.get('name', '')
     rating  = place.get('rating', 0)
     reviews = place.get('user_ratings_total', 0)
@@ -1410,8 +1672,9 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
     has_hrs = bool(place.get('opening_hours'))
     address = place.get('formatted_address', '')
 
+    ri  = review_intel or {}
     checklist = {}
-    gp  = score_google_presence(place, checklist)
+    gp  = score_google_presence(place, checklist, review_intel, gbp_description)
     rep = score_reputation(place, checklist)
     ws  = score_website(place, pagespeed, site_data, checklist)
     seo = score_local_seo(place, site_data, checklist)
@@ -1561,6 +1824,72 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
                        'viewing a business profile. A missing number eliminates an entire lead '
                        'channel and raises credibility concerns for potential customers.'),
             'fix':    'JRZ adds your phone number with call tracking enabled so you can measure leads from Google directly.'
+        })
+
+    # GBP Depth Issues
+    if not gbp_description:
+        issues.append({
+            'severity': 'warning', 'category': 'Google Profile',
+            'title':  'No business description on your Google profile',
+            'detail': ('Google Business Profile descriptions appear in search results and on your '
+                       'profile card. A missing description means Google has to guess what your '
+                       'business does — which reduces the quality of leads and weakens your '
+                       'relevance signal for local searches.'),
+            'fix':    'JRZ writes a keyword-optimized 750-character description covering your services, city, and unique differentiators. Published in 24 hours.'
+        })
+
+    rr = ri.get('response_rate', 0)
+    vel_score = ri.get('velocity_score', 0)
+    if ri.get('total_sampled', 0) > 0 and rr < 50:
+        issues.append({
+            'severity': 'warning', 'category': 'Reputation',
+            'title':  f'Low review response rate — {rr}% of reviews have owner replies',
+            'detail': ('Google factors owner response rate into local ranking signals. '
+                       'Businesses that respond to reviews consistently rank higher than those '
+                       'that do not. More importantly, 89 percent of consumers say they are '
+                       'more likely to choose a business that responds to all reviews.'),
+            'fix':    'JRZ sets up a weekly review monitoring and response workflow — every review gets a professional reply within 48 hours.'
+        })
+
+    if ri.get('total_sampled', 0) > 0 and vel_score < 35:
+        vel_days = ri.get('newest_review_days')
+        days_str = f'{vel_days} days ago' if vel_days else 'unknown'
+        issues.append({
+            'severity': 'warning', 'category': 'Reputation',
+            'title':  f'Review velocity is stagnant — last review posted {days_str}',
+            'detail': ('Google rewards businesses that receive reviews consistently. '
+                       'A stagnant review profile signals low activity to the algorithm and '
+                       'causes your map pack position to drop over time as active competitors '
+                       'accumulate more recent reviews.'),
+            'fix':    'JRZ activates automated review requests sent by SMS after every transaction. Clients average 30 to 50 new reviews within the first 90 days.'
+        })
+
+    # Map pack issues
+    if map_pack_data:
+        not_in_pack = [m for m in map_pack_data if not m.get('in_pack')]
+        if not_in_pack:
+            missing_kws = ', '.join(f'"{m["keyword"]}"' for m in not_in_pack[:2])
+            issues.append({
+                'severity': 'critical', 'category': 'Local SEO',
+                'title':  f'Not appearing in Google Map Pack for {missing_kws}',
+                'detail': ('The Google Map Pack (the 3 businesses shown above organic results) '
+                           'captures 44 percent of all local search clicks. If you are not in the '
+                           'top 3 for your primary keywords, you are invisible to nearly half of '
+                           'all local searchers — regardless of your website ranking.'),
+                'fix':    'JRZ runs a full Local SEO audit and implements the specific signals needed to enter and maintain map pack placement: schema, citations, GBP optimization, and review velocity.'
+            })
+
+    # Directory citation issues
+    dir_links = site_data.get('directory_links', [])
+    if website and not dir_links:
+        issues.append({
+            'severity': 'warning', 'category': 'Local SEO',
+            'title':  'No directory listings detected (Yelp, TripAdvisor, BBB, etc.)',
+            'detail': ('Directory citations — consistent Name, Address, Phone listings across '
+                       'the web — are one of the top local ranking factors. Businesses with '
+                       'strong citation profiles rank higher in map pack results and are more '
+                       'trusted by Google as established, legitimate businesses.'),
+            'fix':    'JRZ builds and verifies your citation profile across 40+ directories including Yelp, Apple Maps, Bing Places, TripAdvisor, Yellow Pages, and BBB.'
         })
 
     # SEO-specific issues (only when site was successfully scanned)
@@ -1760,6 +2089,20 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
         'competitors':       comp_list,
         'competitor_insight': comp_insight,
         'free_tip':          free_tip,
+        'review_intel': {
+            'velocity':          ri.get('velocity', 'No data'),
+            'velocity_score':    ri.get('velocity_score', 0),
+            'recent_30':         ri.get('recent_30', 0),
+            'recent_90':         ri.get('recent_90', 0),
+            'response_rate':     ri.get('response_rate', 0),
+            'responded':         ri.get('responded', 0),
+            'total_sampled':     ri.get('total_sampled', 0),
+            'newest_review_days': ri.get('newest_review_days'),
+        },
+        'gbp_description': gbp_description,
+        'map_pack':        map_pack_data or [],
+        'directory_links': site_data.get('directory_links', []),
+        'delivery_links':  site_data.get('delivery_links', []),
         'seo_audit': {
             'scraped':             site_data.get('scraped', False),
             'h1_count':            site_data.get('h1_count', 0),
