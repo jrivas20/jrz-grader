@@ -184,7 +184,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   background: var(--crimson);
   border: none;
   border-radius: 10px;
-  color: #fff;
+  color: #000;
   font-family: var(--font);
   font-size: 14px;
   font-weight: 700;
@@ -913,7 +913,99 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   .upgrade-btn-meta,.upgrade-btn-skip{flex:1;justify-content:center}
   .modal-box{padding:24px}
 }
+/* ── REVENUE BREAKDOWN ────────────────────────────────────────────── */
+.rev-breakdown {
+  max-width: 700px;
+  margin: 24px auto 0;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.rev-breakdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  user-select: none;
+  transition: color .15s;
+}
+.rev-breakdown-toggle:hover { color: rgba(255,255,255,.7); }
+.rev-breakdown-chevron { font-size: 10px; transition: transform .25s; }
+.rev-breakdown.open .rev-breakdown-chevron { transform: rotate(180deg); }
+.rev-breakdown-body {
+  display: none;
+  padding: 4px 20px 20px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.rev-breakdown.open .rev-breakdown-body { display: block; }
+.rev-step {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.rev-step:last-child { border-bottom: none; }
+.rev-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.5);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.rev-step-content {}
+.rev-step-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.35);
+  margin-bottom: 4px;
+}
+.rev-step-value {
+  font-size: 14px;
+  color: rgba(255,255,255,.8);
+  line-height: 1.5;
+}
+.rev-step-value strong { color: #fff; }
+.rev-step-value em { color: rgba(255,255,255,.45); font-style: normal; font-size: 12px; }
+.rev-disclaimer {
+  font-size: 11px;
+  color: rgba(255,255,255,.28);
+  line-height: 1.55;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  text-align: left;
+}
+/* ── LOADING LOGO ────────────────────────────────────────────────── */
+.loading-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+}
+.loading-logo img {
+  height: 44px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  opacity: .7;
+}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
 
@@ -921,9 +1013,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   SEARCH SECTION
 ════════════════════════════════════════════════════════════════ -->
 <section id="search-section">
-  <video class="hero-video" autoplay muted loop playsinline
-    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_171521_25968ba2-b594-4b32-aab7-f6b69398a6fa.mp4">
-  </video>
+  <video id="hero-video" class="hero-video" autoplay muted loop playsinline></video>
   <div class="hero-bg"></div>
   <div class="search-content">
 
@@ -986,6 +1076,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 ════════════════════════════════════════════════════════════════ -->
 <section id="loading-section">
   <div class="loading-inner">
+    <div class="loading-logo">
+      <img src="https://assets.cdn.filesafe.space/d7iUPfamAaPlSBNj6IhT/media/69dc72b1b30bc5237146bf95.png" alt="JRZ Ink Systems">
+    </div>
     <div class="loading-biz-tag" id="loading-biz-tag">JRZ INK SYSTEMS · STUDIO AUDIT</div>
     <div class="loading-h">Running your<br>full audit<span id="loading-biz-suffix"></span></div>
 
@@ -1071,6 +1164,17 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="rev-col-label">Full Potential</div>
         <div class="rev-col-amount" id="rev-potential">$0</div>
         <div class="rev-col-note">Optimized booking + visibility + trust</div>
+      </div>
+    </div>
+
+    <!-- Revenue Calculation Breakdown — transparent, honest methodology -->
+    <div class="rev-breakdown" id="rev-breakdown">
+      <div class="rev-breakdown-toggle" onclick="this.parentElement.classList.toggle('open')">
+        How we calculate this — see the full breakdown
+        <span class="rev-breakdown-chevron">▼</span>
+      </div>
+      <div class="rev-breakdown-body" id="rev-breakdown-body">
+        <!-- Populated by renderReport() with real numbers -->
       </div>
     </div>
   </div>
@@ -1370,7 +1474,6 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   <div class="luis-section" id="luis-section">
     <div class="luis-inner">
       <div class="luis-left">
-        <div class="luis-eyebrow">✦ PROOF IT WORKS</div>
         <div class="luis-headline">Luis A. Farrera — Tattoo Artist, Florida</div>
         <div class="luis-sub">
           In 30 days, JRZ Ink Systems built and launched a Meta Ads campaign for Luis's private studio — generating 84 real booking inquiries at $14.83 per lead with a 5.06% click-through rate. His calendar went from half-booked to a waiting list.
@@ -1509,6 +1612,25 @@ let currentReport   = null;  // holds the full report data for checklist pre-fil
 let metaToken       = null;  // in-memory only — cleared on close
 let fbAppId         = '';
 let oauthEnabled    = false;
+
+// ── HLS VIDEO BACKGROUND ──────────────────────────────────────────
+(function initHeroVideo() {
+  const video  = document.getElementById('hero-video');
+  const hlsSrc = 'https://stream.mux.com/tLkHO1qZoaaQOUeVWo8hEBeGQfySP02EPS02BmnNFyXys.m3u8';
+  if (!video) return;
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ autoStartLoad: true, startLevel: -1 });
+    hls.loadSource(hlsSrc);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    video.src = hlsSrc;
+    video.addEventListener('loadedmetadata', () => video.play().catch(() => {}));
+  }
+})();
 
 // Fetch config on load (FB App ID for OAuth popup)
 fetch(`${API}/api/config`).then(r => r.json()).then(c => {
@@ -2206,6 +2328,83 @@ function renderReport(d) {
     `Based on ~${rev.est_sessions_month || '?'} sessions/month at $${rev.avg_tattoo_value || '?'} avg in ${rev.city_benchmark || 'your market'}. ` +
     `Conservative estimate — actual upside may reach ${fmt$(rev.opportunity_upside)}.`;
 
+  // ── Revenue Breakdown (transparent methodology) ────────────────
+  const bdBody = document.getElementById('rev-breakdown-body');
+  if (bdBody && rev.est_sessions_month) {
+    const sessions   = rev.est_sessions_month;
+    const avgPrice   = rev.avg_tattoo_value;
+    const curBase    = rev.current_base;
+    const optSess    = Math.round(sessions * 1.45);
+    const potBase    = rev.potential_base;
+    const gap        = rev.opportunity_base;
+    const city       = rev.city_benchmark || 'your market';
+    const reviews    = b.reviews || 0;
+    // Determine volume tier label
+    const volTier = reviews >= 200 ? '200+ reviews = high-volume studio'
+      : reviews >= 100 ? '100–199 reviews = established studio'
+      : reviews >= 50  ? '50–99 reviews = growing studio'
+      : reviews >= 25  ? '25–49 reviews = early-stage studio'
+      :                  'under 25 reviews = new or low-visibility studio';
+
+    bdBody.innerHTML = `
+      <div class="rev-step">
+        <div class="rev-step-num">1</div>
+        <div class="rev-step-content">
+          <div class="rev-step-label">Estimate your current session volume</div>
+          <div class="rev-step-value">
+            You have <strong>${reviews.toLocaleString()} Google reviews</strong> — we use this as a volume proxy.<br>
+            <em>${volTier} → ~${sessions} sessions/month estimated</em>
+          </div>
+        </div>
+      </div>
+      <div class="rev-step">
+        <div class="rev-step-num">2</div>
+        <div class="rev-step-content">
+          <div class="rev-step-label">Apply city market benchmark</div>
+          <div class="rev-step-value">
+            Average tattoo price in <strong>${city}</strong>: <strong>$${avgPrice}</strong>/session<br>
+            <em>Source: industry surveys, local studio pricing, market analysis (2024)</em>
+          </div>
+        </div>
+      </div>
+      <div class="rev-step">
+        <div class="rev-step-num">3</div>
+        <div class="rev-step-content">
+          <div class="rev-step-label">Calculate current monthly revenue estimate</div>
+          <div class="rev-step-value">
+            ${sessions} sessions × $${avgPrice} = <strong>${fmt$(sessions * avgPrice)}/month</strong><br>
+            <em>Conservative figure = ${fmt$(curBase)}/month (75% of raw estimate)</em>
+          </div>
+        </div>
+      </div>
+      <div class="rev-step">
+        <div class="rev-step-num">4</div>
+        <div class="rev-step-content">
+          <div class="rev-step-label">Optimized potential (what full setup unlocks)</div>
+          <div class="rev-step-value">
+            Studios with online booking, strong Google visibility, and active Instagram average <strong>45% more sessions</strong>.<br>
+            ${sessions} × 1.45 = <strong>${optSess} sessions/month → ${fmt$(potBase)}/month</strong>
+          </div>
+        </div>
+      </div>
+      <div class="rev-step">
+        <div class="rev-step-num">5</div>
+        <div class="rev-step-content">
+          <div class="rev-step-label">Your monthly revenue gap</div>
+          <div class="rev-step-value">
+            ${fmt$(potBase)} − ${fmt$(curBase)} = <strong style="color:#fff;font-size:16px">${fmt$(gap)}/month</strong><br>
+            <em>That's ${fmt$(gap * 12)}/year leaving because clients can't find or book you easily.</em>
+          </div>
+        </div>
+      </div>
+      <div class="rev-disclaimer">
+        <strong style="color:rgba(255,255,255,.5)">What this is:</strong> An honest estimate based on your Google review count (volume proxy), city market benchmarks, and industry research on how booking systems and local SEO affect session volume.
+        This is NOT a guarantee — your actual revenue depends on your pricing, availability, and location. We show you this number to help you see the size of the opportunity, not to inflate it.
+        Want exact numbers? We'll tell you on a free strategy call with your real data.
+      </div>
+    `;
+  }
+
   // ── Business Header ────────────────────────────────────────────
   document.getElementById('rpt-biz-name').textContent  = b.name;
   document.getElementById('rpt-rating').textContent    = `${b.rating} stars`;
@@ -2544,22 +2743,30 @@ function renderReport(d) {
   const comps = d.competitors || [];
   if (comps.length > 0) {
     document.getElementById('comp-card').style.display = 'block';
-    document.getElementById('comp-rows').innerHTML = comps.map((c, i) => `
+    document.getElementById('comp-rows').innerHTML = comps.map((c, i) => {
+      const fbLine = c.fb_followers != null
+        ? `<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">FB: ${c.fb_followers.toLocaleString()} followers</div>`
+        : '';
+      const adsTag = c.running_ads
+        ? `<div style="font-size:10px;font-weight:700;letter-spacing:1px;color:rgba(255,153,0,.8);margin-top:3px">▲ RUNNING ADS</div>`
+        : '';
+      return `
       <div class="comp-row">
         <div class="comp-num">${i + 1}</div>
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="comp-name">${c.name}</div>
           <div style="font-size:11px;color:var(--muted)">${c.address}</div>
+          ${fbLine}${adsTag}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div class="comp-stars">★ ${c.rating}</div>
           <div class="comp-revs">${c.reviews} reviews</div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     if (d.competitor_insight) {
       const ci = document.getElementById('comp-insight');
-      ci.textContent = '💡 ' + d.competitor_insight;
+      ci.textContent = d.competitor_insight;
       ci.style.display = 'block';
     }
   }
@@ -2609,7 +2816,7 @@ function renderReport(d) {
         <div class="ls-label">Leads in ${lf.days} Days</div>
       </div>
       <div class="luis-stat">
-        <div class="ls-val">$${lf.cpl}</div>
+        <div class="ls-val">${lf.cpl}</div>
         <div class="ls-label">Cost Per Lead</div>
       </div>
       <div class="luis-stat">

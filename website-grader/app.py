@@ -2731,7 +2731,6 @@ def grade_tattoo():
                     'radius':   8000,
                     'type':     'tattoo_parlor',
                     'key':      GOOGLE_KEY,
-                    'rankby':   'prominence'
                 },
                 timeout=8
             )
@@ -2740,6 +2739,11 @@ def grade_tattoo():
                 r for r in nearby
                 if r.get('place_id') != place_id
                 and r.get('business_status') == 'OPERATIONAL'
+                and (
+                    'tattoo_parlor' in r.get('types', []) or
+                    any(kw in r.get('name', '').lower()
+                        for kw in {'tattoo', 'ink', 'piercing', 'studio'})
+                )
             ][:5]
         except Exception:
             competitors = []
@@ -2791,6 +2795,15 @@ def grade_tattoo():
             map_pack_data = check_map_pack(place.get('name', ''), 'tattoo studio', city, state)
         except Exception:
             map_pack_data = []
+
+    # 2b. Enrich each competitor with Facebook page data
+    if FB_TOKEN and competitors:
+        for comp in competitors:
+            try:
+                fb_data = search_facebook_page(comp.get('name', ''), city)
+                comp.update(fb_data)
+            except Exception:
+                pass
 
     # 10. Social
     social_data = {}
@@ -2978,6 +2991,43 @@ def check_ad_library(city, state):
         return results
     except Exception:
         return []
+
+
+# ── FACEBOOK PAGE SEARCH — COMPETITOR ENRICHMENT ────────────────────
+# Searches Facebook Pages API for a business by name + city.
+# Returns followers/fans for the best-matching result.
+
+def search_facebook_page(biz_name, city):
+    """Find a competitor's Facebook Page and return follower/fan data."""
+    if not FB_TOKEN or not biz_name:
+        return {}
+    try:
+        # Try name + city first, fall back to name only
+        for q in [f'{biz_name} {city}', biz_name]:
+            resp = requests.get(
+                'https://graph.facebook.com/v19.0/pages/search',
+                params={
+                    'access_token': FB_TOKEN,
+                    'q':            q,
+                    'fields':       'id,name,fan_count,followers_count',
+                    'limit':        3,
+                },
+                timeout=6
+            )
+            data  = resp.json()
+            pages = data.get('data', [])
+            if pages:
+                break
+        if not pages:
+            return {}
+        page = pages[0]
+        return {
+            'fb_page_name': page.get('name', ''),
+            'fb_fans':      page.get('fan_count'),
+            'fb_followers': page.get('followers_count'),
+        }
+    except Exception:
+        return {}
 
 
 # ── TATTOO SCORING ENGINE ────────────────────────────────────────────
@@ -3539,12 +3589,27 @@ def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
     roadmap = build_tattoo_roadmap(issues)
     revenue = estimate_tattoo_revenue(place, city, overall, social_data)
 
-    # Competitor insight
-    comp_list = [
-        {'name': c.get('name',''), 'rating': c.get('rating',0),
-         'reviews': c.get('user_ratings_total',0), 'address': c.get('vicinity','')}
-        for c in competitors[:4]
-    ]
+    # Competitor insight — include FB data + ad library cross-reference
+    ad_lib = ad_library or []
+    ad_advertisers = {a.get('page_name', '').lower() for a in ad_lib}
+    comp_list = []
+    for c in competitors[:4]:
+        c_name = c.get('name', '')
+        # Check if this competitor appears in the Meta Ad Library
+        running_ads = any(
+            c_name.lower() in adv or adv in c_name.lower()
+            for adv in ad_advertisers
+        )
+        comp_list.append({
+            'name':         c_name,
+            'rating':       c.get('rating', 0),
+            'reviews':      c.get('user_ratings_total', 0),
+            'address':      c.get('vicinity', ''),
+            'fb_page_name': c.get('fb_page_name', ''),
+            'fb_fans':      c.get('fb_fans'),
+            'fb_followers': c.get('fb_followers'),
+            'running_ads':  running_ads,
+        })
     comp_insight = None
     active = [c for c in comp_list if c['rating']]
     if active:
