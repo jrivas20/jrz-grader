@@ -1942,6 +1942,24 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   border:1px solid rgba(255,68,68,.15);border-radius:8px;font-size:12px;
   color:rgba(255,150,150,.8);line-height:1.6 }
 
+/* Accuracy confidence banner */
+.accuracy-banner { display:flex;align-items:center;gap:16px;
+  padding:14px 20px;margin:0 var(--px) 0;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.08);border-radius:12px }
+.accuracy-pct { font-size:22px;font-weight:900;color:#fff;
+  letter-spacing:-1px;white-space:nowrap;flex-shrink:0 }
+.accuracy-pct span { font-size:12px;font-weight:700;letter-spacing:1px;
+  display:block;color:rgba(255,255,255,.35);margin-top:-2px }
+.accuracy-divider { width:1px;height:36px;background:rgba(255,255,255,.08);flex-shrink:0 }
+.accuracy-body { flex:1 }
+.accuracy-title { font-size:12px;font-weight:700;color:rgba(255,255,255,.8);
+  margin-bottom:3px }
+.accuracy-sources { font-size:11px;color:rgba(255,255,255,.35);line-height:1.5;margin-bottom:3px }
+.accuracy-note { font-size:10px;color:rgba(255,255,255,.22);line-height:1.4;font-style:italic }
+.accuracy-dot { display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--green);margin-right:5px;vertical-align:middle }
+
 /* Reel hook library */
 .igr-hook-intro { font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px }
 .igr-hook-card { display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
@@ -2418,6 +2436,17 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       </div>
     </div>
 
+    <!-- Accuracy Banner -->
+    <div class="accuracy-banner" style="margin:0 0 4px">
+      <div class="accuracy-pct">82%<span>ACCURACY</span></div>
+      <div class="accuracy-divider"></div>
+      <div class="accuracy-body">
+        <div class="accuracy-title"><span class="accuracy-dot"></span>Our technology is directly connected to Google and Meta</div>
+        <div class="accuracy-sources">Live data pulled from Meta Graph API · Google Places · DataForSEO · PageSpeed Insights — the moment you run this audit</div>
+        <div class="accuracy-note">That's what makes this 82% accurate. Real follower counts, live keyword rankings, real-time map pack position — not screenshots, not guesses. Revenue estimates are a rough calculation based on average session prices in your city and typical booking volume for your area — your actual numbers depend on what you charge per tattoo. Connect Instagram via OAuth to reach 92%+.</div>
+      </div>
+    </div>
+
     <!-- Core Metrics -->
     <div class="igr-section">
       <div class="igr-section-label">Performance Metrics</div>
@@ -2681,6 +2710,17 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     <div class="grade-circle" id="grade-circle">
       <div class="grade-letter" id="grade-letter"></div>
       <div class="grade-label">GRADE</div>
+    </div>
+  </div>
+
+  <!-- Accuracy Banner -->
+  <div class="accuracy-banner" style="margin:0 var(--px) 12px">
+    <div class="accuracy-pct">82%<span>ACCURACY</span></div>
+    <div class="accuracy-divider"></div>
+    <div class="accuracy-body">
+      <div class="accuracy-title"><span class="accuracy-dot"></span>Our technology is directly connected to Google and Meta</div>
+      <div class="accuracy-sources">Live data pulled from Google Places · DataForSEO SERP + Map Pack · Meta Ad Library · PageSpeed Insights — the moment you run this audit</div>
+      <div class="accuracy-note">That's what makes this 82% accurate. Real reviews, live keyword rankings, actual map pack position — not screenshots, not guesses. Connect Instagram via OAuth to reach 92%+.</div>
     </div>
   </div>
 
