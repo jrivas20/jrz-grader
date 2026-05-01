@@ -730,6 +730,128 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   padding-left: 4px;
 }
 
+/* ── SEO AUDIT ── */
+.seo-audit-section { margin-bottom: 52px; }
+.seo-audit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media(max-width:600px){ .seo-audit-grid { grid-template-columns: 1fr; } }
+
+.seo-card {
+  background: var(--bg2);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  padding: 20px;
+}
+.seo-card-full { grid-column: 1 / -1; }
+.seo-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.35);
+  margin-bottom: 16px;
+}
+.seo-heading-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+.seo-heading-item { text-align: center; flex: 1; }
+.seo-h-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.seo-h-count {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+.seo-h-count.good  { color: var(--green); }
+.seo-h-count.warn  { color: var(--orange); }
+.seo-h-count.bad   { color: #ff5555; }
+.seo-h-sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.seo-hierarchy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 100px;
+  margin-top: 4px;
+}
+.seo-hierarchy-badge.pass { background: rgba(0,204,102,.08); color: var(--green); border: 1px solid rgba(0,204,102,.2); }
+.seo-hierarchy-badge.fail { background: rgba(255,85,85,.08);  color: #ff7777;     border: 1px solid rgba(255,85,85,.18); }
+
+.seo-h2-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.seo-h2-item {
+  font-size: 12px;
+  color: rgba(255,255,255,.5);
+  padding: 6px 10px;
+  background: rgba(255,255,255,.03);
+  border-radius: 6px;
+  border-left: 2px solid rgba(255,255,255,.12);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seo-signals {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.seo-signal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.seo-signal-label { color: rgba(255,255,255,.65); flex: 1; }
+.seo-signal-val   { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.seo-signal-val.pass { color: var(--green); }
+.seo-signal-val.warn { color: var(--orange); }
+.seo-signal-val.fail { color: #ff5555; }
+.seo-signal-val.neutral { color: rgba(255,255,255,.45); }
+
+.seo-link-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.seo-stat { text-align: center; }
+.seo-stat-num { font-size: 28px; font-weight: 800; color: var(--fg); line-height: 1; }
+.seo-stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.seo-backlinks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media(max-width:500px){ .seo-backlinks { grid-template-columns: 1fr 1fr; } }
+.seo-bl-item { text-align: center; }
+.seo-bl-num   { font-size: 28px; font-weight: 800; color: var(--fg); line-height: 1; }
+.seo-bl-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
 /* ── IMPROVEMENT ROADMAP ── */
 .roadmap-section { margin-bottom: 60px; }
 .roadmap-intro {
@@ -1259,6 +1381,88 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="rankings-note">Rankings checked against top 30 Google organic results in your local market.</div>
       </div>
 
+      <!-- SEO Audit -->
+      <div class="seo-audit-section" id="seo-audit-section" style="display:none">
+        <div class="report-sec-label">
+          <div class="rsl-line"></div>
+          <div class="rsl-txt">SEO Audit — On-Page &amp; Technical</div>
+        </div>
+
+        <div class="seo-audit-grid">
+
+          <!-- Heading Structure -->
+          <div class="seo-card">
+            <div class="seo-card-title">Heading Structure</div>
+            <div class="seo-heading-row">
+              <div class="seo-heading-item">
+                <div class="seo-h-tag">H1</div>
+                <div class="seo-h-count" id="seo-h1-count">—</div>
+                <div class="seo-h-sub" id="seo-h1-sub"></div>
+              </div>
+              <div class="seo-heading-item">
+                <div class="seo-h-tag">H2</div>
+                <div class="seo-h-count" id="seo-h2-count">—</div>
+                <div class="seo-h-sub">Subtopics</div>
+              </div>
+              <div class="seo-heading-item">
+                <div class="seo-h-tag">H3</div>
+                <div class="seo-h-count" id="seo-h3-count">—</div>
+                <div class="seo-h-sub">Sub-sections</div>
+              </div>
+            </div>
+            <div id="seo-hierarchy"></div>
+            <div class="seo-h2-list" id="seo-h2-list"></div>
+          </div>
+
+          <!-- Technical Signals -->
+          <div class="seo-card">
+            <div class="seo-card-title">Technical Signals</div>
+            <div class="seo-signals" id="seo-tech-signals"></div>
+          </div>
+
+          <!-- Link Structure -->
+          <div class="seo-card">
+            <div class="seo-card-title">Link Structure</div>
+            <div class="seo-link-stats">
+              <div class="seo-stat">
+                <div class="seo-stat-num" id="seo-int-links">—</div>
+                <div class="seo-stat-label">Internal Links</div>
+              </div>
+              <div class="seo-stat">
+                <div class="seo-stat-num" id="seo-ext-links">—</div>
+                <div class="seo-stat-label">External Links</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Page Meta -->
+          <div class="seo-card">
+            <div class="seo-card-title">Page Meta</div>
+            <div class="seo-signals" id="seo-meta-signals"></div>
+          </div>
+
+          <!-- Backlinks — shows when DataForSEO is active -->
+          <div class="seo-card seo-card-full" id="seo-backlinks-card" style="display:none">
+            <div class="seo-card-title">Domain Authority &amp; Backlinks</div>
+            <div class="seo-backlinks">
+              <div class="seo-bl-item">
+                <div class="seo-bl-num" id="seo-bl-total">0</div>
+                <div class="seo-bl-label">Total Backlinks</div>
+              </div>
+              <div class="seo-bl-item">
+                <div class="seo-bl-num" id="seo-bl-domains">0</div>
+                <div class="seo-bl-label">Referring Domains</div>
+              </div>
+              <div class="seo-bl-item">
+                <div class="seo-bl-num" id="seo-bl-rank">0</div>
+                <div class="seo-bl-label">Domain Rank (0–100)</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Improvement Roadmap -->
       <div id="roadmap-section" style="display:none">
         <div class="report-sec-label">
@@ -1689,6 +1893,115 @@ function renderReport(d) {
         </div>
       </div>`
     ).join('');
+  }
+
+  // SEO Audit
+  const sa = d.seo_audit || {};
+  if (sa.scraped) {
+    document.getElementById('seo-audit-section').style.display = 'block';
+
+    // Heading counts
+    const h1El = document.getElementById('seo-h1-count');
+    h1El.textContent = sa.h1_count ?? 0;
+    h1El.className   = 'seo-h-count ' + (sa.h1_count === 1 ? 'good' : sa.h1_count === 0 ? 'bad' : 'warn');
+    document.getElementById('seo-h1-sub').textContent = sa.h1_count === 1 ? 'Correct' : sa.h1_count === 0 ? 'Missing' : 'Too many';
+
+    const h2El = document.getElementById('seo-h2-count');
+    h2El.textContent = sa.h2_count ?? 0;
+    h2El.className   = 'seo-h-count ' + (sa.h2_count >= 2 ? 'good' : sa.h2_count === 1 ? 'warn' : 'bad');
+
+    const h3El = document.getElementById('seo-h3-count');
+    h3El.textContent = sa.h3_count ?? 0;
+    h3El.className   = 'seo-h-count ' + (sa.h3_count >= 1 ? 'good' : 'neutral');
+
+    // Heading hierarchy badge
+    const hierEl = document.getElementById('seo-hierarchy');
+    if (sa.heading_hierarchy_ok !== undefined) {
+      hierEl.innerHTML = `<span class="seo-hierarchy-badge ${sa.heading_hierarchy_ok ? 'pass' : 'fail'}">
+        ${sa.heading_hierarchy_ok ? 'Heading hierarchy correct (H1 → H2 → H3)' : 'Heading hierarchy broken — H1/H2 out of order'}
+      </span>`;
+    }
+
+    // H2 list preview
+    if (sa.h2_texts && sa.h2_texts.length) {
+      document.getElementById('seo-h2-list').innerHTML = sa.h2_texts.map(t =>
+        `<div class="seo-h2-item">${esc(t)}</div>`
+      ).join('');
+    }
+
+    // Technical signals
+    const techRows = [
+      { label: 'Canonical tag configured',           val: sa.canonical_tag },
+      { label: 'robots.txt present',                 val: sa.robots_txt_found },
+      { label: 'XML sitemap present',                val: sa.sitemap_found },
+      { label: 'Viewport meta (mobile-ready)',       val: sa.has_viewport_meta },
+      { label: 'SSL certificate (HTTPS)',            val: d.seo_audit?.scraped ? (d.checklists?.website || []) : undefined,
+        custom: (() => {
+          const ws = (d.checklists?.website || []).find(c => c.label && c.label.includes('SSL'));
+          return ws ? (ws.pass ? 'pass' : 'fail') : null;
+        })()
+      },
+      { label: 'noindex tag detected (blocks Google)', val: !sa.meta_robots_noindex, invert: true,
+        danger: sa.meta_robots_noindex },
+    ];
+    document.getElementById('seo-tech-signals').innerHTML = techRows.map(r => {
+      let cls, txt;
+      if (r.danger) {
+        cls = 'fail'; txt = 'YES — CRITICAL';
+      } else if (r.custom) {
+        cls = r.custom; txt = r.custom === 'pass' ? 'Pass' : 'Fail';
+      } else if (r.val === true) {
+        cls = 'pass'; txt = 'Pass';
+      } else if (r.val === false) {
+        cls = 'fail'; txt = 'Fail';
+      } else {
+        cls = 'neutral'; txt = '—';
+      }
+      return `<div class="seo-signal-row">
+        <div class="seo-signal-label">${esc(r.label)}</div>
+        <div class="seo-signal-val ${cls}">${txt}</div>
+      </div>`;
+    }).join('');
+
+    // Link structure
+    document.getElementById('seo-int-links').textContent = sa.internal_links ?? 0;
+    document.getElementById('seo-ext-links').textContent = sa.external_links ?? 0;
+
+    // Page meta signals
+    const titleLen = sa.meta_title_length || 0;
+    const descLen  = sa.meta_desc_length  || 0;
+    const imgMiss  = sa.images_missing_alt || 0;
+    const imgTot   = sa.images_total || 0;
+    const altPct   = imgTot > 0 ? Math.round((1 - imgMiss / imgTot) * 100) : 100;
+
+    const metaRows = [
+      { label: `Title tag (${titleLen} chars)`,
+        cls: titleLen >= 30 && titleLen <= 60 ? 'pass' : titleLen > 60 ? 'warn' : 'fail',
+        txt: titleLen >= 30 && titleLen <= 60 ? 'Optimal' : titleLen > 60 ? 'Too long' : titleLen > 0 ? 'Too short' : 'Missing' },
+      { label: `Meta description (${descLen} chars)`,
+        cls: descLen >= 100 && descLen <= 160 ? 'pass' : descLen > 160 ? 'warn' : 'fail',
+        txt: descLen >= 100 ? 'Optimal' : descLen > 0 ? 'Too short' : 'Missing' },
+      { label: `Image alt text (${altPct}% coverage)`,
+        cls: altPct >= 75 ? 'pass' : altPct >= 50 ? 'warn' : 'fail',
+        txt: altPct + '% covered' },
+      { label: `Keyword in H1`,
+        cls: sa.keyword_in_h1 ? 'pass' : 'warn',
+        txt: sa.keyword_in_h1 ? 'Yes' : 'No' },
+    ];
+    document.getElementById('seo-meta-signals').innerHTML = metaRows.map(r => `
+      <div class="seo-signal-row">
+        <div class="seo-signal-label">${esc(r.label)}</div>
+        <div class="seo-signal-val ${r.cls}">${r.txt}</div>
+      </div>`
+    ).join('');
+
+    // Backlinks
+    if (sa.backlinks > 0 || sa.referring_domains > 0) {
+      document.getElementById('seo-backlinks-card').style.display = 'block';
+      document.getElementById('seo-bl-total').textContent   = (sa.backlinks || 0).toLocaleString();
+      document.getElementById('seo-bl-domains').textContent = (sa.referring_domains || 0).toLocaleString();
+      document.getElementById('seo-bl-rank').textContent    = sa.domain_rank || 0;
+    }
   }
 
   // Improvement Roadmap

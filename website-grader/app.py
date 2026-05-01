@@ -147,8 +147,17 @@ def grade():
             place.get('name', ''), type_label, city, state
         )
 
-    # 6. Build Report
-    report = build_report(place, pagespeed, site_data, competitors, keyword_rankings, place_id, type_label)
+    # 6. Backlinks (Phase 2 — DataForSEO)
+    backlink_data = {}
+    if DFS_LOGIN and DFS_PASSWORD and website:
+        try:
+            backlink_data = check_backlinks(website)
+        except Exception:
+            backlink_data = {}
+
+    # 7. Build Report
+    report = build_report(place, pagespeed, site_data, competitors, keyword_rankings,
+                          place_id, type_label, backlink_data)
 
     CACHE[cache_key] = {'ts': time.time(), 'data': report}
 
@@ -344,6 +353,7 @@ def scrape_website(url, biz_name='', biz_city=''):
     empty = {
         'scraped': False, 'h1_exists': False, 'h1_text': '',
         'meta_title': '', 'meta_description': '', 'meta_desc_length': 0,
+        'meta_title_length': 0,
         'og_title': False, 'og_description': False, 'og_image': False,
         'twitter_card': False, 'favicon': False,
         'phone_on_site': False, 'address_on_site': False, 'hours_on_site': False,
@@ -353,6 +363,16 @@ def scrape_website(url, biz_name='', biz_city=''):
         'has_booking_widget': False, 'has_online_menu': False,
         'has_live_chat': False, 'has_ssl': False,
         'city_in_content': False, 'name_in_title': False,
+        # SEO audit fields
+        'h1_count': 0, 'h2_count': 0, 'h3_count': 0,
+        'h2_texts': [], 'h3_texts': [],
+        'heading_hierarchy_ok': False, 'multiple_h1': False,
+        'keyword_in_h1': False,
+        'images_total': 0, 'images_missing_alt': 0,
+        'internal_links': 0, 'external_links': 0,
+        'canonical_tag': False, 'meta_robots_noindex': False,
+        'has_viewport_meta': False,
+        'robots_txt_found': False, 'sitemap_found': False,
     }
     try:
         headers = {
@@ -536,6 +556,97 @@ def scrape_website(url, biz_name='', biz_city=''):
         ]
         r['has_live_chat'] = any(sig in html_lower for sig in chat_signals)
 
+        # ── SEO AUDIT SIGNALS ────────────────────────────────────────
+
+        # Heading structure (H1 / H2 / H3)
+        h1_tags = soup.find_all('h1')
+        h2_tags = soup.find_all('h2')
+        h3_tags = soup.find_all('h3')
+        r['h1_count']   = len(h1_tags)
+        r['h2_count']   = len(h2_tags)
+        r['h3_count']   = len(h3_tags)
+        r['multiple_h1'] = len(h1_tags) > 1
+        r['h2_texts']   = [h.get_text(strip=True)[:80] for h in h2_tags[:8]]
+        r['h3_texts']   = [h.get_text(strip=True)[:80] for h in h3_tags[:8]]
+
+        # Heading hierarchy: H1 appears before H2 in document order
+        h1_pos = h2_pos = None
+        for i, tag in enumerate(soup.find_all(['h1', 'h2', 'h3'])):
+            if tag.name == 'h1' and h1_pos is None:
+                h1_pos = i
+            elif tag.name == 'h2' and h2_pos is None:
+                h2_pos = i
+        r['heading_hierarchy_ok'] = (
+            h1_pos is not None and h2_pos is not None and h1_pos < h2_pos
+        )
+
+        # Keyword in H1 (city or business name signals geographic relevance)
+        if h1_tags and (biz_name or biz_city):
+            h1_lower = h1_tags[0].get_text(strip=True).lower()
+            city_in_h1 = biz_city.lower() in h1_lower if biz_city else False
+            name_in_h1 = any(
+                w.lower() in h1_lower
+                for w in biz_name.split() if len(w) > 3
+            ) if biz_name else False
+            r['keyword_in_h1'] = city_in_h1 or name_in_h1
+
+        # Image alt text coverage
+        images = soup.find_all('img')
+        r['images_total']       = len(images)
+        r['images_missing_alt'] = sum(
+            1 for img in images
+            if not (img.get('alt') or '').strip()
+        )
+
+        # Internal / external link counts
+        base_domain = resp.url.split('/')[2].replace('www.', '')
+        int_links = ext_links = 0
+        for a in soup.find_all('a', href=True):
+            href = a['href'].strip()
+            if not href or href.startswith(('#', 'mailto:', 'tel:', 'javascript:')):
+                continue
+            if href.startswith('/') or base_domain in href:
+                int_links += 1
+            elif href.startswith('http'):
+                ext_links += 1
+        r['internal_links'] = int_links
+        r['external_links'] = ext_links
+
+        # Canonical tag
+        r['canonical_tag'] = bool(soup.find('link', rel='canonical'))
+
+        # Meta robots — detect noindex (critical: means Google ignores the page)
+        meta_rob = soup.find('meta', attrs={'name': re.compile(r'^robots$', re.I)})
+        r['meta_robots_noindex'] = (
+            'noindex' in (meta_rob.get('content', '') or '').lower()
+            if meta_rob else False
+        )
+
+        # Meta title length (ideal: 50–60 chars)
+        r['meta_title_length'] = len(r['meta_title'])
+
+        # Viewport meta (mobile-friendliness signal)
+        r['has_viewport_meta'] = bool(soup.find('meta', attrs={'name': 'viewport'}))
+
+        # robots.txt — check at domain root
+        base_url = f"{resp.url.split('//')[0]}//{resp.url.split('/')[2]}"
+        try:
+            rb = requests.get(f'{base_url}/robots.txt', timeout=5, headers=headers)
+            r['robots_txt_found'] = rb.status_code == 200 and len(rb.text) > 5
+        except Exception:
+            r['robots_txt_found'] = False
+
+        # sitemap.xml — check at domain root
+        try:
+            sm = requests.get(f'{base_url}/sitemap.xml', timeout=5, headers=headers)
+            r['sitemap_found'] = (
+                sm.status_code == 200 and
+                ('xml' in sm.headers.get('content-type', '').lower()
+                 or sm.text.strip().startswith('<?xml'))
+            )
+        except Exception:
+            r['sitemap_found'] = False
+
     except Exception:
         return empty
 
@@ -591,6 +702,40 @@ def check_keyword_rankings(biz_name, type_label, city, state):
             results.append({'keyword': keyword, 'rank': None, 'ranked': False})
 
     return results
+
+
+# ─────────────────────────────────────────────────────────────────
+#  DATAFORSEO BACKLINKS  (Phase 2)
+# ─────────────────────────────────────────────────────────────────
+
+def check_backlinks(website):
+    """Pull backlink summary from DataForSEO Backlinks API."""
+    if not (DFS_LOGIN and DFS_PASSWORD) or not website:
+        return {}
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(website)
+        target = parsed.netloc or website
+    except Exception:
+        target = website
+    try:
+        resp = requests.post(
+            'https://api.dataforseo.com/v3/backlinks/summary/live',
+            auth=(DFS_LOGIN, DFS_PASSWORD),
+            json=[{'target': target, 'include_subdomains': True}],
+            timeout=12
+        )
+        data   = resp.json()
+        result = ((data.get('tasks') or [{}])[0].get('result') or [{}])
+        r      = result[0] if result else {}
+        return {
+            'backlinks':         int(r.get('backlinks', 0) or 0),
+            'referring_domains': int(r.get('referring_domains', 0) or 0),
+            'rank':              int(r.get('rank', 0) or 0),
+            'spam_score':        int(r.get('backlinks_spam_score', 0) or 0),
+        }
+    except Exception:
+        return {}
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -861,43 +1006,74 @@ def score_local_seo(place, site_data, checklist):
     has_ph  = bool(place.get('formatted_phone_number'))
     scraped = site_data.get('scraped', False)
 
-    # Schema markup — strongest on-site local ranking signal
+    # Schema markup — top on-site local ranking signal
     has_schema = site_data.get('has_schema', False) if scraped else False
     items.append({'label': 'Schema markup (LocalBusiness structured data)', 'pass': has_schema})
-    if has_schema: s += 22
+    if has_schema: s += 16
 
-    # NAP: phone number on website (matches Google Business Profile)
+    # NAP: phone on website
     phone_ok = site_data.get('phone_on_site', False) if scraped else False
     items.append({'label': 'Phone number on website (NAP consistency)', 'pass': phone_ok})
-    if phone_ok: s += 14
+    if phone_ok: s += 10
 
-    # NAP: physical address on website
+    # NAP: address on website
     addr_ok = site_data.get('address_on_site', False) if scraped else False
     items.append({'label': 'Physical address on website (NAP consistency)', 'pass': addr_ok})
-    if addr_ok: s += 12
+    if addr_ok: s += 8
 
-    # City/location keyword in website content
+    # City keyword in content
     city_ok = site_data.get('city_in_content', False) if scraped else False
     items.append({'label': 'City/location keyword in website content', 'pass': city_ok})
-    if city_ok: s += 14
+    if city_ok: s += 10
 
-    # Business name in page title tag
+    # Business name in title tag
     name_ok = site_data.get('name_in_title', False) if scraped else False
     items.append({'label': 'Business name in website title tag', 'pass': name_ok})
-    if name_ok: s += 10
+    if name_ok: s += 8
 
-    # Social profiles linked (external citation signals)
-    social_ok = len(site_data.get('social_links', [])) >= 1 if scraped else False
-    items.append({'label': 'Social profiles linked from website (citation signals)', 'pass': social_ok})
-    if social_ok: s += 12
+    # H2 heading structure (content depth signal)
+    h2_count = site_data.get('h2_count', 0)
+    h2_ok    = h2_count >= 2 if scraped else False
+    items.append({'label': f'H2 heading structure ({h2_count} H2 tags)', 'pass': h2_ok})
+    if h2_ok: s += 8
 
-    # Google Business Profile: web + phone + hours fully configured
+    # Image alt text coverage
+    img_total   = site_data.get('images_total', 0)
+    img_missing = site_data.get('images_missing_alt', 0)
+    if scraped and img_total > 0:
+        alt_ok  = (img_missing / img_total) <= 0.25
+        alt_lbl = f'{img_missing}/{img_total} images missing alt text'
+    else:
+        alt_ok  = scraped   # no images = pass; unsscanned = fail
+        alt_lbl = 'No images detected' if scraped else 'Scan unavailable'
+    items.append({'label': f'Image alt text ({alt_lbl})', 'pass': alt_ok})
+    if alt_ok: s += 7
+
+    # Canonical tag (duplicate content prevention)
+    canonical_ok = site_data.get('canonical_tag', False) if scraped else False
+    items.append({'label': 'Canonical tag configured (prevents duplicate content)', 'pass': canonical_ok})
+    if canonical_ok: s += 7
+
+    # Internal linking (site architecture)
+    int_links = site_data.get('internal_links', 0)
+    int_ok    = int_links >= 5 if scraped else False
+    items.append({'label': f'Internal linking structure ({int_links} internal links)', 'pass': int_ok})
+    if int_ok: s += 6
+
+    # Google Business Profile trifecta
     nap_gbp = has_web and has_ph and bool(place.get('opening_hours'))
-    items.append({
-        'label': 'Google Business Profile: website + phone + hours all configured',
-        'pass': nap_gbp
-    })
-    if nap_gbp: s += 16
+    items.append({'label': 'Google Business Profile: website + phone + hours complete', 'pass': nap_gbp})
+    if nap_gbp: s += 13
+
+    # robots.txt
+    robots_ok = site_data.get('robots_txt_found', False) if scraped else False
+    items.append({'label': 'robots.txt file present and accessible', 'pass': robots_ok})
+    if robots_ok: s += 4
+
+    # sitemap.xml
+    sitemap_ok = site_data.get('sitemap_found', False) if scraped else False
+    items.append({'label': 'XML sitemap present and accessible', 'pass': sitemap_ok})
+    if sitemap_ok: s += 3
 
     checklist['local_seo'] = items
     return min(s, 100)
@@ -1111,6 +1287,64 @@ def get_jrz_action(issue, site_data, pagespeed, place):
             'service':  'Local SEO Content'
         }
 
+    if 'noindex' in title or 'blocking google' in title:
+        return {
+            'fix':      ('JRZ locates the noindex tag, removes it from production, and forces '
+                         'an immediate Google re-crawl of the affected pages via Search Console '
+                         'URL Inspection. We also audit all other pages for accidental indexing '
+                         'blocks before marking the fix complete.'),
+            'timeline': '24 hours',
+            'result':   ('Pages become eligible for Google indexing immediately after removal. '
+                         'Full re-index typically completes within 3 to 7 days.'),
+            'service':  'Technical SEO'
+        }
+
+    if 'multiple h1' in title or 'h1 tags' in title:
+        return {
+            'fix':      ('JRZ audits your full heading structure — H1, H2, H3 — and restructures '
+                         'the page to follow one primary H1 (your main keyword + city) with '
+                         'supporting H2 sections for each service or topic. All changes are made '
+                         'directly in your CMS or HTML with no disruption to your design.'),
+            'timeline': '24 to 48 hours',
+            'result':   ('Cleaner keyword signal to Google. Pages with proper heading structure '
+                         'rank 15 to 30 percent higher on average for their primary keyword.'),
+            'service':  'On-Page SEO'
+        }
+
+    if 'alt text' in title or 'images missing' in title:
+        return {
+            'fix':      ('JRZ adds descriptive, keyword-optimized alt text to every image on '
+                         'your site. Each alt tag includes your primary service and city naturally, '
+                         'turning your image library into an additional ranking signal.'),
+            'timeline': '24 to 48 hours',
+            'result':   ('Images become indexable by Google Image Search. '
+                         'Accessibility score improves, which Google uses as a quality ranking signal.'),
+            'service':  'Technical SEO'
+        }
+
+    if 'sitemap' in title:
+        return {
+            'fix':      ('JRZ generates a complete XML sitemap covering all pages, submits it '
+                         'to Google Search Console and Bing Webmaster Tools, and sets up '
+                         'automatic regeneration whenever new content is published.'),
+            'timeline': '24 hours',
+            'result':   ('All pages become discoverable to Google crawlers. '
+                         'New content gets indexed within days instead of weeks.'),
+            'service':  'Technical SEO'
+        }
+
+    if 'title is too long' in title or 'title is too short' in title or 'page title' in title:
+        return {
+            'fix':      ('JRZ rewrites all page titles to 50–60 characters with your primary '
+                         'keyword and city front-loaded. Format: [Primary Service] in [City] | '
+                         '[Business Name]. Each title is written to maximize click-through from '
+                         'Google results while staying within the character limit.'),
+            'timeline': '24 hours',
+            'result':   ('Full title visible in search results. '
+                         'Up to 20 percent improvement in organic click-through rate.'),
+            'service':  'On-Page SEO'
+        }
+
     if 'ssl' in title or 'https' in title or 'not secure' in title:
         return {
             'fix':      ('JRZ provisions and installs your SSL certificate, enforces HTTPS across '
@@ -1165,7 +1399,8 @@ def build_roadmap(issues, site_data, pagespeed, place):
 #  REPORT BUILDER
 # ─────────────────────────────────────────────────────────────────
 
-def build_report(place, pagespeed, site_data, competitors, keyword_rankings, place_id, type_label='business'):
+def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
+                 place_id, type_label='business', backlink_data=None):
     name    = place.get('name', '')
     rating  = place.get('rating', 0)
     reviews = place.get('user_ratings_total', 0)
@@ -1328,6 +1563,71 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings, pla
             'fix':    'JRZ adds your phone number with call tracking enabled so you can measure leads from Google directly.'
         })
 
+    # SEO-specific issues (only when site was successfully scanned)
+    if site_data.get('scraped') and website:
+        if site_data.get('meta_robots_noindex'):
+            issues.append({
+                'severity': 'critical', 'category': 'Technical SEO',
+                'title':  'Website is blocking Google — noindex tag detected',
+                'detail': ('A "noindex" meta robots tag is present on your site. This instructs '
+                           'Google to not index the page, meaning it will not appear in any search '
+                           'results. This is often a staging configuration left live by mistake, '
+                           'but it is actively preventing your site from being found.'),
+                'fix':    'JRZ removes the noindex directive and submits the affected pages to Google for re-indexing within 24 hours.'
+            })
+
+        if site_data.get('multiple_h1'):
+            issues.append({
+                'severity': 'warning', 'category': 'Technical SEO',
+                'title':  f'Multiple H1 tags detected ({site_data.get("h1_count", 0)} H1s on page)',
+                'detail': ('A page should have exactly one H1 tag. Multiple H1 tags dilute '
+                           'the primary keyword signal sent to Google and indicate a structural '
+                           'content issue that can limit your ranking potential.'),
+                'fix':    'JRZ restructures your heading hierarchy — one H1, supporting H2s, and H3 subsections — following Google SEO best practices.'
+            })
+
+        title_len = site_data.get('meta_title_length', 0)
+        if title_len > 60:
+            issues.append({
+                'severity': 'warning', 'category': 'SEO',
+                'title':  f'Page title is too long ({title_len} characters — Google truncates above 60)',
+                'detail': ('Titles over 60 characters are cut off in Google search results with "..." '
+                           'This hides your key information from searchers and reduces click-through rate.'),
+                'fix':    'JRZ rewrites all page titles to 50–60 characters with your primary keyword and city front-loaded.'
+            })
+        elif website and title_len < 30 and title_len > 0:
+            issues.append({
+                'severity': 'warning', 'category': 'SEO',
+                'title':  f'Page title is too short ({title_len} characters — underutilized keyword space)',
+                'detail': ('Short page titles waste valuable keyword real estate. '
+                           'Google allows up to 60 characters — every unused character is a '
+                           'missed opportunity to rank for an additional service or location term.'),
+                'fix':    'JRZ rewrites titles to maximize keyword coverage: [Primary Service] in [City] | [Business Name].'
+            })
+
+        img_total   = site_data.get('images_total', 0)
+        img_missing = site_data.get('images_missing_alt', 0)
+        if img_total > 0 and img_missing > 0 and (img_missing / img_total) > 0.5:
+            issues.append({
+                'severity': 'warning', 'category': 'Technical SEO',
+                'title':  f'{img_missing} of {img_total} images missing alt text',
+                'detail': ('Alt text tells Google what your images contain. Missing alt text '
+                           'means Google cannot read your images for ranking purposes, and '
+                           'it also fails accessibility standards — which Google uses as a '
+                           'quality signal for local search ranking.'),
+                'fix':    'JRZ adds descriptive, keyword-rich alt text to every image on your site with proper location and service context.'
+            })
+
+        if not site_data.get('sitemap_found'):
+            issues.append({
+                'severity': 'warning', 'category': 'Technical SEO',
+                'title':  'No XML sitemap found',
+                'detail': ('A sitemap tells Google exactly which pages exist on your site and '
+                           'how frequently they are updated. Without one, Google may miss pages '
+                           'entirely — especially new content, service pages, and location pages.'),
+                'fix':    'JRZ generates and submits your sitemap to Google Search Console, ensuring every page gets crawled and indexed.'
+            })
+
     # Website-level accuracy signals (only when site was successfully scanned)
     if site_data.get('scraped') and website:
         if not site_data.get('has_ssl'):
@@ -1459,7 +1759,36 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings, pla
         'keyword_rankings':  keyword_rankings,
         'competitors':       comp_list,
         'competitor_insight': comp_insight,
-        'free_tip':          free_tip
+        'free_tip':          free_tip,
+        'seo_audit': {
+            'scraped':             site_data.get('scraped', False),
+            'h1_count':            site_data.get('h1_count', 0),
+            'h1_text':             site_data.get('h1_text', ''),
+            'h2_count':            site_data.get('h2_count', 0),
+            'h2_texts':            site_data.get('h2_texts', []),
+            'h3_count':            site_data.get('h3_count', 0),
+            'h3_texts':            site_data.get('h3_texts', []),
+            'heading_hierarchy_ok': site_data.get('heading_hierarchy_ok', False),
+            'multiple_h1':         site_data.get('multiple_h1', False),
+            'keyword_in_h1':       site_data.get('keyword_in_h1', False),
+            'meta_title':          site_data.get('meta_title', ''),
+            'meta_title_length':   site_data.get('meta_title_length', 0),
+            'meta_description':    site_data.get('meta_description', ''),
+            'meta_desc_length':    site_data.get('meta_desc_length', 0),
+            'images_total':        site_data.get('images_total', 0),
+            'images_missing_alt':  site_data.get('images_missing_alt', 0),
+            'internal_links':      site_data.get('internal_links', 0),
+            'external_links':      site_data.get('external_links', 0),
+            'canonical_tag':       site_data.get('canonical_tag', False),
+            'meta_robots_noindex': site_data.get('meta_robots_noindex', False),
+            'has_viewport_meta':   site_data.get('has_viewport_meta', False),
+            'robots_txt_found':    site_data.get('robots_txt_found', False),
+            'sitemap_found':       site_data.get('sitemap_found', False),
+            'backlinks':           (backlink_data or {}).get('backlinks', 0),
+            'referring_domains':   (backlink_data or {}).get('referring_domains', 0),
+            'domain_rank':         (backlink_data or {}).get('rank', 0),
+            'spam_score':          (backlink_data or {}).get('spam_score', 0),
+        }
     }
 
 
