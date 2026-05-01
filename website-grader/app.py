@@ -2672,41 +2672,81 @@ def autocomplete_tattoo():
 @app.route('/api/find-tattoo-by-name')
 def find_tattoo_by_name():
     """
-    Text-search Google Places for a tattoo artist by name (no GMB required).
-    Used when an artist searches by Instagram handle / display name.
-    Returns up to 5 candidate place_ids with names + addresses for the frontend to confirm.
+    Multi-query text search for tattoo artists by Instagram handle OR real name.
+    Tries 3 query variations and merges de-duped results so handles like 'tattoos.ap'
+    still surface their Google listing even when the GMB name differs from the IG handle.
+    Accepts: tattoo_parlor type, art_studio type (for private/freelance artists),
+    or any result whose name/editorial mentions tattoo keywords.
     """
     name = request.args.get('name', '').strip()
     city = request.args.get('city', '').strip()
     if not name:
         return jsonify({'results': []})
-    try:
-        query = f'{name} tattoo {city}'.strip() if city else f'{name} tattoo'
-        resp = requests.get(
-            'https://maps.googleapis.com/maps/api/place/textsearch/json',
-            params={
-                'query': query,
-                'key':   GOOGLE_KEY,
-            },
-            timeout=8
-        )
-        raw = resp.json().get('results', [])
-        # Only include tattoo-related results
-        filtered = [
-            {
-                'place_id': r['place_id'],
-                'name':     r.get('name', ''),
-                'address':  r.get('formatted_address', ''),
-                'rating':   r.get('rating', 0),
-                'reviews':  r.get('user_ratings_total', 0),
-            }
-            for r in raw
-            if 'tattoo_parlor' in r.get('types', []) or
-               any(kw in r.get('name', '').lower() for kw in {'tattoo', 'ink', 'piercing'})
-        ][:5]
-        return jsonify({'results': filtered})
-    except Exception as e:
-        return jsonify({'results': [], 'error': str(e)})
+
+    # Clean handle: replace dots/underscores/dashes with spaces for alternate search
+    clean_name = re.sub(r'[._\-]', ' ', name).strip()
+
+    # Build query list (ordered by specificity — most specific first)
+    queries = []
+    if city:
+        queries.append(f'tattoo artist {name} {city}')
+        if clean_name.lower() != name.lower():
+            queries.append(f'{clean_name} tattoo {city}')
+        queries.append(f'{name} tattoo {city}')
+        queries.append(f'tattoo studio {city}')        # broad city fallback
+    else:
+        queries.append(f'tattoo artist {name}')
+        if clean_name.lower() != name.lower():
+            queries.append(f'{clean_name} tattoo')
+        queries.append(f'{name} tattoo')
+
+    TATTOO_KW = {'tattoo', 'ink', 'piercing', 'tattooing'}
+    seen_ids  = set()
+    filtered  = []
+
+    for query in queries:
+        if len(filtered) >= 6:
+            break
+        try:
+            resp = requests.get(
+                'https://maps.googleapis.com/maps/api/place/textsearch/json',
+                params={'query': query, 'key': GOOGLE_KEY},
+                timeout=8
+            )
+            raw = resp.json().get('results', [])
+            for r in raw:
+                pid = r.get('place_id', '')
+                if not pid or pid in seen_ids:
+                    continue
+                types          = r.get('types', [])
+                biz_name_lower = r.get('name', '').lower()
+                editorial      = (r.get('editorial_summary') or {}).get('overview', '').lower()
+
+                # Accept if any of these are true:
+                is_tattoo = (
+                    'tattoo_parlor' in types or
+                    any(kw in biz_name_lower for kw in TATTOO_KW) or
+                    any(kw in editorial for kw in TATTOO_KW) or
+                    # Freelance/private artists often show as art_studio or point_of_interest
+                    ('art_studio' in types and 'tattoo' in query.lower()) or
+                    ('point_of_interest' in types and
+                        any(kw in biz_name_lower for kw in TATTOO_KW))
+                )
+                if is_tattoo:
+                    seen_ids.add(pid)
+                    filtered.append({
+                        'place_id': pid,
+                        'name':     r.get('name', ''),
+                        'address':  r.get('formatted_address', ''),
+                        'rating':   r.get('rating', 0),
+                        'reviews':  r.get('user_ratings_total', 0),
+                    })
+                    if len(filtered) >= 6:
+                        break
+        except Exception:
+            pass
+
+    return jsonify({'results': filtered})
 
 
 @app.route('/api/grade-tattoo')

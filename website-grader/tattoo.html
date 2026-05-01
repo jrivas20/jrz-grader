@@ -1503,6 +1503,46 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .sbc-bar { flex: 2; height: 6px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; }
 .sbc-fill { height: 100%; border-radius: 3px; transition: width .8s var(--ease); }
 .sbc-val { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6); width: 32px; text-align: right; flex-shrink: 0; }
+
+/* ── IG MODE OAUTH INFO BANNER ──────────────────────────────────── */
+.ig-oauth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+.ig-oauth-note-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: -.3px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.ig-oauth-note-body { flex: 1; }
+.ig-oauth-note-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,.85);
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.ig-oauth-note-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.38);
+  line-height: 1.55;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
@@ -1549,10 +1589,20 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
     <!-- Mode 2: Instagram handle search -->
     <div id="search-mode-ig" class="search-mode-wrap" style="display:none">
+
+      <!-- OAuth info banner — shown immediately on entering IG mode -->
+      <div class="ig-oauth-note">
+        <div class="ig-oauth-note-icon">IG</div>
+        <div class="ig-oauth-note-body">
+          <div class="ig-oauth-note-title">Connect via Facebook to unlock live Instagram data</div>
+          <div class="ig-oauth-note-sub">Works with Business and Creator accounts only. After your audit runs, you'll be prompted to connect — 10 seconds, read-only access.</div>
+        </div>
+      </div>
+
       <div class="search-wrap">
         <div class="ig-handle-prefix">@</div>
-        <input id="ig-handle-input" type="text" class="ig-handle-field" placeholder="yourhandle (no @)" autocomplete="off">
-        <input id="ig-city-input" type="text" class="ig-city-field" placeholder="City, State" autocomplete="off">
+        <input id="ig-handle-input" type="text" class="ig-handle-field" placeholder="yourhandle  —  OR  —  your artist / studio name" autocomplete="off">
+        <input id="ig-city-input" type="text" class="ig-city-field" placeholder="City, State  (e.g. Orlando, FL)" autocomplete="off">
         <button class="search-btn" onclick="startIGSearch()">Find My Profile</button>
       </div>
       <div id="ig-search-error" class="search-error-banner"></div>
@@ -2386,8 +2436,13 @@ async function startIGSearch() {
         <div class="ig-no-gmb-banner">
           <div class="ig-no-gmb-banner-icon">⚠</div>
           <div>
-            <strong style="color:rgba(255,200,80,.9)">No Google Business Profile found for "${handle}".</strong><br>
-            <span style="font-size:12px;color:rgba(255,255,255,.4)">This is a critical issue — without a Google listing, clients searching "tattoo near me" cannot find you. JRZ Ink Systems can set up and optimize your profile in 48 hours.</span>
+            <strong style="color:rgba(255,200,80,.9)">No profile found for "@${handle}".</strong><br>
+            <span style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.6;display:block;margin-top:4px">
+              Google Business Profiles are listed under your <strong style="color:rgba(255,200,80,.7)">studio name or real name</strong>, not your Instagram handle.
+              Try typing your studio or artist name in the field above instead of your handle.<br><br>
+              If you don't have a Google Business listing, clients searching "tattoo near me" cannot find you — this is directly costing you bookings.
+              JRZ Ink Systems can set up and verify your profile in 48 hours.
+            </span>
           </div>
         </div>
       `;
