@@ -1023,14 +1023,12 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
      SEARCH SECTION
 ════════════════════════════════════════════════════ -->
 <section id="search-section">
-  <video class="bg-video" autoplay muted loop playsinline>
-    <source src="https://stream.mux.com/01yW6GoUz01OTXk5w1Rt1MHkJWlCGIwj46SUONJZ4DJUE/high.mp4" type="video/mp4">
-  </video>
+  <video class="bg-video" id="bg-video" autoplay muted loop playsinline></video>
   <div class="bg-video-overlay"></div>
 
   <div class="search-content">
     <div class="search-logo">
-      <img src="https://storage.googleapis.com/msgsndr/d7iUPfamAaPlSBNj6IhT/media/67ea33ca95a1e34f1e2e3df0.png" alt="JRZ Marketing">
+      <img src="https://assets.cdn.filesafe.space/d7iUPfamAaPlSBNj6IhT/media/6957081ee4125a4ef97efc62.png" alt="JRZ Marketing">
     </div>
 
     <div class="search-eyebrow">
@@ -1280,10 +1278,32 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 <!-- ════════════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
 <script>
 'use strict';
 
-const API_BASE = 'https://jrz-grader.onrender.com';
+const API_BASE  = 'https://jrz-grader.onrender.com';
+const MUX_HLS   = 'https://stream.mux.com/01yW6GoUz01OTXk5w1Rt1MHkJWlCGIwj46SUONJZ4DJUE.m3u8';
+
+// ── HLS VIDEO BACKGROUND ─────────────────────────────────────────
+(function() {
+  const vid = document.getElementById('bg-video');
+  if (!vid) return;
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ autoStartLoad: true, startLevel: -1 });
+    hls.loadSource(MUX_HLS);
+    hls.attachMedia(vid);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { vid.play().catch(() => {}); });
+  } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    vid.src = MUX_HLS;
+    vid.play().catch(() => {});
+  } else {
+    // Fallback to Mux MP4
+    vid.src = 'https://stream.mux.com/01yW6GoUz01OTXk5w1Rt1MHkJWlCGIwj46SUONJZ4DJUE/high.mp4';
+    vid.play().catch(() => {});
+  }
+})();
 
 // ── STATE ─────────────────────────────────────────────────────────
 let selectedPlaceId   = null;
