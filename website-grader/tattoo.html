@@ -3915,7 +3915,9 @@ function retryIGPages() {
 }
 
 async function handleOAuthMessage(event) {
-  if (event.origin !== window.location.origin && !event.origin.includes('onrender.com')) return;
+  if (event.origin !== window.location.origin &&
+      !event.origin.includes('onrender.com') &&
+      !event.origin.includes('jrzmarketing.com')) return;
   const msg = event.data;
   if (!msg || (msg.type !== 'meta_token' && msg.type !== 'meta_error')) return;
 
