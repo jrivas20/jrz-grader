@@ -3718,7 +3718,41 @@ async function gradeByIGPage(token, pageData) {
   `;
   document.getElementById('loading-biz-tag').textContent = 'JRZ INK SYSTEMS · INSTAGRAM AUDIT';
   document.getElementById('loading-h').innerHTML = `Auditing<br><em style="font-style:normal;color:rgba(255,255,255,.55)">@${pageData.ig_username || pageData.page_name}</em>`;
-  startStepAnimation();
+
+  // IG-specific loading animation — 8 steps, independent of Google audit timer
+  pctCurrent = 0;
+  document.getElementById('loading-pct').innerHTML = '0<span class="pct-sym">%</span>';
+  document.getElementById('loading-bar-fill').style.width = '0%';
+  const IG_STEP_DELAYS  = [0, 2800, 5600, 8500, 11500, 14500, 18000, 22000];
+  const IG_STEP_PCTS    = [10, 22, 35, 48, 61, 73, 84, 94];
+  let igStepTimers = [];
+  IG_STEP_DELAYS.forEach((delay, i) => {
+    igStepTimers.push(setTimeout(() => {
+      for (let j = 0; j < 8; j++) {
+        const el = document.getElementById('ls-' + j);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (j < i)  el.classList.add('done');
+        if (j === i) el.classList.add('active');
+      }
+      animateCounter(IG_STEP_PCTS[i]);
+      document.getElementById('loading-bar-fill').style.width = IG_STEP_PCTS[i] + '%';
+    }, delay));
+  });
+
+  function stopIGStepAnimation() {
+    igStepTimers.forEach(t => clearTimeout(t));
+    igStepTimers = [];
+  }
+
+  function showIGError(msg) {
+    // Show error in IG search panel and keep IG mode active
+    showSearch();
+    switchSearchMode('ig');
+    const errEl = document.getElementById('ig-search-error');
+    errEl.innerHTML = msg;
+    errEl.style.display = 'block';
+  }
 
   try {
     const r = await fetch(`${API}/api/grade-ig-only`, {
@@ -3733,11 +3767,27 @@ async function gradeByIGPage(token, pageData) {
     });
     const data = await r.json();
 
-    stopStepAnimation();
+    stopIGStepAnimation();
 
     if (!r.ok || data.error) {
-      showSearch();
-      showError(data.message || data.error || 'Something went wrong. Please try again.');
+      const errMsg = data.message || data.error || 'Instagram audit failed. Please try again.';
+      // Friendly message for the "no IG linked" case
+      if (data.error === 'no_ig_account' || errMsg.includes('No Instagram Business')) {
+        showIGError(`
+          <strong style="display:block;margin-bottom:6px;color:rgba(255,200,80,.9)">Instagram account not linked to this page.</strong>
+          <span style="font-size:12px;line-height:1.7;color:rgba(255,255,255,.5)">
+            The Facebook page you selected doesn't have an Instagram Business account connected.<br><br>
+            <strong style="color:#fff">Fix in 60 seconds:</strong><br>
+            1. Open Instagram → Settings → Account → Switch to <strong style="color:#fff">Creator or Business</strong><br>
+            2. Settings → Account → Linked Accounts → Connect <strong style="color:#fff">Facebook</strong><br>
+            3. Come back and click "Connect & Audit" again
+          </span>
+          <button onclick="startIGModeOAuth()" style="margin-top:12px;padding:9px 18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer">
+            Try Again →
+          </button>`);
+      } else {
+        showIGError(`<strong>Audit failed:</strong> ${errMsg}`);
+      }
       return;
     }
 
@@ -3746,9 +3796,8 @@ async function gradeByIGPage(token, pageData) {
     showLeadGate();
 
   } catch(e) {
-    stopStepAnimation();
-    showSearch();
-    showError('Connection error. Please try again in a moment.');
+    stopIGStepAnimation();
+    showIGError('Connection error — the server may be warming up. Wait 10 seconds and try again.');
   }
 }
 
