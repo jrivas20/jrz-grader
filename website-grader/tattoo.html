@@ -6043,15 +6043,21 @@ function renderIGReport(d) {
   if (posts.length > 0) {
     document.getElementById('igr-posts-section').style.display = 'block';
     postsEl.innerHTML = posts.map(p => {
-      const date   = p.timestamp ? new Date(p.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-      const typeTag = p.media_type === 'VIDEO' ? 'Reel' : p.media_type === 'CAROUSEL_ALBUM' ? 'Carousel' : 'Photo';
+      // Backend sends: type / likes / comments / link / ts
+      // Normalise to handle both that shape and any future Graph-API-direct shape
+      const mtype   = p.type       || p.media_type || '';
+      const likes   = p.likes      ?? p.like_count;
+      const comments= p.comments   ?? p.comment_count;
+      const link    = p.link       || p.permalink  || '';
+      const date    = p.ts         || '';   // already formatted as "Xd ago" by backend
+      const typeTag = mtype === 'VIDEO' ? 'Reel' : mtype === 'CAROUSEL_ALBUM' ? 'Carousel' : 'Photo';
       return `
         <div class="igr-post-card">
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.3);margin-bottom:4px">${typeTag.toUpperCase()}</div>
-          <div style="font-size:14px;font-weight:700;color:#fff">${p.like_count != null ? '♥ ' + Number(p.like_count).toLocaleString() : '—'}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">${p.comment_count != null ? p.comment_count + ' comments' : ''}</div>
+          <div style="font-size:14px;font-weight:700;color:#fff">${likes != null ? '♥ ' + Number(likes).toLocaleString() : '—'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">${comments != null ? comments + ' comments' : ''}</div>
           ${date ? `<div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:4px">${date}</div>` : ''}
-          ${p.permalink ? `<a href="${p.permalink}" target="_blank" rel="noopener" style="font-size:11px;color:rgba(255,255,255,.3);text-decoration:underline;margin-top:4px;display:block">View →</a>` : ''}
+          ${link ? `<a href="${link}" target="_blank" rel="noopener" style="font-size:11px;color:rgba(255,255,255,.3);text-decoration:underline;margin-top:4px;display:block">View →</a>` : ''}
         </div>`;
     }).join('');
   }
