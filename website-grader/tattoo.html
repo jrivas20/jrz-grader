@@ -4183,7 +4183,7 @@ async function fetchIGPages(token, attempt) {
         <div style="padding:16px 20px;display:flex;align-items:center;gap:12px">
           <div style="width:8px;height:8px;border-radius:50%;background:#ff9900;animation:pulse-crimson 1s infinite;flex-shrink:0"></div>
           <div style="font-size:13px;color:rgba(255,255,255,.55)">
-            Server is starting up — retrying in ${delaySec}s
+            Almost ready — connecting in ${delaySec}s
             <span style="color:rgba(255,255,255,.25);margin-left:6px">(${attempt}/${MAX})</span>
           </div>
         </div>
@@ -4197,8 +4197,8 @@ async function fetchIGPages(token, attempt) {
       errEl.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
-            <strong style="color:rgba(255,200,80,.9)">Server took too long to respond.</strong><br>
-            <span style="font-size:12px;color:rgba(255,255,255,.4)">This happens when the server is waking up. Click Try Again.</span>
+            <strong style="color:rgba(255,200,80,.9)">Taking longer than expected.</strong><br>
+            <span style="font-size:12px;color:rgba(255,255,255,.4)">The server is warming up — click Try Again and it will connect instantly.</span>
           </div>
           <button onclick="retryIGPages()"
             style="padding:9px 18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);

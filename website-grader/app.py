@@ -3577,19 +3577,30 @@ def _grade_tattoo_internal(place_id):
         return None, {'error': 'Business not found'}, 404
 
     # ── TATTOO-ONLY GATE ─────────────────────────────────────────────
+    # Accepts: tattoo_parlor (traditional studios), art_studio (freelance/private
+    # artists — Google's default when no tattoo_parlor category exists), or any
+    # business whose name contains a tattoo keyword.
+    # Rationale: by the time a place_id reaches this function, it was already found
+    # via the tattoo-specific autocomplete or find-tattoo-by-name search — so
+    # art_studio results are pre-filtered tattoo businesses, not random art studios.
     raw_types = place.get('types', [])
     biz_name_lower = place.get('name', '').lower()
+    editorial_lower = (place.get('editorial_summary') or {}).get('overview', '').lower()
+    TATTOO_KW = {'tattoo', 'ink', 'piercing', 'tattooing', 'tat '}
     is_tattoo = (
         'tattoo_parlor' in raw_types or
-        any(kw in biz_name_lower for kw in TATTOO_NAME_KEYWORDS)
+        'art_studio' in raw_types or
+        any(kw in biz_name_lower for kw in TATTOO_NAME_KEYWORDS) or
+        any(kw in editorial_lower for kw in TATTOO_KW)
     )
     if not is_tattoo:
         return None, {
             'error': 'not_tattoo',
             'message': (
                 f"{place.get('name', 'This business')} does not appear to be a "
-                "tattoo studio or artist. This audit is built exclusively for "
-                "tattoo artists and private studios."
+                "tattoo artist or studio. This audit is built exclusively for "
+                "tattoo artists and private studios. Try searching by your studio "
+                "name or business name instead of your Instagram handle."
             )
         }, 422
 
