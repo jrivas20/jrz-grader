@@ -5024,11 +5024,11 @@ function renderReport(d) {
   if (mapPack.length > 0) {
     document.getElementById('map-pack-section').style.display = 'block';
     document.getElementById('map-pack-rows').innerHTML = mapPack.map(mp => {
-      const results = mp.pack_results || [];
+      const results = mp.pack_businesses || mp.pack_results || [];
       const resultsHtml = results.map((r, idx) => `
-        <div class="mp-pack-item ${r.is_you ? 'is-you' : ''}">
+        <div class="mp-pack-item ${(r.is_target || r.is_you) ? 'is-you' : ''}">
           <div class="mp-rank">${idx + 1}</div>
-          <div class="mp-biz-name">${r.name}${r.is_you ? ' 👈' : ''}</div>
+          <div class="mp-biz-name">${r.name}${(r.is_target || r.is_you) ? ' 👈' : ''}</div>
           <div class="mp-biz-stars">★ ${r.rating}</div>
           <div style="font-size:11px;color:var(--muted);margin-left:4px">(${(r.reviews||0).toLocaleString()})</div>
         </div>
