@@ -5672,7 +5672,7 @@ function renderIGReport(d) {
       if (loser && typeEng[loser]) {
         const ratio = (typeEng[winner].avg_likes / Math.max(typeEng[loser].avg_likes, 1)).toFixed(1);
         typeGrid.innerHTML += `<div style="margin-top:12px;font-size:12px;color:rgba(0,204,102,.7);line-height:1.5">
-          ${winner} get ${ratio}× more likes than ${loser}. ${typeEng[winner].pct < 50 ? `You post ${typeEng[loser]?.pct||0}% ${loser} — flip that ratio.` : 'Keep leaning into what works.'}
+          ${winner} get ${ratio}× more likes than ${loser}. ${typeEng[winner].pct < 50 ? `You're posting ${typeEng[loser]?.pct||0}% ${loser} — but ${winner.toLowerCase()} reach people who have never heard of you yet. That's how new tattoo clients discover your work. Film one process video this week and measure the difference.` : `${winner} are your discovery engine — new clients find tattoo artists through Reels, not photos. Keep posting them to reach people outside your current followers.`}
         </div>`;
       }
     }
@@ -5704,7 +5704,7 @@ function renderIGReport(d) {
           <div class="igr-timing-val">${Math.round(avg)} avg</div>
         </div>`;
     }).join('');
-    timingNote.textContent = `Post on ${bestDays.join(' and ')} between ${patterns.best_hour_start}–${patterns.best_hour_end} — that's when your audience is most active based on your last ${patterns.posts_analyzed} posts.`;
+    timingNote.textContent = `Post on ${bestDays.join(' and ')} between ${patterns.best_hour_start}–${patterns.best_hour_end} — that's when your followers engage most. Tattoo clients browse inspiration during downtime; hitting them at the right moment is what turns a save into a DM. Based on your last ${patterns.posts_analyzed} posts.`;
   }
 
   // ── Posting Consistency ───────────────────────────────────────
@@ -5725,11 +5725,11 @@ function renderIGReport(d) {
     fill.style.background = col;
     const noteEl = document.getElementById('igr-consist-note');
     if (consist.max_gap_days >= 14) {
-      noteEl.textContent = `You went ${consist.max_gap_days} days without posting at some point. Gaps longer than 7 days reset your algorithmic momentum — you start from scratch each time. Aim to never go more than 4 days between posts.`;
+      noteEl.textContent = `You went ${consist.max_gap_days} days without posting at some point. When a potential client lands on your profile and your last post is 2 weeks old, they assume you're not actively booking — and they move on to the artist who posted yesterday. Post at least every 4 days. Your next client is checking your profile right now.`;
     } else if (score >= 70) {
-      noteEl.textContent = `Solid posting rhythm — you average a post every ${consist.avg_gap_days} days with minimal gaps. Keep it up.`;
+      noteEl.textContent = `Solid posting rhythm — you average a new tattoo piece every ${consist.avg_gap_days} days with minimal gaps. Clients who visit your profile see an active artist. Keep it up.`;
     } else {
-      noteEl.textContent = `Your posting gaps average ${consist.avg_gap_days} days. The algorithm rewards artists who post on a schedule. Inconsistency cuts your reach by 40–60% compared to artists who post at the same cadence.`;
+      noteEl.textContent = `Your posting gaps average ${consist.avg_gap_days} days. Potential clients checking your profile between sessions see dead air — and book the artist who posted this week. Batch-shoot one session worth of content and spread it across 5 posts to stay visible without burning out.`;
     }
   }
 
@@ -5804,7 +5804,7 @@ function renderIGReport(d) {
       const gapNote = document.getElementById('igr-comp-gap-note');
       gapNote.style.display = 'block';
       const biggestGap = Math.max(...higherComps.map(c => c.ig_followers - myFol));
-      gapNote.textContent = `${higherComps.length} competitor${higherComps.length > 1 ? 's' : ''} near you ${higherComps.length > 1 ? 'have' : 'has'} more followers — the largest gap is ${Number(biggestGap).toLocaleString()} followers. Consistent posting + Reels is the fastest way to close it.`;
+      gapNote.textContent = `${higherComps.length} artist${higherComps.length > 1 ? 's' : ''} in your area ${higherComps.length > 1 ? 'have' : 'has'} more followers — the biggest gap is ${Number(biggestGap).toLocaleString()} followers. Tattoo clients follow multiple artists before they commit to booking. Every Reel you post is a chance to pull them away from a competitor and onto your calendar. Process videos and before/after reveals are the fastest-growing content in your niche.`;
     }
   }
 

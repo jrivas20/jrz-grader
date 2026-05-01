@@ -391,11 +391,11 @@ def analyze_ig_competitive(ig_profile, media_list, competitors=None):
             else 'Weak'
         ),
         'note': (
-            'Your audience actively engages — real community signals'
+            'Your audience actively engages — tattoo clients trust artists they have a conversation with. Momentum is working in your favor.'
             if comment_to_like >= 2.0
-            else 'Typical passive engagement — captions need stronger CTAs to drive comments'
+            else 'Tattoo clients are visual lurkers — they save your work but don\'t always speak up. End captions with "Which style would you pick?" or "DM me your idea and I\'ll sketch it this week." Comments = trust = bookings.'
             if comment_to_like >= 1.0
-            else 'Your audience scrolls but rarely comments — end every caption with a question or CTA'
+            else 'Your posts are getting likes but no one\'s talking. Tattoo clients want to connect before they commit to a session. Ask about their idea, their story, their next piece — a comment is the first step toward a booking.'
         ),
     }
 
@@ -3066,9 +3066,9 @@ def analyze_hashtags(captions, city=''):
     if len(broad_used) >= 5:
         issues.append('Too many mega-tags (>500M posts each) — you disappear in the feed')
     if avg_per_post < 5:
-        issues.append('Using too few hashtags — aim for 10–15 per post')
+        issues.append('Tattoo artists using 10–15 targeted hashtags get 3× more profile visits from potential clients — you\'re leaving discovery on the table')
     if avg_per_post > 25:
-        issues.append('Over 25 hashtags looks spammy — 10–15 is the sweet spot')
+        issues.append('Pasting 30+ hashtags under every tattoo post signals desperation — cap at 15. Niche style tags (#finelinetattoo, #realismtattoo) outperform mega-tags every time')
     if not has_city_tag and city:
         issues.append(f'No {city}-specific hashtag — local tags are the fastest path to local clients')
     if not niche_used:
