@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JRZ Ink Systems — Free AI Audit for Tattoo Artists & Private Studios</title>
+<title>JRZ Ink Systems — Tattoo Artist Audit</title>
 <meta name="description" content="Find out exactly why potential clients are choosing other artists over you. Free AI-powered audit built exclusively for tattoo artists and private studios.">
 
 <!-- GHL FULL BLEED OVERRIDE -->
@@ -19,21 +19,22 @@ body{overflow-x:hidden!important}
 <style>
 /* ── TOKENS ──────────────────────────────────────────────────────── */
 :root {
-  --bg:      #0a0a0a;
-  --bg2:     #111111;
-  --bg3:     #181818;
+  --bg:      #000000;
+  --bg2:     #0d0d0d;
+  --bg3:     #141414;
   --fg:      #ffffff;
-  --muted:   rgba(255,255,255,.42);
+  --muted:   rgba(255,255,255,.40);
   --b:       rgba(255,255,255,.08);
-  --b2:      rgba(255,255,255,.15);
+  --b2:      rgba(255,255,255,.16);
   --font:    'Geist', sans-serif;
   --ease:    cubic-bezier(0.16, 1, 0.3, 1);
-  --crimson: #CC2936;
-  --crimson2:#e8303f;
-  --gold:    #D4AF37;
+  --crimson: #ffffff;
+  --crimson2:#e0e0e0;
+  --gold:    #ffffff;
   --red:     #ff4444;
   --amber:   #ff9900;
   --green:   #00cc66;
+  --accent:  #ffffff;
   --px:      clamp(20px,5vw,80px);
 }
 
@@ -62,14 +63,23 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   overflow: hidden;
   background: var(--bg);
 }
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
 .hero-bg {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(204,41,54,.18) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 15% 80%, rgba(212,175,55,.07) 0%, transparent 60%),
-    var(--bg);
-  z-index: 0;
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,.72) 0%,
+    rgba(0,0,0,.55) 40%,
+    rgba(0,0,0,.88) 100%);
+  z-index: 1;
 }
 .search-content {
   position: relative;
@@ -87,19 +97,11 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   gap: 12px;
 }
 .logo-ink-mark {
-  width: 44px;
-  height: 44px;
-  background: var(--crimson);
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: -1px;
-  flex-shrink: 0;
 }
+.logo-ink-mark img { height: 52px; width: auto; filter: brightness(0) invert(1); }
 .logo-ink-text {
   display: flex;
   flex-direction: column;
@@ -224,20 +226,15 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(24px, 4vw, 56px);
+  gap: 14px;
   flex-wrap: wrap;
   margin-top: 52px;
   padding-top: 36px;
   border-top: 1px solid rgba(255,255,255,.07);
 }
-.proof-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-.proof-icon{font-size:20px;filter:grayscale(.3)}
-.proof-label{font-size:11px;font-weight:500;letter-spacing:.5px;color:rgba(255,255,255,.38);text-align:center}
+.proof-item { display: flex; align-items: center; }
+.proof-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.18); }
+.proof-label{font-size:11px;font-weight:500;letter-spacing:.5px;color:rgba(255,255,255,.35);text-align:center}
 .search-error-banner {
   display: none;
   background: rgba(255, 153, 0, .1);
@@ -260,62 +257,116 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 #loading-section {
   display: none;
   min-height: 100vh;
+  background: var(--bg);
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  flex-direction: column;
   padding: 60px var(--px);
 }
-.loading-inner {
-  width: 100%;
-  max-width: 520px;
-  text-align: center;
-}
-.loading-logo { margin: 0 auto 40px; display: flex; align-items: center; justify-content: center; gap: 12px; }
-.loading-spinner {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid rgba(204,41,54,.2);
-  border-top-color: var(--crimson);
-  animation: spin 1s linear infinite;
-  margin: 0 auto 32px;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-h2{font-size:22px;font-weight:700;margin-bottom:10px;letter-spacing:-.5px}
-.loading-sub{font-size:13px;color:var(--muted);margin-bottom:36px}
-.loading-steps{display:flex;flex-direction:column;gap:10px;text-align:left}
-.loading-step {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: var(--bg2);
-  border: 1px solid var(--b);
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,.35);
-  transition: all .35s var(--ease);
-}
-.loading-step.active{color:#fff;border-color:rgba(204,41,54,.35);background:rgba(204,41,54,.07)}
-.loading-step.done{color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.06)}
-.step-icon{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all .35s}
-.loading-step.active .step-icon{background:var(--crimson);box-shadow:0 0 0 4px rgba(204,41,54,.2)}
-.loading-step.done .step-icon{background:rgba(0,204,102,.15);color:#00cc66}
-.biz-preview {
-  display: none;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid var(--b);
-  border-radius: 10px;
+.loading-inner { text-align: center; max-width: 540px; width: 100%; }
+.loading-biz-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
   margin-bottom: 28px;
+}
+.loading-h {
+  font-size: clamp(26px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1.08;
+  color: #fff;
+  margin-bottom: 56px;
+}
+.loading-pct {
+  font-size: 80px;
+  font-weight: 900;
+  letter-spacing: -5px;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.loading-pct .pct-sym {
+  font-size: 44px;
+  font-weight: 300;
+  color: rgba(255,255,255,.3);
+  letter-spacing: -2px;
+  margin-left: 4px;
+}
+.loading-bar-wrap {
+  height: 2px;
+  background: var(--b);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 52px;
+}
+.loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, rgba(255,255,255,.5), #fff);
+  border-radius: 2px;
+  transition: width .7s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+.loading-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+  animation: bar-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes bar-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(300%)} }
+.loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   text-align: left;
 }
-.biz-preview-icon{font-size:28px}
-.biz-preview-name{font-size:14px;font-weight:700;margin-bottom:2px}
-.biz-preview-addr{font-size:12px;color:var(--muted)}
+.l-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  opacity: .2;
+  transform: translateX(-6px);
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+.l-step.active { opacity: 1; transform: translateX(0); }
+.l-step.done   { opacity: .5; transform: translateX(0); }
+.l-step-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--b2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .4s, border-color .4s;
+}
+.l-step-icon svg { width: 16px; height: 16px; stroke: rgba(255,255,255,.4); fill: none; stroke-width: 1.5; }
+.l-step.active .l-step-icon { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.28); animation: icon-glow 1.6s ease-in-out infinite; }
+.l-step.done   .l-step-icon { background: rgba(0,204,102,.1); border-color: rgba(0,204,102,.28); }
+.l-step.done   .l-step-icon svg { stroke: var(--green); }
+@keyframes icon-glow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,.08); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,255,255,.04); }
+}
+.l-step-text { font-size: 15px; font-weight: 500; color: rgba(255,255,255,.65); }
+.l-step.done .l-step-text::after { content: ' \2713'; color: var(--green); font-weight: 700; }
+.l-step.active .l-step-text .dot-anim::after {
+  content: '';
+  animation: ellipsis 1.6s steps(4, end) infinite;
+}
+@keyframes ellipsis {
+  0%  { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    REPORT
@@ -672,6 +723,39 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   .review-intel-grid{grid-template-columns:1fr 1fr}
 }
 
+/* ── CONNECT PROMPTS (per section) ──────────────────────────────── */
+.connect-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,.03);
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.cp-left { flex:1; min-width:160px }
+.cp-tag { font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px }
+.cp-text { font-size:13px;color:rgba(255,255,255,.6);line-height:1.4 }
+.cp-btn {
+  padding:9px 18px;
+  background: rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:8px;
+  color:rgba(255,255,255,.7);
+  font-family:var(--font);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .2s;
+  flex-shrink:0;
+}
+.cp-btn:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.3)}
+.cp-btn.connected{background:rgba(0,204,102,.1);border-color:rgba(0,204,102,.25);color:#00cc66;cursor:default}
+
 /* ── UPGRADE BAR ─────────────────────────────────────────────────── */
 .upgrade-bar {
   display: none;
@@ -837,20 +921,21 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   SEARCH SECTION
 ════════════════════════════════════════════════════════════════ -->
 <section id="search-section">
+  <video class="hero-video" autoplay muted loop playsinline
+    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_171521_25968ba2-b594-4b32-aab7-f6b69398a6fa.mp4">
+  </video>
   <div class="hero-bg"></div>
   <div class="search-content">
 
     <div class="search-logo">
-      <div class="logo-ink-mark">✦</div>
-      <div class="logo-ink-text">
-        <span class="top">JRZ Ink Systems</span>
-        <span class="sub">Tattoo Artist Growth Engine</span>
+      <div class="logo-ink-mark">
+        <img src="https://assets.cdn.filesafe.space/d7iUPfamAaPlSBNj6IhT/media/69dc72b1b30bc5237146bf95.png" alt="JRZ Ink Systems">
       </div>
     </div>
 
     <div class="search-eyebrow">
       <div class="eyebrow-dot"></div>
-      FREE AI AUDIT · TATTOO ARTISTS + PRIVATE STUDIOS
+      FREE AUDIT · TATTOO ARTISTS + PRIVATE STUDIOS
     </div>
 
     <h1 class="search-h1">
@@ -864,8 +949,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     </p>
 
     <div class="search-wrap">
-      <input id="search-input" type="text" placeholder="Search your studio or artist name + city..." autocomplete="off">
-      <button class="search-btn" onclick="startGrade()">Grade My Studio →</button>
+      <input id="search-input" type="text" placeholder="Search your studio or artist name and city..." autocomplete="off">
+      <button class="search-btn" onclick="startGrade()">Grade My Studio</button>
       <div id="autocomplete-list"></div>
     </div>
 
@@ -873,24 +958,23 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
     <div class="proof-strip">
       <div class="proof-item">
-        <div class="proof-icon">📍</div>
-        <div class="proof-label">Google Map Pack<br>Position</div>
+        <div class="proof-label">Google Map Pack Position</div>
       </div>
+      <div class="proof-dot"></div>
       <div class="proof-item">
-        <div class="proof-icon">📸</div>
-        <div class="proof-label">Instagram<br>Presence Score</div>
+        <div class="proof-label">Instagram Presence Score</div>
       </div>
+      <div class="proof-dot"></div>
       <div class="proof-item">
-        <div class="proof-icon">📅</div>
-        <div class="proof-label">Online Booking<br>System Audit</div>
+        <div class="proof-label">Online Booking Audit</div>
       </div>
+      <div class="proof-dot"></div>
       <div class="proof-item">
-        <div class="proof-icon">⭐</div>
-        <div class="proof-label">Review Velocity<br>+ Trust Score</div>
+        <div class="proof-label">Review Velocity + Trust</div>
       </div>
+      <div class="proof-dot"></div>
       <div class="proof-item">
-        <div class="proof-icon">🎯</div>
-        <div class="proof-label">Nearby Studio<br>Comparison</div>
+        <div class="proof-label">Competitor Analysis</div>
       </div>
     </div>
 
@@ -902,36 +986,49 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 ════════════════════════════════════════════════════════════════ -->
 <section id="loading-section">
   <div class="loading-inner">
-    <div class="loading-logo">
-      <div class="logo-ink-mark">✦</div>
-      <div class="logo-ink-text">
-        <span class="top">JRZ Ink Systems</span>
-        <span class="sub">Tattoo Artist Growth Engine</span>
+    <div class="loading-biz-tag" id="loading-biz-tag">JRZ INK SYSTEMS · STUDIO AUDIT</div>
+    <div class="loading-h">Running your<br>full audit<span id="loading-biz-suffix"></span></div>
+
+    <div class="loading-pct" id="loading-pct">0<span class="pct-sym">%</span></div>
+    <div class="loading-bar-wrap"><div class="loading-bar-fill" id="loading-bar-fill"></div></div>
+
+    <div class="loading-steps">
+      <div class="l-step" id="ls-0">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="l-step-text">Finding your studio on Google<span class="dot-anim"></span></div>
       </div>
-    </div>
-
-    <div id="biz-preview" class="biz-preview">
-      <div class="biz-preview-icon">🎨</div>
-      <div>
-        <div class="biz-preview-name" id="preview-name"></div>
-        <div class="biz-preview-addr" id="preview-addr"></div>
+      <div class="l-step" id="ls-1">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div class="l-step-text">Pulling reviews and reputation data<span class="dot-anim"></span></div>
       </div>
-    </div>
-
-    <div class="loading-spinner"></div>
-    <div class="loading-h2">Auditing your studio...</div>
-    <div class="loading-sub">Pulling live data from Google, Instagram, and local search — this takes 20 to 40 seconds.</div>
-
-    <div class="loading-steps" id="loading-steps">
-      <div class="loading-step" data-step="0"><div class="step-icon">📍</div> Finding your studio on Google...</div>
-      <div class="loading-step" data-step="1"><div class="step-icon">⭐</div> Pulling Google reviews + reputation data...</div>
-      <div class="loading-step" data-step="2"><div class="step-icon">🌐</div> Scanning your website & booking system...</div>
-      <div class="loading-step" data-step="3"><div class="step-icon">🗺️</div> Checking local map pack visibility...</div>
-      <div class="loading-step" data-step="4"><div class="step-icon">📸</div> Analyzing your Instagram presence...</div>
-      <div class="loading-step" data-step="5"><div class="step-icon">🏆</div> Researching nearby tattoo studios...</div>
-      <div class="loading-step" data-step="6"><div class="step-icon">🔍</div> Running keyword ranking check...</div>
-      <div class="loading-step" data-step="7"><div class="step-icon">💰</div> Calculating your revenue opportunity...</div>
-      <div class="loading-step" data-step="8"><div class="step-icon">📋</div> Building your Ink Systems report...</div>
+      <div class="l-step" id="ls-2">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <div class="l-step-text">Scanning your website and booking system<span class="dot-anim"></span></div>
+      </div>
+      <div class="l-step" id="ls-3">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+        <div class="l-step-text">Checking local map pack visibility<span class="dot-anim"></span></div>
+      </div>
+      <div class="l-step" id="ls-4">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <div class="l-step-text">Analyzing Instagram presence<span class="dot-anim"></span></div>
+      </div>
+      <div class="l-step" id="ls-5">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="l-step-text">Researching nearby studios<span class="dot-anim"></span></div>
+      </div>
+      <div class="l-step" id="ls-6">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="l-step-text">Running keyword ranking check<span class="dot-anim"></span></div>
+      </div>
+      <div class="l-step" id="ls-7">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="l-step-text">Calculating revenue opportunity<span class="dot-anim"></span></div>
+      </div>
+      <div class="l-step" id="ls-8">
+        <div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+        <div class="l-step-text">Building your Ink Systems report<span class="dot-anim"></span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -1144,11 +1241,21 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
       <!-- Social Presence -->
       <div class="main-section">
-        <div class="main-section-title">📸 Social Media Presence</div>
+        <div class="main-section-title">
+          Social Media Presence
+          <span class="estimated-badge" id="social-data-badge">ESTIMATED</span>
+        </div>
         <div class="social-grid" id="social-grid"></div>
         <div id="social-links-found" style="margin-top:16px;display:none">
           <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">DETECTED SOCIAL CHANNELS</div>
           <div class="social-links-found" id="social-link-chips"></div>
+        </div>
+        <div class="connect-prompt" id="meta-connect-prompt">
+          <div class="cp-left">
+            <div class="cp-tag">INSTAGRAM · FACEBOOK · META ADS</div>
+            <div class="cp-text">Connect your Meta account to replace all estimated data with live, verified numbers. Read-only. Clears when you close.</div>
+          </div>
+          <button class="cp-btn" id="meta-section-btn" onclick="openOAuthModal()">Connect Meta Account</button>
         </div>
       </div>
 
@@ -1169,8 +1276,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
       <!-- Review Intelligence -->
       <div class="main-section">
-        <div class="main-section-title">⭐ Review Intelligence</div>
+        <div class="main-section-title">
+          Review Intelligence
+          <span class="estimated-badge" id="review-data-badge">5-REVIEW SAMPLE</span>
+        </div>
         <div class="review-intel-grid" id="review-intel-grid"></div>
+        <div class="connect-prompt" style="margin-top:12px">
+          <div class="cp-left">
+            <div class="cp-tag">GOOGLE MY BUSINESS · GOOGLE BUSINESS PROFILE API</div>
+            <div class="cp-text">Connect your Google Business Profile to see exact review velocity, impression count, calls, direction requests, and website clicks from your GBP. Phase 2 — available when GBP API is configured.</div>
+          </div>
+          <button class="cp-btn" style="opacity:.5;cursor:not-allowed">Coming in Phase 2</button>
+        </div>
       </div>
 
       <!-- Tattoo Extras -->
@@ -1282,7 +1399,99 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
   <!-- Run Again -->
   <div class="run-again-bar">
-    <button class="run-again-btn" onclick="runAgain()">← Grade Another Studio</button>
+    <button class="run-again-btn" onclick="runAgain()">Grade Another Studio</button>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  OAUTH MODAL
+════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="oauth-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeOAuthModal()">✕</button>
+
+    <div class="modal-eyebrow">OPTIONAL · READ-ONLY ACCESS</div>
+    <h3 class="modal-title">See your <em>real numbers</em>.<br>Not estimates.</h3>
+    <p class="modal-sub">
+      Connect your Instagram and Facebook Business account for 60 seconds to replace every estimated data point with live, verified numbers directly from Meta.
+    </p>
+
+    <div class="privacy-badge">
+      <div class="privacy-icon">🔒</div>
+      <div class="privacy-text">
+        <strong>We never post, publish, or store anything.</strong> This is a read-only connection used only for this report session. When you close this window, all access tokens are cleared from memory permanently. No accounts are retained.
+      </div>
+    </div>
+
+    <div class="modal-benefits">
+      <div class="modal-benefit"><div class="benefit-check">✓</div> Real Instagram follower count + post engagement rate</div>
+      <div class="modal-benefit"><div class="benefit-check">✓</div> Exact days since your last post — not estimated</div>
+      <div class="modal-benefit"><div class="benefit-check">✓</div> Average likes + comments per post (last 12 posts)</div>
+      <div class="modal-benefit"><div class="benefit-check">✓</div> Facebook Page fans + engagement data</div>
+      <div class="modal-benefit"><div class="benefit-check">✓</div> Your Instagram bio + website link status</div>
+    </div>
+
+    <button class="modal-connect-btn" id="connect-btn" onclick="connectMeta()">
+      <span id="connect-btn-text">Connect Instagram + Facebook</span>
+    </button>
+    <button class="modal-skip-btn" onclick="closeOAuthModal()">Skip — keep estimates</button>
+    <div class="modal-status" id="modal-status"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  PRE-LAUNCH CHECKLIST
+════════════════════════════════════════════════════════════════ -->
+<section class="checklist-section" id="checklist-section">
+
+  <div class="checklist-hero">
+    <div class="cl-hero-eyebrow">JRZ INK SYSTEMS · PRE-LAUNCH CHECKLIST · v1.0</div>
+    <h2 class="cl-hero-title">This is what<br>success looks like.</h2>
+    <p class="cl-hero-sub">
+      Every artist we work with goes through 68 checkpoints before going live. Here's where your studio stands right now — and what we build for you in 14 days.
+    </p>
+    <div class="cl-hero-stats">
+      <div class="cl-hero-stat">
+        <div class="cl-hero-stat-val done" id="cl-done-count">0</div>
+        <div class="cl-hero-stat-label">Already Done</div>
+      </div>
+      <div class="cl-hero-stat">
+        <div class="cl-hero-stat-val missing" id="cl-missing-count">68</div>
+        <div class="cl-hero-stat-label">JRZ Builds for You</div>
+      </div>
+      <div class="cl-hero-stat">
+        <div class="cl-hero-stat-val" style="color:var(--muted)">14</div>
+        <div class="cl-hero-stat-label">Days to Live</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cl-sections" id="cl-sections"></div>
+
+  <div class="checklist-cta">
+    <div class="cl-vip-tag">VIP CONCIERGE ONBOARDING</div>
+    <div class="cl-cta-eyebrow">DONE-FOR-YOU SETUP · EVERY CHECKPOINT · 14 DAYS</div>
+    <h3 class="cl-cta-title">Your studio.<br>Fully built. <span>Fully booked.</span></h3>
+    <p class="cl-cta-sub">
+      We don't hand you a template and wish you luck. JRZ Ink Systems builds every system on this list — your website, your booking flow, your automations, your ads — and then we run it for you month after month. You focus on the art. We fill your calendar.
+    </p>
+    <div class="cl-cta-features">
+      <div class="cl-cta-feature"><span>✓</span> Done-for-you website build</div>
+      <div class="cl-cta-feature"><span>✓</span> Booking system integrated</div>
+      <div class="cl-cta-feature"><span>✓</span> CRM + pipeline configured</div>
+      <div class="cl-cta-feature"><span>✓</span> Meta Pixel + GA4 tracked</div>
+      <div class="cl-cta-feature"><span>✓</span> Automated review requests</div>
+      <div class="cl-cta-feature"><span>✓</span> Facebook Ads launched</div>
+      <div class="cl-cta-feature"><span>✓</span> Monthly performance reports</div>
+    </div>
+    <a href="https://jrzmarketing.com" target="_blank" rel="noopener" class="cl-cta-btn">
+      Book Your Strategy Call
+    </a>
+    <div class="cl-cta-note">
+      Starting at $1,000/mo · Performance-based · No long-term contracts<br>
+      We are not a software tool. We are the team that builds and runs your entire growth system.
+    </div>
   </div>
 
 </section>
@@ -1293,9 +1502,23 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 <script>
 const API = 'https://jrz-grader.onrender.com';
 let selectedPlaceId = '';
-let selectedName = '';
-let selectedAddr = '';
-let stepTimer = null;
+let selectedName    = '';
+let selectedAddr    = '';
+let stepTimer       = null;
+let currentReport   = null;  // holds the full report data for checklist pre-fill
+let metaToken       = null;  // in-memory only — cleared on close
+let fbAppId         = '';
+let oauthEnabled    = false;
+
+// Fetch config on load (FB App ID for OAuth popup)
+fetch(`${API}/api/config`).then(r => r.json()).then(c => {
+  fbAppId      = c.fb_app_id || '';
+  oauthEnabled = c.oauth_enabled || false;
+}).catch(() => {});
+
+// Clear tokens if user closes or navigates away
+window.addEventListener('beforeunload', clearOAuthData);
+window.addEventListener('message', handleOAuthMessage);
 
 // ── AUTOCOMPLETE ─────────────────────────────────────────────────
 const input = document.getElementById('search-input');
@@ -1385,51 +1608,75 @@ async function startGrade() {
   }
 }
 
-// ── STEP ANIMATION ────────────────────────────────────────────────
+// ── LOADING ANIMATION (% counter + bar + steps) ───────────────────
+const STEP_DELAYS  = [0, 3200, 6500, 9800, 13000, 16500, 20000, 24000, 28000];
+const STEP_PROGRESS = [8, 19, 33, 46, 58, 69, 79, 89, 96];
+let pctCurrent = 0;
+
+function animateCounter(to) {
+  const el    = document.getElementById('loading-pct');
+  const from  = pctCurrent;
+  const dur   = 600;
+  const start = performance.now();
+  function tick(now) {
+    const p     = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val   = Math.round(from + (to - from) * eased);
+    el.innerHTML = `${val}<span class="pct-sym">%</span>`;
+    if (p < 1) requestAnimationFrame(tick);
+    else pctCurrent = to;
+  }
+  requestAnimationFrame(tick);
+}
+
 function startStepAnimation() {
-  const steps = document.querySelectorAll('.loading-step');
-  steps.forEach(s => s.classList.remove('active','done'));
+  pctCurrent = 0;
+  document.getElementById('loading-pct').innerHTML = '0<span class="pct-sym">%</span>';
+  document.getElementById('loading-bar-fill').style.width = '0%';
 
   if (selectedName) {
-    document.getElementById('preview-name').textContent = selectedName;
-    document.getElementById('preview-addr').textContent = selectedAddr;
-    document.getElementById('biz-preview').style.display = 'flex';
+    document.getElementById('loading-biz-suffix').textContent = ' — ' + selectedName;
   }
 
-  const delays = [0, 3500, 7000, 10500, 14000, 17500, 21000, 25000, 29000];
-  let current = 0;
-
-  function advance() {
-    if (current < steps.length) {
-      if (current > 0) {
-        steps[current - 1].classList.remove('active');
-        steps[current - 1].classList.add('done');
-        steps[current - 1].querySelector('.step-icon').textContent = '✓';
-      }
-      steps[current].classList.add('active');
-      current++;
-      const next = delays[current] - (delays[current - 1] || 0);
-      if (current < delays.length) {
-        stepTimer = setTimeout(advance, next);
-      }
-    }
+  for (let i = 0; i < 9; i++) {
+    document.getElementById('ls-' + i)?.classList.remove('active', 'done');
   }
-  advance();
+
+  const bar = document.getElementById('loading-bar-fill');
+  STEP_DELAYS.forEach((delay, i) => {
+    stepTimer = setTimeout(() => {
+      for (let j = 0; j < 9; j++) {
+        const el = document.getElementById('ls-' + j);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (j < i)  el.classList.add('done');
+        if (j === i) el.classList.add('active');
+      }
+      bar.style.width = STEP_PROGRESS[i] + '%';
+      animateCounter(STEP_PROGRESS[i]);
+    }, delay);
+  });
 }
 
 function stopStepAnimation() {
   clearTimeout(stepTimer);
-  document.querySelectorAll('.loading-step').forEach(s => {
-    s.classList.remove('active');
-    s.classList.add('done');
-  });
+  for (let i = 0; i < 9; i++) {
+    const el = document.getElementById('ls-' + i);
+    if (el) { el.classList.remove('active'); el.classList.add('done'); }
+  }
+  document.getElementById('loading-bar-fill').style.width = '100%';
+  animateCounter(100);
 }
 
 // ── SECTION VISIBILITY ────────────────────────────────────────────
 function showLoading() {
-  document.getElementById('search-section').style.display = 'none';
-  document.getElementById('loading-section').style.display = 'flex';
-  document.getElementById('report-section').style.display = 'none';
+  document.getElementById('search-section').style.display   = 'none';
+  document.getElementById('loading-section').style.display  = 'flex';
+  document.getElementById('loading-section').style.flexDirection = 'column';
+  document.getElementById('loading-section').style.alignItems    = 'center';
+  document.getElementById('loading-section').style.justifyContent= 'center';
+  document.getElementById('report-section').style.display   = 'none';
+  document.getElementById('checklist-section').style.display = 'none';
 }
 function showSearch() {
   document.getElementById('search-section').style.display = '';
@@ -1440,6 +1687,12 @@ function showReport() {
   document.getElementById('search-section').style.display = 'none';
   document.getElementById('loading-section').style.display = 'none';
   document.getElementById('report-section').style.display = 'block';
+  document.getElementById('checklist-section').style.display = 'block';
+  // Upgrade bar shows after 2s delay so report renders first
+  setTimeout(() => {
+    const bar = document.getElementById('upgrade-bar');
+    if (bar) bar.style.display = 'flex';
+  }, 2000);
   window.scrollTo({ top: 0 });
 }
 
@@ -1463,18 +1716,438 @@ function clearError() {
 // ── RUN AGAIN ─────────────────────────────────────────────────────
 function runAgain() {
   selectedPlaceId = '';
-  selectedName = '';
-  selectedAddr = '';
+  selectedName    = '';
+  selectedAddr    = '';
+  currentReport   = null;
   input.value = '';
   clearError();
-  document.getElementById('biz-preview').style.display = 'none';
-  document.querySelectorAll('.loading-step').forEach((s, i) => {
-    s.classList.remove('active','done');
-    const icons = ['📍','⭐','🌐','🗺️','📸','🏆','🔍','💰','📋'];
-    s.querySelector('.step-icon').textContent = icons[i];
-  });
+  clearOAuthData();
+  // no biz-preview in new loading style
+  document.getElementById('upgrade-bar').style.display  = 'none';
+  document.getElementById('checklist-section').style.display = 'none';
+  document.getElementById('loading-biz-suffix').textContent = '';
+  for (let i = 0; i < 9; i++) {
+    const el = document.getElementById('ls-' + i);
+    if (el) el.classList.remove('active', 'done');
+  }
+  pctCurrent = 0;
+  document.getElementById('loading-pct').innerHTML = '0<span class="pct-sym">%</span>';
+  document.getElementById('loading-bar-fill').style.width = '0%';
   showSearch();
   window.scrollTo({ top: 0 });
+}
+
+function dismissUpgradeBar() {
+  document.getElementById('upgrade-bar').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// OAUTH FLOW
+// ─────────────────────────────────────────────────────────────────
+
+function openOAuthModal() {
+  document.getElementById('oauth-modal').classList.add('open');
+  document.getElementById('modal-status').textContent = '';
+  const btn = document.getElementById('connect-btn');
+  btn.disabled = false;
+  document.getElementById('connect-btn-text').textContent = 'Connect Instagram + Facebook';
+  if (!oauthEnabled) {
+    setModalStatus('OAuth not yet configured on this instance. Contact JRZ to enable.', 'error');
+    btn.disabled = true;
+  }
+}
+
+function closeOAuthModal() {
+  document.getElementById('oauth-modal').classList.remove('open');
+  clearOAuthData();
+}
+
+function clearOAuthData() {
+  metaToken = null;
+}
+
+function connectMeta() {
+  if (!oauthEnabled || !fbAppId) {
+    setModalStatus('OAuth not configured. Contact JRZ to enable live data.', 'error');
+    return;
+  }
+  const redirectUri = encodeURIComponent(`${API}/oauth-callback`);
+  const scope       = encodeURIComponent('instagram_basic,pages_show_list,pages_read_engagement');
+  const oauthUrl    = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&display=popup`;
+
+  const btn = document.getElementById('connect-btn');
+  btn.disabled = true;
+  document.getElementById('connect-btn-text').textContent = 'Waiting for authorization...';
+  setModalStatus('A Facebook window will open. Authorize read-only access to continue.', '');
+
+  const popup = window.open(oauthUrl, 'meta_oauth', 'width=580,height=640,left=200,top=100');
+  if (!popup) {
+    setModalStatus('Popup blocked. Please allow popups for this site and try again.', 'error');
+    btn.disabled = false;
+    document.getElementById('connect-btn-text').textContent = 'Connect Instagram + Facebook';
+  }
+}
+
+function handleOAuthMessage(event) {
+  if (event.origin !== window.location.origin && !event.origin.includes('onrender.com')) return;
+  const msg = event.data;
+  if (!msg || msg.type !== 'meta_token') return;
+
+  if (msg.token) {
+    metaToken = msg.token;
+    setModalStatus('Connected. Fetching your real data...', 'success');
+    fetchEnhancedData(msg.token);
+  } else if (msg.type === 'meta_error') {
+    setModalStatus(msg.error || 'Authorization failed. Please try again.', 'error');
+    const btn = document.getElementById('connect-btn');
+    btn.disabled = false;
+    document.getElementById('connect-btn-text').textContent = 'Connect Instagram + Facebook';
+  }
+}
+
+async function fetchEnhancedData(token) {
+  if (!currentReport) return;
+  try {
+    const r = await fetch(`${API}/api/enhance-tattoo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, place_id: currentReport.place_id })
+    });
+    const data = await r.json();
+
+    if (!r.ok || data.error) {
+      setModalStatus(data.error || 'Could not fetch real data. Estimates remain active.', 'error');
+      const btn = document.getElementById('connect-btn');
+      btn.disabled = false;
+      document.getElementById('connect-btn-text').textContent = 'Try Again';
+      return;
+    }
+
+    // Update the social grid with live data
+    renderEnhancedSocial(data);
+    document.getElementById('upgrade-bar').style.display = 'none';
+    setModalStatus('Live data loaded. This window will close.', 'success');
+    setTimeout(() => closeOAuthModal(), 1400);
+
+  } catch(e) {
+    setModalStatus('Network error. Please try again.', 'error');
+    const btn = document.getElementById('connect-btn');
+    btn.disabled = false;
+    document.getElementById('connect-btn-text').textContent = 'Try Again';
+  }
+}
+
+function renderEnhancedSocial(data) {
+  const ig = data.instagram || {};
+  const fb = data.facebook  || {};
+  const grid = document.getElementById('social-grid');
+  if (!grid) return;
+
+  // Swap estimated badge → live badge, update connect prompt
+  const badge = document.getElementById('social-data-badge');
+  if (badge) { badge.className = 'live-badge'; badge.textContent = 'LIVE DATA'; }
+  const prompt = document.getElementById('meta-connect-prompt');
+  if (prompt) {
+    const btn = document.getElementById('meta-section-btn');
+    if (btn) { btn.className = 'cp-btn connected'; btn.textContent = 'Connected'; btn.onclick = null; }
+  }
+
+  const liveBadge = '<span class="live-badge">LIVE DATA</span>';
+  let html = '';
+
+  // Instagram card with real data
+  const igFol    = ig.followers;
+  const igLast   = ig.last_post_days;
+  const igPosts  = ig.media_count;
+  const igUser   = ig.username;
+  const igAvgLk  = ig.avg_likes;
+  const igStatus = igLast !== null && igLast !== undefined
+    ? (igLast <= 7 ? 'active' : igLast <= 21 ? 'moderate' : 'warning') : 'neutral';
+  const igStatusText = igLast !== null && igLast !== undefined
+    ? `Last post: ${igLast} days ago` : 'Post date unavailable';
+
+  html += `
+    <div class="social-card" style="border-color:rgba(0,204,102,.2)">
+      <div class="social-card-header">
+        <div class="social-platform-icon ig-icon">&#128247;</div>
+        <div class="social-platform-name">Instagram ${liveBadge}</div>
+      </div>
+      ${igFol !== null && igFol !== undefined ? `
+        <div class="social-stat">
+          <div class="social-stat-val">${igFol.toLocaleString()}</div>
+          <div class="social-stat-label">Followers (verified)</div>
+        </div>
+        ${igPosts !== null ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${igPosts.toLocaleString()} total posts${igAvgLk ? ' · ' + igAvgLk + ' avg likes/post' : ''}</div>` : ''}
+        ${igUser ? `<div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px">@${igUser}</div>` : ''}
+        ${ig.bio ? `<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:8px;line-height:1.4;font-style:italic">"${ig.bio.slice(0,80)}${ig.bio.length>80?'...':''}"</div>` : ''}
+        <div class="social-pill ${igStatus}">${igStatusText}</div>
+      ` : `<div style="font-size:13px;color:var(--muted)">No Instagram Business Account connected to this Page.</div>`}
+    </div>
+  `;
+
+  // Facebook card
+  html += `
+    <div class="social-card" style="border-color:rgba(0,204,102,.2)">
+      <div class="social-card-header">
+        <div class="social-platform-icon fb-icon">f</div>
+        <div class="social-platform-name">Facebook ${liveBadge}</div>
+      </div>
+      ${fb.followers !== undefined ? `
+        <div class="social-stat">
+          <div class="social-stat-val">${(fb.followers || 0).toLocaleString()}</div>
+          <div class="social-stat-label">Page followers (verified)</div>
+        </div>
+        ${fb.fans !== undefined ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${(fb.fans||0).toLocaleString()} page fans</div>` : ''}
+        ${fb.page_name ? `<div style="font-size:12px;color:rgba(255,255,255,.4)">${fb.page_name}</div>` : ''}
+      ` : `<div style="font-size:13px;color:var(--muted)">No Facebook Page found under this account.</div>`}
+    </div>
+  `;
+
+  grid.innerHTML = html;
+}
+
+function setModalStatus(msg, type) {
+  const el = document.getElementById('modal-status');
+  el.textContent = msg;
+  el.className = 'modal-status' + (type ? ' ' + type : '');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PRE-LAUNCH CHECKLIST ENGINE
+// ─────────────────────────────────────────────────────────────────
+
+const CHECKLIST_DATA = [
+  {
+    num: '01', title: 'Discovery & Intake',
+    sub: 'Before we touch a single account or build a single page.',
+    groups: [
+      { label: 'CLIENT INFORMATION CAPTURED', items: [
+        { t: 'Artist / studio legal name, address, and contact email on file', a: null },
+        { t: 'Primary specialty confirmed (color, black & grey, realism, traditional, etc.)', n: 'This drives SEO and ad targeting', a: d => d.tattoo_extras?.detected_styles?.length > 0 || null },
+        { t: 'Average tattoo price documented + price range', a: null },
+        { t: 'Current lead sources mapped (Instagram, referrals, walk-ins, etc.)', a: null },
+        { t: 'Existing website audited — URL, platform, known issues noted', a: d => !!d.business?.website },
+        { t: 'Ad history reviewed (platforms, spend, past CPL)', a: null },
+        { t: 'Monthly ad budget confirmed in writing', a: null },
+        { t: 'Content inventory taken (photos, videos, reels available)', n: 'Minimum: 5 photos + 1 video', a: d => d.business?.photos >= 5 },
+      ]},
+      { label: 'ACCESS & ASSETS SECURED', items: [
+        { t: 'Facebook Page admin access granted to JRZ', a: null },
+        { t: 'Instagram account access confirmed', a: null },
+        { t: 'Domain purchased or transferred (or confirmed available for purchase)', a: d => !!d.business?.website },
+        { t: 'Logo + brand colors received (or briefed for design)', a: null },
+        { t: 'Portfolio photos uploaded to shared folder (min. 10)', a: d => d.business?.photos >= 10 },
+        { t: 'Video asset received (reel, process, or interview)', n: 'Raw phone footage is fine', a: null },
+      ]},
+    ]
+  },
+  {
+    num: '02', title: 'CRM & Pipeline Setup',
+    sub: 'The backbone. If this is wrong, nothing downstream works.',
+    groups: [
+      { label: 'ACCOUNT STRUCTURE', items: [
+        { t: 'Client sub-account provisioned under JRZ parent', a: null },
+        { t: 'API integration key generated and stored securely', n: 'Never commit to Git. Use the secrets vault.', a: null },
+        { t: 'Location ID + API key logged in the client ops sheet', a: null },
+        { t: 'Booking manager added as user with correct role permissions', a: null },
+        { t: 'A2P 10DLC registration submitted', n: 'Approval takes 1–3 weeks. Submit day one.', a: null },
+      ]},
+      { label: 'BOOKING PIPELINE BUILT', items: [
+        { t: "Pipeline named 'Book Now' created", a: null },
+        { t: 'All 7 stages added: New Inquiry → Contacted → Consultation Scheduled → Deposit Paid → Session Booked → Session Complete → After Care + Google Review', a: null },
+        { t: 'Pipeline ID + all stage IDs pulled and stored for automation reference', a: null },
+      ]},
+      { label: 'TAGS & CLASSIFICATION', items: [
+        { t: 'All pipeline stage tags created (new-inquiry, contacted, consultation-scheduled, deposit-paid, session-booked, session-complete, after-care)', a: null },
+        { t: 'Source tags created (booking-form, facebook-lead, google-lead, referral)', a: null },
+        { t: 'Tag naming convention documented in client ops sheet', n: 'Lowercase, hyphenated. No exceptions.', a: null },
+      ]},
+    ]
+  },
+  {
+    num: '03', title: 'Website Build & Deploy',
+    sub: 'The storefront. Everything the client cares about passes through here.',
+    groups: [
+      { label: 'PAGES BUILT', items: [
+        { t: 'Home page — hero, specialty call-out, portfolio grid, CTA to /book-now', a: d => !!d.business?.website },
+        { t: 'Portfolio page — full gallery, organized by style', a: d => d.tattoo_extras?.has_portfolio || null },
+        { t: 'About page — artist story, credentials, trust-builders', a: d => d.tattoo_extras?.has_artist_bio || null },
+        { t: 'Book Now page — typeform booking flow (no nav distractions)', a: d => d.tattoo_extras?.has_tattoo_booking || null },
+        { t: 'Thank You page — confirmation + next-steps copy after form submit', a: null },
+        { t: 'Contact page — location, hours, social links', a: null },
+      ]},
+      { label: 'CONTENT & SEO', items: [
+        { t: "Custom SEO title on every page — targeting local tattoo searches", n: "e.g., 'Color Tattoo Artist in Miami | [Artist Name]'", a: d => d.seo_audit?.meta_title ? d.seo_audit.meta_title.length > 0 : null },
+        { t: 'Meta description on every page (150–160 chars, unique)', a: d => { const l = d.seo_audit?.meta_desc_length; return l ? l >= 120 : null; } },
+        { t: 'Minimum 10 portfolio photos loaded and optimized', a: d => d.business?.photos >= 10 },
+        { t: 'Alt text written for every image (accessibility + SEO)', a: d => { const t2 = d.seo_audit?.images_total; const m = d.seo_audit?.images_missing_alt; return (t2 && m !== undefined) ? m === 0 : null; } },
+        { t: 'Every page has a clear CTA pointing to /book-now', a: d => d.tattoo_extras?.has_tattoo_booking || null },
+        { t: 'Full-bleed override CSS applied to every custom HTML page', n: 'Our standard nuclear override pattern', a: null },
+      ]},
+      { label: 'DEPLOYMENT', items: [
+        { t: 'Custom domain connected (A record or CNAME)', a: d => !!d.business?.website },
+        { t: 'SSL certificate active — https loads clean, no warnings', a: d => d.business?.website ? d.business.website.startsWith('https://') : null },
+        { t: 'Site published and accessible at the correct URL', a: d => !!d.business?.website },
+        { t: 'All pages load in under 3 seconds on mobile', a: d => { const lcp = d.pagespeed_detail?.lcp; if (!lcp) return null; const v = parseFloat(lcp); return !isNaN(v) ? v <= 3.0 : null; } },
+        { t: 'Live chat widget active (if included in scope)', a: null },
+      ]},
+    ]
+  },
+  {
+    num: '04', title: 'Booking Form',
+    sub: 'The single most important conversion point on the site.',
+    groups: [
+      { label: 'FORM BUILD', items: [
+        { t: 'Luxury typeform-style form built (one question per screen)', a: d => d.tattoo_extras?.has_tattoo_booking || null },
+        { t: 'All 8 questions present: name, phone, email, concept, placement, size, timing, best call time', a: null },
+        { t: 'Progress bar visible at the top', a: null },
+        { t: 'Enter key advances to next question', a: null },
+        { t: 'Fade transitions smooth on desktop and mobile', a: null },
+        { t: 'Mobile layout tested on iPhone + Android (real devices, not just emulator)', a: null },
+      ]},
+      { label: 'SUBMISSION FLOW', items: [
+        { t: 'Form submission hits the correct proxy endpoint', a: null },
+        { t: 'Test submission creates a new contact in the CRM', n: 'Verify in CRM, not just in form response', a: null },
+        { t: 'Contact is assigned to the booking manager automatically', a: null },
+        { t: 'Full tattoo details saved as a note on the contact', a: null },
+        { t: "Tags 'booking-form' and 'new-inquiry' both applied", a: null },
+        { t: "New opportunity created in Book Now pipeline at 'New Inquiry' stage", a: null },
+        { t: 'Redirect to /thank-you page works cleanly', a: null },
+      ]},
+      { label: 'EDGE CASES TESTED', items: [
+        { t: 'Duplicate submission from same email handled gracefully', a: null },
+        { t: "Form still submits when user hits 'back' and resubmits", a: null },
+        { t: 'Special characters in fields (emojis, accents) save correctly', a: null },
+      ]},
+    ]
+  },
+  {
+    num: '05', title: 'Tracking & Analytics',
+    sub: "If it's not measured, it didn't happen.",
+    groups: [
+      { label: 'META PIXEL', items: [
+        { t: "New Meta Pixel created under client's Business Manager", a: null },
+        { t: 'Pixel ID logged in client ops sheet', a: null },
+        { t: 'Pixel installed in site header (fires on every page)', a: null },
+        { t: 'PageView event verified firing in Meta Test Events', a: null },
+        { t: 'Lead event fires on booking form submit (verified live)', a: null },
+        { t: 'Lead event selected as Conversion Event in Events Manager', a: null },
+        { t: 'Aggregated Event Measurement configured (iOS 14+ compliance)', a: null },
+      ]},
+      { label: 'GOOGLE ANALYTICS 4', items: [
+        { t: 'New GA4 property created for the client', a: null },
+        { t: 'Measurement ID and Property ID saved to ops sheet', a: null },
+        { t: 'Tracking code installed in site header', a: null },
+        { t: 'PageView events verified in Realtime report', a: null },
+        { t: "'generate_lead' event fires on booking form submit", a: null },
+        { t: 'Traffic source attribution tested (UTM parameters working)', a: null },
+      ]},
+      { label: 'EMAIL INFRASTRUCTURE', items: [
+        { t: 'Custom sending domain added (format: email.clientdomain.com)', a: null },
+        { t: 'DKIM records verified', a: null },
+        { t: 'SPF record verified', a: null },
+        { t: 'DMARC record verified', n: 'Minimum policy: p=none with reporting', a: null },
+        { t: 'Test email sent and received without spam flagging', a: null },
+      ]},
+    ]
+  },
+  {
+    num: '06', title: 'Automations & Ads',
+    sub: 'The 24/7 machine. This is where the time-freedom promise lives or dies.',
+    groups: [
+      { label: 'AUTOMATED WORKFLOWS LIVE', items: [
+        { t: 'New Inquiry → internal SMS to booking manager + email to artist', a: null },
+        { t: 'Consultation Scheduled → confirmation SMS to client', a: null },
+        { t: 'Deposit Paid → confirmation SMS to client', a: null },
+        { t: 'Session Booked → 24-hour reminder SMS fires automatically', a: null },
+        { t: 'After Care → review request SMS sent 1 day post-session', a: null },
+        { t: 'Review request follow-up fires after 3 days if no response', a: null },
+        { t: 'Google Reviews auto-respond enabled with brand-voice tone', a: null },
+        { t: 'All workflows end-to-end tested with a real test contact', n: "Use your own phone. Don't ship what you haven't received.", a: null },
+      ]},
+      { label: 'FACEBOOK ADS READY (IF IN SCOPE)', items: [
+        { t: 'Pixel connected to the ad account and firing Lead events', a: null },
+        { t: 'One campaign created with objective: OUTCOME_LEADS', a: null },
+        { t: 'One ad set created — full budget concentrated (no splits on day one)', a: null },
+        { t: '3 ads built: interview video + process reel + portfolio/before-after', a: null },
+        { t: 'All 3 ads use existing organic posts (not new dark-post creatives)', n: 'Social proof on the ad = higher CTR', a: null },
+        { t: 'Optimization set to OFFSITE_CONVERSIONS', a: null },
+        { t: 'Lead event confirmed as the conversion event', a: null },
+        { t: 'Destination set to /book-now (not native Meta form)', a: null },
+        { t: "Geographic targeting: artist's city + 25–30 mile radius", a: null },
+        { t: 'CTA set to LEARN_MORE or BOOK_NOW', a: null },
+      ]},
+    ]
+  },
+  {
+    num: '07', title: 'Final Sign-Off',
+    sub: 'No shortcuts.',
+    groups: [
+      { label: 'FINAL VERIFICATION — DO NOT SKIP', items: [
+        { t: 'Submitted a live test inquiry end-to-end (form → contact → pipeline → SMS received)', a: null },
+        { t: 'Clicked every CTA on every page — none 404, none broken', a: null },
+        { t: 'Mobile experience tested on a real iPhone AND a real Android', a: null },
+        { t: 'Client has been walked through the CRM and knows how to check opportunities', a: null },
+        { t: 'Reporting expectations set: monthly report cadence + what\'s included', a: null },
+        { t: 'Client has our emergency contact if something breaks', a: null },
+      ]},
+    ]
+  }
+];
+
+function renderChecklist(reportData) {
+  let totalItems = 0;
+  let doneCount  = 0;
+  let html = '';
+
+  CHECKLIST_DATA.forEach(section => {
+    html += `
+      <div class="cl-section">
+        <div class="cl-section-header">
+          <div class="cl-section-num">${section.num}</div>
+          <div class="cl-section-info">
+            <div class="cl-section-title">${section.title}</div>
+            <div class="cl-section-sub">${section.sub}</div>
+          </div>
+        </div>
+    `;
+    section.groups.forEach(group => {
+      html += `<div class="cl-group"><div class="cl-group-label">${group.label}</div>`;
+      group.items.forEach(item => {
+        totalItems++;
+        let autoResult = null;
+        try { autoResult = item.a ? item.a(reportData) : null; } catch(e) {}
+
+        let checkCls, checkIcon, labelCls, tag = '';
+        if (autoResult === true) {
+          checkCls = 'checked'; checkIcon = '&#10003;'; labelCls = 'checked-label';
+          tag = '<span class="cl-tag auto-detected">Detected</span>';
+          doneCount++;
+        } else if (autoResult === false) {
+          checkCls = 'unchecked'; checkIcon = ''; labelCls = '';
+        } else {
+          // null = not determinable from cold audit (JRZ will set up)
+          checkCls = 'unchecked'; checkIcon = ''; labelCls = '';
+        }
+
+        html += `
+          <div class="cl-item-row">
+            <div class="cl-checkbox ${checkCls}">${checkIcon}</div>
+            <div>
+              <div class="cl-item-label ${labelCls}">${item.t}${tag}</div>
+              ${item.n ? `<div class="cl-item-note">${item.n}</div>` : ''}
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('cl-sections').innerHTML    = html;
+  document.getElementById('cl-done-count').textContent    = doneCount;
+  document.getElementById('cl-missing-count').textContent = totalItems - doneCount;
 }
 
 // ── SCORE BAR TOGGLE ──────────────────────────────────────────────
@@ -1949,6 +2622,12 @@ function renderReport(d) {
       </div>
     `;
   }
+
+  // Store report globally (used by checklist + OAuth enhance)
+  currentReport = d;
+
+  // Render checklist (always, based on cold audit data)
+  renderChecklist(d);
 
   showReport();
 }
