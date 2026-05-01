@@ -1504,6 +1504,133 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .sbc-fill { height: 100%; border-radius: 3px; transition: width .8s var(--ease); }
 .sbc-val { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6); width: 32px; text-align: right; flex-shrink: 0; }
 
+/* ── SEARCH MODE TABS (BUSINESS NAME / @ INSTAGRAM) ────────────── */
+.search-mode-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 5px;
+}
+.smt-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255,255,255,.38);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .2s, color .2s, box-shadow .2s;
+}
+.smt-tab.active {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+.smt-tab:not(.active):hover { color: rgba(255,255,255,.65); }
+
+/* ── OAUTH INTERSTITIAL ─────────────────────────────────────────── */
+#oauth-interstitial {
+  display: none;
+  min-height: 100vh;
+  background: var(--bg);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 60px var(--px);
+  text-align: center;
+}
+.oi-inner { max-width: 480px; width: 100%; }
+.oi-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 18px;
+}
+.oi-checkmark {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0,204,102,.1);
+  border: 1px solid rgba(0,204,102,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 22px;
+  color: var(--green);
+  font-weight: 700;
+}
+.oi-title {
+  font-size: clamp(26px,4vw,40px);
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  margin-bottom: 14px;
+}
+.oi-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,.52);
+  line-height: 1.65;
+  margin-bottom: 32px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.oi-connect-btn {
+  display: block;
+  width: 100%;
+  padding: 18px 24px;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 14px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  margin-bottom: 12px;
+}
+.oi-connect-btn:hover:not(:disabled) { background: rgba(230,230,230,1); transform: scale(1.01); }
+.oi-connect-btn:disabled { opacity: .5; cursor: default; transform: none; }
+.oi-skip-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 24px;
+  background: transparent;
+  color: rgba(255,255,255,.38);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+  margin-bottom: 20px;
+}
+.oi-skip-btn:hover { color: rgba(255,255,255,.65); border-color: rgba(255,255,255,.25); }
+.oi-privacy {
+  font-size: 11px;
+  color: rgba(255,255,255,.2);
+  line-height: 1.5;
+}
+.oi-status {
+  font-size: 13px;
+  color: rgba(255,255,255,.5);
+  margin-top: 12px;
+  min-height: 20px;
+}
+
 /* ── IG MODE OAUTH INFO BANNER ──────────────────────────────────── */
 .ig-oauth-note {
   display: flex;
@@ -1573,6 +1700,12 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
     <!-- ── ARTIST AUDIT FORMS ──────────────────────────────────────── -->
     <div id="artist-audit-forms">
+
+    <!-- Search mode selector tabs -->
+    <div class="search-mode-tabs">
+      <button class="smt-tab active" id="smt-gmb" onclick="switchSearchMode('gmb')">Business Name</button>
+      <button class="smt-tab" id="smt-ig" onclick="switchSearchMode('ig')">@ Instagram Handle</button>
+    </div>
 
     <!-- Mode 1: Google Search (has a GMB or studio name) -->
     <div id="search-mode-gmb" class="search-mode-wrap">
@@ -1712,6 +1845,27 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="l-step-text">Building your Ink Systems report<span class="dot-anim"></span></div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  OAUTH INTERSTITIAL
+  Shown after audit data returns, BEFORE report renders.
+  Artist can connect Instagram for live data or skip for estimates.
+════════════════════════════════════════════════════════════════ -->
+<section id="oauth-interstitial">
+  <div class="oi-inner">
+    <div class="oi-checkmark">✓</div>
+    <div class="oi-eyebrow">Audit Complete</div>
+    <h2 class="oi-title">Your report is ready.</h2>
+    <p class="oi-sub">
+      Connect Instagram + Facebook to replace estimated data with your real numbers.<br>
+      10 seconds. Read-only. We never post or store your token.
+    </p>
+    <button class="oi-connect-btn" id="oi-connect-btn" onclick="oiConnect()">Connect Instagram + Facebook</button>
+    <button class="oi-skip-btn" onclick="oiSkip()">Skip — show my report with estimates</button>
+    <div class="oi-privacy">Read-only access · Business and Creator accounts only · Disconnect anytime</div>
+    <div class="oi-status" id="oi-status"></div>
   </div>
 </section>
 
@@ -2365,9 +2519,11 @@ let selectedName    = '';
 let selectedAddr    = '';
 let stepTimer       = null;
 let currentReport   = null;  // holds the full report data for checklist pre-fill
-let metaToken       = null;  // in-memory only — cleared on close
-let fbAppId         = '';
-let oauthEnabled    = false;
+let metaToken         = null;  // in-memory only — cleared on close
+let fbAppId           = '';
+let oauthEnabled      = false;
+let pendingReportData = null;  // holds API response while interstitial is shown
+let oiConnecting      = false; // true while interstitial OAuth popup is open
 
 // ── HLS VIDEO BACKGROUND ──────────────────────────────────────────
 (function initHeroVideo() {
@@ -2399,16 +2555,18 @@ window.addEventListener('beforeunload', clearOAuthData);
 window.addEventListener('message', handleOAuthMessage);
 
 // ── SEARCH MODE SWITCH ────────────────────────────────────────────
-function switchToIGMode() {
-  document.getElementById('search-mode-gmb').style.display = 'none';
-  document.getElementById('search-mode-ig').style.display  = 'block';
-  document.getElementById('ig-handle-input').focus();
+function switchSearchMode(mode) {
+  const isGmb = mode === 'gmb';
+  document.getElementById('smt-gmb').classList.toggle('active', isGmb);
+  document.getElementById('smt-ig').classList.toggle('active', !isGmb);
+  document.getElementById('search-mode-gmb').style.display = isGmb ? 'block' : 'none';
+  document.getElementById('search-mode-ig').style.display  = isGmb ? 'none'  : 'block';
+  if (isGmb) document.getElementById('search-input').focus();
+  else        document.getElementById('ig-handle-input').focus();
 }
-function switchToGMBMode() {
-  document.getElementById('search-mode-ig').style.display  = 'none';
-  document.getElementById('search-mode-gmb').style.display = 'block';
-  document.getElementById('search-input').focus();
-}
+// Backwards-compatible aliases used by inline onclick handlers
+function switchToIGMode()  { switchSearchMode('ig'); }
+function switchToGMBMode() { switchSearchMode('gmb'); }
 
 // ── INSTAGRAM HANDLE SEARCH ───────────────────────────────────────
 async function startIGSearch() {
@@ -2563,7 +2721,15 @@ async function startGrade() {
     }
 
     stopStepAnimation();
-    renderReport(data);
+
+    // If OAuth is enabled, intercept with the interstitial before showing report
+    if (oauthEnabled) {
+      pendingReportData = data;
+      oiConnecting      = false;
+      showInterstitial();
+    } else {
+      renderReport(data);
+    }
   } catch(e) {
     stopStepAnimation();
     showSearch();
@@ -2660,12 +2826,30 @@ function showLoading() {
   document.getElementById('report-section').style.display    = 'none';
   document.getElementById('checklist-section').style.display = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('oauth-interstitial').style.display = 'none';
 }
 function showSearch() {
   document.getElementById('search-section').style.display   = '';
   document.getElementById('loading-section').style.display  = 'none';
   document.getElementById('report-section').style.display   = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('oauth-interstitial').style.display = 'none';
+}
+function showInterstitial() {
+  document.getElementById('search-section').style.display    = 'none';
+  document.getElementById('loading-section').style.display   = 'none';
+  document.getElementById('report-section').style.display    = 'none';
+  document.getElementById('checklist-section').style.display = 'none';
+  document.getElementById('guest-report-section').style.display = 'none';
+  const oi = document.getElementById('oauth-interstitial');
+  oi.style.display        = 'flex';
+  oi.style.flexDirection  = 'column';
+  oi.style.alignItems     = 'center';
+  oi.style.justifyContent = 'center';
+  document.getElementById('oi-status').textContent = '';
+  const btn = document.getElementById('oi-connect-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Connect Instagram + Facebook'; }
+  window.scrollTo({ top: 0 });
 }
 function showReport() {
   document.getElementById('search-section').style.display = 'none';
@@ -2699,10 +2883,12 @@ function clearError() {
 
 // ── RUN AGAIN ─────────────────────────────────────────────────────
 function runAgain() {
-  selectedPlaceId = '';
-  selectedName    = '';
-  selectedAddr    = '';
-  currentReport   = null;
+  selectedPlaceId   = '';
+  selectedName      = '';
+  selectedAddr      = '';
+  currentReport     = null;
+  pendingReportData = null;
+  oiConnecting      = false;
   input.value = '';
   clearError();
   clearOAuthData();
@@ -2723,6 +2909,72 @@ function runAgain() {
 
 function dismissUpgradeBar() {
   document.getElementById('upgrade-bar').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// OAUTH INTERSTITIAL ACTIONS
+// ─────────────────────────────────────────────────────────────────
+
+function oiSkip() {
+  document.getElementById('oauth-interstitial').style.display = 'none';
+  if (pendingReportData) {
+    renderReport(pendingReportData);
+  }
+}
+
+function oiConnect() {
+  if (!oauthEnabled || !fbAppId) {
+    document.getElementById('oi-status').textContent = 'OAuth not configured. Click Skip to view your report.';
+    return;
+  }
+  const btn = document.getElementById('oi-connect-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Waiting for authorization...'; }
+  document.getElementById('oi-status').textContent = 'A Facebook window will open. Authorize read-only access.';
+
+  const redirectUri = encodeURIComponent(`${API}/oauth-callback`);
+  const scope       = encodeURIComponent('instagram_basic,pages_show_list,pages_read_engagement');
+  const oauthUrl    = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&display=popup`;
+
+  oiConnecting = true;
+  const popup  = window.open(oauthUrl, 'meta_oauth', 'width=580,height=640,left=200,top=100');
+  if (!popup) {
+    document.getElementById('oi-status').textContent = 'Popup blocked. Allow popups and try again, or click Skip.';
+    oiConnecting = false;
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect Instagram + Facebook'; }
+  }
+}
+
+async function fetchEnhancedDataThenRender(token) {
+  if (!pendingReportData) { oiSkip(); return; }
+  const statusEl = document.getElementById('oi-status');
+  statusEl.textContent = 'Connected! Fetching your live Instagram data...';
+
+  try {
+    const r = await fetch(`${API}/api/enhance-tattoo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, place_id: pendingReportData.place_id || '' })
+    });
+    const enhData = await r.json();
+
+    // Hide interstitial, render base report
+    document.getElementById('oauth-interstitial').style.display = 'none';
+    renderReport(pendingReportData);
+
+    // If enhancement succeeded, overlay live social data and hide upgrade bar
+    if (r.ok && !enhData.error) {
+      metaToken = token;
+      renderEnhancedSocial(enhData);
+      const bar = document.getElementById('upgrade-bar');
+      if (bar) bar.style.display = 'none';
+    }
+  } catch(e) {
+    statusEl.textContent = 'Network error. Showing report with estimates.';
+    setTimeout(() => {
+      document.getElementById('oauth-interstitial').style.display = 'none';
+      renderReport(pendingReportData);
+    }, 1800);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2819,13 +3071,27 @@ function handleOAuthMessage(event) {
 
   if (msg.token) {
     metaToken = msg.token;
-    setModalStatus('Connected. Fetching your real data...', 'success');
-    fetchEnhancedData(msg.token);
+    if (oiConnecting) {
+      // Came from the interstitial — render report with live data overlay
+      oiConnecting = false;
+      fetchEnhancedDataThenRender(msg.token);
+    } else {
+      // Came from the in-report OAuth modal
+      setModalStatus('Connected. Fetching your real data...', 'success');
+      fetchEnhancedData(msg.token);
+    }
   } else if (msg.type === 'meta_error') {
-    setModalStatus(msg.error || 'Authorization failed. Please try again.', 'error');
-    const btn = document.getElementById('connect-btn');
-    btn.disabled = false;
-    document.getElementById('connect-btn-text').textContent = 'Connect Instagram + Facebook';
+    oiConnecting = false;
+    if (document.getElementById('oauth-interstitial').style.display !== 'none') {
+      document.getElementById('oi-status').textContent = msg.error || 'Authorization failed. Try again or skip.';
+      const btn = document.getElementById('oi-connect-btn');
+      if (btn) { btn.disabled = false; btn.textContent = 'Connect Instagram + Facebook'; }
+    } else {
+      setModalStatus(msg.error || 'Authorization failed. Please try again.', 'error');
+      const btn = document.getElementById('connect-btn');
+      btn.disabled = false;
+      document.getElementById('connect-btn-text').textContent = 'Connect Instagram + Facebook';
+    }
   }
 }
 
@@ -4011,7 +4277,8 @@ function renderGuestReport(d) {
   }
 
   // Market stats
-  document.getElementById('gr-artist-count').textContent = comp.artist_count ?? '—';
+  document.getElementById('gr-artist-count').textContent =
+    comp.artist_count_capped ? '20+' : (comp.artist_count ?? '—');
   document.getElementById('gr-avg-price').textContent    = bench.avg_price ? fmt$(bench.avg_price) : '—';
   document.getElementById('gr-avg-reviews').textContent  = comp.avg_reviews ? comp.avg_reviews.toFixed(0) : '—';
 
