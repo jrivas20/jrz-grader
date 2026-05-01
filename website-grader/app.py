@@ -2669,6 +2669,46 @@ def autocomplete_tattoo():
         return jsonify({'predictions': [], 'error': str(e)})
 
 
+@app.route('/api/find-tattoo-by-name')
+def find_tattoo_by_name():
+    """
+    Text-search Google Places for a tattoo artist by name (no GMB required).
+    Used when an artist searches by Instagram handle / display name.
+    Returns up to 5 candidate place_ids with names + addresses for the frontend to confirm.
+    """
+    name = request.args.get('name', '').strip()
+    city = request.args.get('city', '').strip()
+    if not name:
+        return jsonify({'results': []})
+    try:
+        query = f'{name} tattoo {city}'.strip() if city else f'{name} tattoo'
+        resp = requests.get(
+            'https://maps.googleapis.com/maps/api/place/textsearch/json',
+            params={
+                'query': query,
+                'key':   GOOGLE_KEY,
+            },
+            timeout=8
+        )
+        raw = resp.json().get('results', [])
+        # Only include tattoo-related results
+        filtered = [
+            {
+                'place_id': r['place_id'],
+                'name':     r.get('name', ''),
+                'address':  r.get('formatted_address', ''),
+                'rating':   r.get('rating', 0),
+                'reviews':  r.get('user_ratings_total', 0),
+            }
+            for r in raw
+            if 'tattoo_parlor' in r.get('types', []) or
+               any(kw in r.get('name', '').lower() for kw in {'tattoo', 'ink', 'piercing'})
+        ][:5]
+        return jsonify({'results': filtered})
+    except Exception as e:
+        return jsonify({'results': [], 'error': str(e)})
+
+
 @app.route('/api/grade-tattoo')
 def grade_tattoo():
     place_id = request.args.get('place_id', '').strip()
@@ -2724,26 +2764,36 @@ def grade_tattoo():
     loc = place.get('geometry', {}).get('location', {})
     if loc:
         try:
+            # keyword=tattoo is the hard gate — Google only returns places
+            # where "tattoo" appears in name, description, or reviews.
+            # type=tattoo_parlor further restricts the category.
+            # The post-filter is the third safety layer.
             nr = requests.get(
                 'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
                 params={
                     'location': f"{loc['lat']},{loc['lng']}",
                     'radius':   8000,
                     'type':     'tattoo_parlor',
+                    'keyword':  'tattoo',
                     'key':      GOOGLE_KEY,
                 },
                 timeout=8
             )
             nearby = nr.json().get('results', [])
+            TATTOO_FILTER = {'tattoo', 'ink', 'piercing', 'tat '}
             competitors = [
                 r for r in nearby
                 if r.get('place_id') != place_id
                 and r.get('business_status') == 'OPERATIONAL'
                 and (
                     'tattoo_parlor' in r.get('types', []) or
-                    any(kw in r.get('name', '').lower()
-                        for kw in {'tattoo', 'ink', 'piercing', 'studio'})
+                    any(kw in r.get('name', '').lower() for kw in TATTOO_FILTER)
                 )
+                # Hard exclude known non-tattoo categories
+                and not any(xt in (r.get('types') or []) for xt in [
+                    'lodging', 'hotel', 'restaurant', 'gas_station',
+                    'grocery_or_supermarket', 'bank', 'hospital',
+                ])
             ][:5]
         except Exception:
             competitors = []

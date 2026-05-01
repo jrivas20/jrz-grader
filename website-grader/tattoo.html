@@ -250,6 +250,122 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   margin-right: auto;
   line-height: 1.5;
 }
+.search-mode-wrap { width: 100%; max-width: 620px; margin: 0 auto; }
+.search-mode-alt {
+  margin-top: 12px;
+  font-size: 12px;
+  color: rgba(255,255,255,.28);
+  text-align: center;
+}
+.mode-toggle-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.5);
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+  transition: color .15s;
+}
+.mode-toggle-btn:hover { color: rgba(255,255,255,.8); }
+/* Instagram handle mode fields */
+.ig-handle-prefix {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255,255,255,.4);
+  pointer-events: none;
+}
+.ig-handle-field {
+  width: 100%;
+  height: 64px;
+  background: rgba(255,255,255,.06);
+  border: 1.5px solid rgba(255,255,255,.14);
+  border-radius: 14px 14px 0 0;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 400;
+  padding: 0 200px 0 42px;
+  outline: none;
+  transition: border .2s, background .2s;
+}
+.ig-handle-field:focus { border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.09); }
+.ig-city-field {
+  width: 100%;
+  height: 52px;
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 0 200px 0 22px;
+  outline: none;
+  transition: border .2s;
+  margin-bottom: 4px;
+}
+.ig-city-field::placeholder { color: rgba(255,255,255,.22); }
+.ig-city-field:focus { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.07); }
+/* IG search: position the Run Audit button differently */
+#search-mode-ig .search-wrap { position: relative; }
+#search-mode-ig .search-btn {
+  top: 32px; /* center between the two inputs */
+}
+/* IG results list */
+.ig-results {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.ig-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+  transition: background .15s;
+  gap: 12px;
+}
+.ig-result-item:last-child { border-bottom: none; }
+.ig-result-item:hover { background: rgba(255,255,255,.04); }
+.ig-result-name { font-size: 14px; font-weight: 600; color: #fff; }
+.ig-result-addr { font-size: 12px; color: rgba(255,255,255,.35); margin-top: 2px; }
+.ig-result-meta { font-size: 12px; color: rgba(255,255,255,.4); text-align: right; white-space: nowrap; }
+.ig-result-select-btn {
+  padding: 6px 14px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ig-result-select-btn:hover { background: rgba(255,255,255,.15); }
+.ig-no-gmb-banner {
+  padding: 16px 18px;
+  font-size: 13px;
+  color: rgba(255,200,80,.85);
+  line-height: 1.55;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ig-no-gmb-banner-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 
 /* ═══════════════════════════════════════════════════════════════════
    LOADING
@@ -479,7 +595,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 }
 .score-bar-header:hover{background:rgba(255,255,255,.03)}
 .sbh-left{display:flex;align-items:center;gap:12px;flex:1}
-.sbh-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.sbh-icon{width:28px;height:28px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.35)}
+.sbh-icon svg{width:16px;height:16px;stroke:rgba(255,255,255,.35);fill:none;stroke-width:1.5}
 .sbh-name{font-size:14px;font-weight:600}
 .sbh-max{font-size:11px;color:var(--muted);font-weight:500}
 .sbh-right{display:flex;align-items:center;gap:14px}
@@ -1029,43 +1146,54 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     </div>
 
     <h1 class="search-h1">
-      Are clients choosing<br>
-      <em>another artist</em><br>
-      over you?
+      Your Art Is Undeniable.<br>
+      <em>Your Calendar Isn't Full.</em>
     </h1>
 
     <p class="search-sub">
-      Find out exactly what's blocking your bookings — Google visibility, Instagram presence, online booking system, and local competition. Free, instant, built only for tattoo artists.
+      Find out exactly what's blocking your bookings — Google visibility, Instagram presence, booking system, and competitor ad activity. Built exclusively for tattoo artists.
     </p>
 
-    <div class="search-wrap">
-      <input id="search-input" type="text" placeholder="Search your studio or artist name and city..." autocomplete="off">
-      <button class="search-btn" onclick="startGrade()">Grade My Studio</button>
-      <div id="autocomplete-list"></div>
+    <!-- Mode 1: Google Search (has a GMB or studio name) -->
+    <div id="search-mode-gmb" class="search-mode-wrap">
+      <div class="search-wrap">
+        <input id="search-input" type="text" placeholder="Search your studio or artist name + city..." autocomplete="off">
+        <button class="search-btn" onclick="startGrade()">Run Audit</button>
+        <div id="autocomplete-list"></div>
+      </div>
+      <div id="search-error" class="search-error-banner"></div>
+      <div class="search-mode-alt">
+        No Google Business listing? <button class="mode-toggle-btn" onclick="switchToIGMode()">Search by Instagram handle instead</button>
+      </div>
     </div>
 
-    <div id="search-error" class="search-error-banner"></div>
+    <!-- Mode 2: Instagram handle search -->
+    <div id="search-mode-ig" class="search-mode-wrap" style="display:none">
+      <div class="search-wrap">
+        <div class="ig-handle-prefix">@</div>
+        <input id="ig-handle-input" type="text" class="ig-handle-field" placeholder="yourhandle (no @)" autocomplete="off">
+        <input id="ig-city-input" type="text" class="ig-city-field" placeholder="City, State" autocomplete="off">
+        <button class="search-btn" onclick="startIGSearch()">Find My Profile</button>
+      </div>
+      <div id="ig-search-error" class="search-error-banner"></div>
+      <div id="ig-results-list" class="ig-results" style="display:none"></div>
+      <div class="search-mode-alt">
+        Have a Google Business profile? <button class="mode-toggle-btn" onclick="switchToGMBMode()">Search by studio name instead</button>
+      </div>
+    </div>
 
     <div class="proof-strip">
-      <div class="proof-item">
-        <div class="proof-label">Google Map Pack Position</div>
-      </div>
+      <div class="proof-item"><div class="proof-label">Google Map Pack</div></div>
       <div class="proof-dot"></div>
-      <div class="proof-item">
-        <div class="proof-label">Instagram Presence Score</div>
-      </div>
+      <div class="proof-item"><div class="proof-label">Instagram Score</div></div>
       <div class="proof-dot"></div>
-      <div class="proof-item">
-        <div class="proof-label">Online Booking Audit</div>
-      </div>
+      <div class="proof-item"><div class="proof-label">Booking System Audit</div></div>
       <div class="proof-dot"></div>
-      <div class="proof-item">
-        <div class="proof-label">Review Velocity + Trust</div>
-      </div>
+      <div class="proof-item"><div class="proof-label">Review Velocity</div></div>
       <div class="proof-dot"></div>
-      <div class="proof-item">
-        <div class="proof-label">Competitor Analysis</div>
-      </div>
+      <div class="proof-item"><div class="proof-label">Competitor Ads</div></div>
+      <div class="proof-dot"></div>
+      <div class="proof-item"><div class="proof-label">Revenue Gap</div></div>
     </div>
 
   </div>
@@ -1076,9 +1204,6 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 ════════════════════════════════════════════════════════════════ -->
 <section id="loading-section">
   <div class="loading-inner">
-    <div class="loading-logo">
-      <img src="https://assets.cdn.filesafe.space/d7iUPfamAaPlSBNj6IhT/media/69dc72b1b30bc5237146bf95.png" alt="JRZ Ink Systems">
-    </div>
     <div class="loading-biz-tag" id="loading-biz-tag">JRZ INK SYSTEMS · STUDIO AUDIT</div>
     <div class="loading-h">Running your<br>full audit<span id="loading-biz-suffix"></span></div>
 
@@ -1183,7 +1308,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   <div class="report-header">
     <div>
       <div class="biz-name-row">
-        <div class="biz-type-badge">🎨 TATTOO STUDIO</div>
+        <div class="biz-type-badge">TATTOO STUDIO AUDIT</div>
       </div>
       <h2 class="biz-title" id="rpt-biz-name"></h2>
       <div class="biz-meta">
@@ -1223,10 +1348,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="score-bar-row" id="bar-visibility">
         <div class="score-bar-header" onclick="toggleBar('visibility')">
           <div class="sbh-left">
-            <div class="sbh-icon">📍</div>
+            <div class="sbh-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
             <div>
               <div class="sbh-name">Digital Visibility</div>
-              <div class="sbh-max">Google Profile + Local Search / 20 pts</div>
+              <div class="sbh-max">Google Profile · Local Search · Keyword Rankings / 20 pts</div>
             </div>
           </div>
           <div class="sbh-right">
@@ -1241,10 +1366,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="score-bar-row" id="bar-trust">
         <div class="score-bar-header" onclick="toggleBar('trust')">
           <div class="sbh-left">
-            <div class="sbh-icon">⭐</div>
+            <div class="sbh-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
             <div>
               <div class="sbh-name">Trust & Reputation</div>
-              <div class="sbh-max">Reviews + Portfolio + Social Proof / 20 pts</div>
+              <div class="sbh-max">Reviews · Portfolio · Social Proof / 20 pts</div>
             </div>
           </div>
           <div class="sbh-right">
@@ -1259,10 +1384,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="score-bar-row" id="bar-booking_funnel">
         <div class="score-bar-header" onclick="toggleBar('booking_funnel')">
           <div class="sbh-left">
-            <div class="sbh-icon">📅</div>
+            <div class="sbh-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
             <div>
-              <div class="sbh-name">Booking Funnel</div>
-              <div class="sbh-max">Online Booking + Conversion System / 20 pts</div>
+              <div class="sbh-name">Booking System</div>
+              <div class="sbh-max">Online Booking · Conversion Funnel / 20 pts</div>
             </div>
           </div>
           <div class="sbh-right">
@@ -1277,10 +1402,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="score-bar-row" id="bar-followup">
         <div class="score-bar-header" onclick="toggleBar('followup')">
           <div class="sbh-left">
-            <div class="sbh-icon">🔄</div>
+            <div class="sbh-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
             <div>
               <div class="sbh-name">Follow-Up & Retention</div>
-              <div class="sbh-max">Review Response + Velocity + Re-engagement / 15 pts</div>
+              <div class="sbh-max">Review Response · Velocity · Re-engagement / 15 pts</div>
             </div>
           </div>
           <div class="sbh-right">
@@ -1295,10 +1420,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="score-bar-row" id="bar-content">
         <div class="score-bar-header" onclick="toggleBar('content')">
           <div class="sbh-left">
-            <div class="sbh-icon">📸</div>
+            <div class="sbh-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
             <div>
               <div class="sbh-name">Content & Instagram</div>
-              <div class="sbh-max">Instagram + Portfolio + Style Presence / 15 pts</div>
+              <div class="sbh-max">Instagram · Portfolio · Style Presence / 15 pts</div>
             </div>
           </div>
           <div class="sbh-right">
@@ -1313,10 +1438,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="score-bar-row" id="bar-competitor">
         <div class="score-bar-header" onclick="toggleBar('competitor')">
           <div class="sbh-left">
-            <div class="sbh-icon">🏆</div>
+            <div class="sbh-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
             <div>
-              <div class="sbh-name">Competitor Position</div>
-              <div class="sbh-max">Map Pack + Review Standing vs Market / 10 pts</div>
+              <div class="sbh-name">Market Position</div>
+              <div class="sbh-max">Map Pack · Review Standing vs Competitors / 10 pts</div>
             </div>
           </div>
           <div class="sbh-right">
@@ -1365,16 +1490,16 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
       <!-- Map Pack -->
       <div class="main-section" id="map-pack-section" style="display:none">
-        <div class="main-section-title">🗺️ Google Map Pack Visibility</div>
+        <div class="main-section-title">Google Map Pack Visibility</div>
         <div class="map-pack-rows" id="map-pack-rows"></div>
       </div>
 
       <!-- Competitor Ad Activity -->
       <div class="main-section" id="ad-library-section" style="display:none">
-        <div class="main-section-title">📢 Competitor Ad Activity
-          <span style="font-size:11px;font-weight:600;letter-spacing:1px;padding:3px 10px;border-radius:999px;background:rgba(204,41,54,.1);color:rgba(204,41,54,.8);border:1px solid rgba(204,41,54,.2);margin-left:4px">META AD LIBRARY</span>
+        <div class="main-section-title">Competitor Ad Activity
+          <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.1);margin-left:8px">META AD LIBRARY</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5" id="ad-library-intro"></div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6" id="ad-library-intro"></div>
         <div id="ad-library-cards" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
 
@@ -1387,16 +1512,16 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="review-intel-grid" id="review-intel-grid"></div>
         <div class="connect-prompt" style="margin-top:12px">
           <div class="cp-left">
-            <div class="cp-tag">GOOGLE MY BUSINESS · GOOGLE BUSINESS PROFILE API</div>
-            <div class="cp-text">Connect your Google Business Profile to see exact review velocity, impression count, calls, direction requests, and website clicks from your GBP. Phase 2 — available when GBP API is configured.</div>
+            <div class="cp-tag">GOOGLE BUSINESS PROFILE API</div>
+            <div class="cp-text">Connect your Google Business Profile to unlock exact review velocity, impression count, calls, direction requests, and website clicks. Phase 2 — available when GBP API is configured.</div>
           </div>
-          <button class="cp-btn" style="opacity:.5;cursor:not-allowed">Coming in Phase 2</button>
+          <button class="cp-btn" style="opacity:.45;cursor:not-allowed">Coming in Phase 2</button>
         </div>
       </div>
 
       <!-- Tattoo Extras -->
       <div class="main-section" id="tattoo-extras-section">
-        <div class="main-section-title">🎨 Studio Signals</div>
+        <div class="main-section-title">Studio Signals</div>
         <div class="tattoo-extras-grid" id="tattoo-extras-grid"></div>
         <div id="detected-styles-wrap" style="display:none;margin-top:16px">
           <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">DETECTED TATTOO STYLES</div>
@@ -1406,18 +1531,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
       <!-- Keyword Rankings -->
       <div class="main-section" id="kw-section" style="display:none">
-        <div class="main-section-title">🔍 Keyword Rankings</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">
-          Checking organic positions for your top 5 tattoo keywords in your market (top 30 results).
+        <div class="main-section-title">Keyword Rankings</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+          Organic positions for your top tattoo keywords in your market — top 30 results tracked.
         </div>
         <div class="kw-rows" id="kw-rows"></div>
       </div>
 
       <!-- Roadmap -->
       <div class="main-section">
-        <div class="main-section-title">🛠️ Improvement Roadmap</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5">
-          Every issue mapped to a concrete JRZ Ink Systems fix — with timelines and expected outcomes.
+        <div class="main-section-title">Improvement Roadmap</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6">
+          Every issue mapped to a JRZ Ink Systems fix — timelines and expected outcomes included.
         </div>
         <div class="roadmap-steps" id="roadmap-steps"></div>
       </div>
@@ -1642,6 +1767,83 @@ fetch(`${API}/api/config`).then(r => r.json()).then(c => {
 window.addEventListener('beforeunload', clearOAuthData);
 window.addEventListener('message', handleOAuthMessage);
 
+// ── SEARCH MODE SWITCH ────────────────────────────────────────────
+function switchToIGMode() {
+  document.getElementById('search-mode-gmb').style.display = 'none';
+  document.getElementById('search-mode-ig').style.display  = 'block';
+  document.getElementById('ig-handle-input').focus();
+}
+function switchToGMBMode() {
+  document.getElementById('search-mode-ig').style.display  = 'none';
+  document.getElementById('search-mode-gmb').style.display = 'block';
+  document.getElementById('search-input').focus();
+}
+
+// ── INSTAGRAM HANDLE SEARCH ───────────────────────────────────────
+async function startIGSearch() {
+  const handle = document.getElementById('ig-handle-input').value.trim().replace(/^@/, '');
+  const city   = document.getElementById('ig-city-input').value.trim();
+  const errEl  = document.getElementById('ig-search-error');
+  const resEl  = document.getElementById('ig-results-list');
+
+  errEl.style.display = 'none';
+  resEl.style.display = 'none';
+
+  if (!handle) {
+    errEl.textContent = 'Enter your Instagram handle (without the @)';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API}/api/find-tattoo-by-name?name=${encodeURIComponent(handle)}&city=${encodeURIComponent(city)}`);
+    const data = await r.json();
+    const results = data.results || [];
+
+    if (results.length === 0) {
+      resEl.innerHTML = `
+        <div class="ig-no-gmb-banner">
+          <div class="ig-no-gmb-banner-icon">⚠</div>
+          <div>
+            <strong style="color:rgba(255,200,80,.9)">No Google Business Profile found for "${handle}".</strong><br>
+            <span style="font-size:12px;color:rgba(255,255,255,.4)">This is a critical issue — without a Google listing, clients searching "tattoo near me" cannot find you. JRZ Ink Systems can set up and optimize your profile in 48 hours.</span>
+          </div>
+        </div>
+      `;
+      resEl.style.display = 'block';
+      return;
+    }
+
+    resEl.innerHTML = `
+      <div style="padding:12px 18px 8px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Select your studio to run the full audit</div>
+      ${results.map(r => `
+        <div class="ig-result-item" onclick="selectIGResult('${r.place_id}','${r.name.replace(/'/g,"\\'")}','${r.address.replace(/'/g,"\\'")}')">
+          <div>
+            <div class="ig-result-name">${r.name}</div>
+            <div class="ig-result-addr">${r.address}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="ig-result-meta">★ ${r.rating || '—'} · ${r.reviews || 0} reviews</div>
+            <button class="ig-result-select-btn">Run Audit</button>
+          </div>
+        </div>
+      `).join('')}
+    `;
+    resEl.style.display = 'block';
+  } catch(e) {
+    errEl.textContent = 'Search failed. Check your connection and try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+function selectIGResult(placeId, name, addr) {
+  selectedPlaceId = placeId;
+  selectedName    = name;
+  selectedAddr    = addr;
+  document.getElementById('ig-results-list').style.display = 'none';
+  startGrade(); // runs the full audit
+}
+
 // ── AUTOCOMPLETE ─────────────────────────────────────────────────
 const input = document.getElementById('search-input');
 const acList = document.getElementById('autocomplete-list');
@@ -1655,6 +1857,9 @@ input.addEventListener('input', () => {
 });
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter') startGrade();
+});
+document.getElementById('ig-handle-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startIGSearch();
 });
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) acList.style.display = 'none';
