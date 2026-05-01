@@ -3499,31 +3499,33 @@ async function showIGPageSelector(token, pages) {
   const errEl = document.getElementById('ig-search-error');
 
   if (pagesWithIG.length === 0) {
-    // No pages have IG connected — offer public scrape fallback
+    // No IG Business/Creator account linked to any FB page
     const savedHandle = pendingIGHandle;
     const savedCity   = pendingIGCity;
     errEl.innerHTML = `
-      <strong style="color:rgba(255,200,80,.9)">No Instagram Business Account found.</strong><br>
-      <span style="font-size:12px;line-height:1.6;display:block;margin-top:4px">
-        Make sure your Instagram account is:<br>
-        1. Converted to a <strong>Business or Creator account</strong><br>
-        2. Connected to a <strong>Facebook Page</strong> you manage<br><br>
-        You can do this in Instagram Settings → Account → Switch to Professional Account.
+      <strong style="color:rgba(255,200,80,.9);display:block;margin-bottom:10px">
+        Instagram account not connected to a Facebook Page.
+      </strong>
+      <span style="font-size:12px;line-height:1.8;display:block;color:rgba(255,255,255,.55)">
+        We found your Facebook account but couldn't find an Instagram Business or Creator account linked to it.
+        To unlock the full audit, do this once:<br><br>
+        <span style="color:#fff;font-weight:700">Step 1</span> — Open Instagram → Settings → Account → <strong style="color:#fff">Switch to Professional Account</strong> (Creator or Business)<br>
+        <span style="color:#fff;font-weight:700">Step 2</span> — In Instagram → Settings → Account → <strong style="color:#fff">Linked Accounts</strong> → Connect Facebook<br>
+        <span style="color:#fff;font-weight:700">Step 3</span> — Come back here and click "Search" again
       </span>
-      ${savedHandle ? `
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
-        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px">
-          Or analyze <strong style="color:rgba(255,255,255,.7)">@${savedHandle}</strong> as a public profile — limited data, no engagement stats.
-        </div>
-        <button onclick="gradeIGPublic('${savedHandle}','${savedCity}')"
-          style="padding:9px 18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
-                 border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;
-                 cursor:pointer;transition:background .15s"
-          onmouseover="this.style.background='rgba(255,255,255,.14)'"
-          onmouseout="this.style.background='rgba(255,255,255,.08)'">
-          Analyze Public Profile →
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <button onclick="startIGModeOAuth()"
+          style="padding:9px 18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+                 border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer">
+          Try Again →
         </button>
-      </div>` : ''}
+        ${savedHandle ? `
+        <button onclick="gradeIGPublic('${savedHandle}','${savedCity}')"
+          style="padding:9px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);
+                 border-radius:8px;color:rgba(255,255,255,.5);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer">
+          Try Public Profile (limited)
+        </button>` : ''}
+      </div>
     `;
     errEl.style.display = 'block';
     resEl.style.display = 'none';
@@ -6508,7 +6510,22 @@ async function gradeIGPublic(handle, city) {
     if (!r.ok || data.error) {
       showSearch();
       const errEl = document.getElementById('ig-search-error');
-      errEl.innerHTML = `Could not find <strong>@${handle}</strong>. Check the handle and try again.`;
+      if (data.ig_blocked) {
+        errEl.innerHTML = `
+          <strong style="display:block;margin-bottom:8px;color:rgba(255,200,80,.9)">Instagram blocked the automated lookup.</strong>
+          <span style="font-size:12px;line-height:1.7;display:block;color:rgba(255,255,255,.5)">
+            This happens when Instagram detects server-side requests without a login session.
+            To audit <strong style="color:#fff">@${handle}</strong>, the account owner needs to:<br>
+            1. Switch to a <strong style="color:#fff">Creator or Business</strong> account on Instagram<br>
+            2. Connect it to a <strong style="color:#fff">Facebook Page</strong><br>
+            3. Come back → use the <strong style="color:#fff">@ INSTAGRAM</strong> tab → log in with Facebook
+          </span>
+          <button onclick="startIGModeOAuth()" style="margin-top:12px;padding:9px 18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer">
+            Try Facebook Login Instead →
+          </button>`;
+      } else {
+        errEl.innerHTML = `Could not find <strong>@${handle}</strong>. Double-check the handle (no @) and try again.`;
+      }
       errEl.style.display = 'block';
       return;
     }

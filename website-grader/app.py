@@ -4145,24 +4145,29 @@ def grade_ig_public():
     except Exception:
         pass
 
-    # ── Method 2: HTML page parse (ld+json schema) ──────────────────
+    # ── Method 2: HTML page parse (ld+json + meta tags) ────────────
     if not profile_data:
         try:
             resp2 = requests.get(
                 f'https://www.instagram.com/{handle}/',
                 headers={
                     'User-Agent': (
-                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-                        'AppleWebKit/537.36 (KHTML, like Gecko) '
-                        'Chrome/122.0.0.0 Safari/537.36'
+                        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) '
+                        'AppleWebKit/605.1.15 (KHTML, like Gecko) '
+                        'Version/17.4 Mobile/15E148 Safari/604.1'
                     ),
-                    'Accept':         'text/html,application/xhtml+xml',
+                    'Accept':         'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language':'en-US,en;q=0.9',
+                    'Accept-Encoding':'gzip, deflate, br',
+                    'Connection':     'keep-alive',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
                 },
                 timeout=10
             )
             if resp2.status_code == 200:
                 soup = BeautifulSoup(resp2.text, 'lxml')
+                # Try ld+json first
                 for script in soup.find_all('script', type='application/ld+json'):
                     try:
                         jd = json.loads(script.string or '{}')
@@ -4186,17 +4191,95 @@ def grade_ig_public():
                             break
                     except Exception:
                         continue
+                # Fallback: og:description meta tag (often contains "X Followers, Y Following")
+                if not profile_data:
+                    og_desc = soup.find('meta', property='og:description')
+                    og_title = soup.find('meta', property='og:title')
+                    if og_desc and og_desc.get('content'):
+                        desc = og_desc['content']
+                        title = (og_title.get('content', '') if og_title else '')
+                        followers = 0
+                        m = re.search(r'([\d,.]+[KMk]?)\s*[Ff]ollowers', desc)
+                        if m:
+                            raw = m.group(1).replace(',', '').upper()
+                            if 'K' in raw:
+                                followers = int(float(raw.replace('K', '')) * 1000)
+                            elif 'M' in raw:
+                                followers = int(float(raw.replace('M', '')) * 1_000_000)
+                            else:
+                                try: followers = int(raw)
+                                except: pass
+                        # Extract bio from description (after the follower counts)
+                        bio = re.sub(r'^[\d,.KMk]+\s*[Ff]ollowers.*?[Ff]ollowing.*?-\s*', '', desc).strip()
+                        profile_data = {
+                            'username':    handle,
+                            'full_name':   title.replace(' (@' + handle + ')', '').replace(' • Instagram', '').strip(),
+                            'biography':   bio,
+                            'website':     '',
+                            'followers':   followers,
+                            'following':   0,
+                            'media_count': 0,
+                            'is_private':  False,
+                            'is_business': False,
+                        }
         except Exception:
             pass
 
+    # ── Method 3: Instagram internal API with alternate app IDs ─────
+    if not profile_data:
+        for app_id in ('936619743392459', '1217981644879628', '124024574287414'):
+            try:
+                r3 = requests.get(
+                    'https://www.instagram.com/api/v1/users/web_profile_info/',
+                    params={'username': handle},
+                    headers={
+                        'X-IG-App-ID':    app_id,
+                        'User-Agent':     (
+                            'Mozilla/5.0 (Linux; Android 13; Pixel 7) '
+                            'AppleWebKit/537.36 (KHTML, like Gecko) '
+                            'Chrome/122.0.6261.119 Mobile Safari/537.36'
+                        ),
+                        'Accept':         'application/json',
+                        'Accept-Language':'en-US',
+                        'Referer':        f'https://www.instagram.com/{handle}/',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    timeout=8
+                )
+                if r3.status_code == 200:
+                    jd3  = r3.json()
+                    user = jd3.get('data', {}).get('user', {})
+                    if user:
+                        bio_links = user.get('bio_links', []) or []
+                        website   = (user.get('external_url', '') or
+                                     (bio_links[0].get('url', '') if bio_links else ''))
+                        profile_data = {
+                            'username':    user.get('username', handle),
+                            'full_name':   user.get('full_name', ''),
+                            'biography':   user.get('biography', ''),
+                            'website':     website,
+                            'followers':   user.get('edge_followed_by', {}).get('count', 0),
+                            'following':   user.get('edge_follow', {}).get('count', 0),
+                            'media_count': user.get('edge_owner_to_timeline_media', {}).get('count', 0),
+                            'is_private':  user.get('is_private', False),
+                            'is_business': (user.get('is_business', False) or
+                                           user.get('is_professional_account', False)),
+                        }
+                        break
+            except Exception:
+                continue
+
     if not profile_data:
         return jsonify({
-            'error': 'could_not_fetch',
+            'error':     'ig_blocked',
+            'ig_blocked': True,
             'message': (
-                f'Could not load public profile for @{handle}. '
-                'Instagram may have blocked the request, or the account is private. '
-                'Ask the artist to convert to a Business/Creator account and link to a Facebook Page '
-                'to unlock the full OAuth-based audit.'
+                f'Instagram is blocking automated lookups for @{handle} from our servers. '
+                'This is a known limitation — Instagram restricts scraping without a logged-in session. '
+                'To audit this account, the artist needs to: '
+                '1) Switch to a Creator or Business account on Instagram, '
+                '2) Connect it to a Facebook Page, '
+                '3) Come back and use the @ Instagram tab with Facebook login.'
             )
         }), 404
 
