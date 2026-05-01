@@ -219,7 +219,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   gap: 10px;
 }
 .ac-item:last-child{border-bottom: none}
-.ac-item:hover{background:rgba(204,41,54,.12);color:#fff}
+.ac-item:hover{background:rgba(255,255,255,.06);color:#fff}
 .ac-icon{font-size:16px;opacity:.5;flex-shrink:0}
 .ac-item strong{color:#fff}
 .proof-strip {
@@ -491,8 +491,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
 /* ── REVENUE BANNER ─────────────────────────────────────────────── */
 .revenue-banner {
-  background: linear-gradient(135deg, rgba(204,41,54,.15) 0%, rgba(212,175,55,.08) 100%);
-  border-bottom: 1px solid rgba(204,41,54,.2);
+  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, rgba(255,255,255,.01) 100%);
+  border-bottom: 1px solid rgba(255,255,255,.07);
   padding: clamp(32px,5vw,56px) var(--px);
   text-align: center;
 }
@@ -551,11 +551,11 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   gap: 6px;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(204,41,54,.12);
-  border: 1px solid rgba(204,41,54,.25);
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.15);
   font-size: 11px;
   font-weight: 600;
-  color: var(--crimson);
+  color: rgba(255,255,255,.8);
   letter-spacing: .5px;
 }
 .biz-title{font-size:clamp(22px,3.5vw,40px);font-weight:800;letter-spacing:-1.5px;margin-bottom:10px}
@@ -637,7 +637,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .issue-card.warning .issue-cat{color:rgba(255,170,50,.7)}
 .issue-title{font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.35}
 .issue-detail{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:8px}
-.issue-fix{font-size:12px;color:rgba(204,41,54,.85);font-weight:500}
+.issue-fix{font-size:12px;color:rgba(255,255,255,.5);font-weight:500}
 
 /* ── TWO-COLUMN LAYOUT ───────────────────────────────────────────── */
 .report-cols {
@@ -687,7 +687,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .mp-badge.out{background:rgba(255,68,68,.1);color:#ff4444;border:1px solid rgba(255,68,68,.2)}
 .mp-pack-list{display:flex;flex-direction:column;gap:6px}
 .mp-pack-item{display:flex;align-items:center;gap:10px;font-size:12px;padding:6px 10px;border-radius:8px}
-.mp-pack-item.is-you{background:rgba(204,41,54,.08);border:1px solid rgba(204,41,54,.2)}
+.mp-pack-item.is-you{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18)}
 .mp-rank{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
 .mp-biz-name{flex:1;font-weight:500}
 .mp-biz-stars{color:var(--gold);font-size:11px}
@@ -969,10 +969,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .checklist-section {
   display: none;
   background: var(--bg);
-  border-top: 2px solid rgba(204,41,54,.25);
+  border-top: 1px solid rgba(255,255,255,.08);
 }
 .checklist-hero {
-  background: linear-gradient(135deg, #0a0a0a 0%, rgba(204,41,54,.08) 100%);
+  background: linear-gradient(135deg, #0a0a0a 0%, rgba(255,255,255,.02) 100%);
   padding: clamp(40px,6vw,80px) var(--px);
   text-align: center;
   border-bottom: 1px solid var(--b);
@@ -989,7 +989,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .cl-sections{max-width:900px;margin:0 auto;padding:clamp(28px,4vw,56px) var(--px)}
 .cl-section{margin-bottom:36px}
 .cl-section-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--b)}
-.cl-section-num{width:40px;height:40px;border-radius:10px;background:rgba(204,41,54,.85);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;flex-shrink:0}
+.cl-section-num{width:40px;height:40px;border-radius:10px;background:#ffffff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#000000;flex-shrink:0}
 .cl-section-info{}
 .cl-section-title{font-size:18px;font-weight:800;letter-spacing:-.3px;color:#fff}
 .cl-section-sub{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px}
@@ -1007,8 +1007,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .cl-tag{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;margin-left:6px}
 .cl-tag.auto-detected{background:rgba(212,175,55,.1);color:rgba(212,175,55,.8);border:1px solid rgba(212,175,55,.15)}
 .checklist-cta {
-  background: linear-gradient(135deg, rgba(204,41,54,.12) 0%, rgba(212,175,55,.06) 100%);
-  border-top: 1px solid rgba(204,41,54,.2);
+  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, rgba(255,255,255,.01) 100%);
+  border-top: 1px solid rgba(255,255,255,.07);
   padding: clamp(40px,5vw,72px) var(--px);
   text-align: center;
 }
@@ -1019,8 +1019,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .cl-cta-features{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:36px}
 .cl-cta-feature{padding:8px 16px;background:rgba(255,255,255,.05);border:1px solid var(--b);border-radius:999px;font-size:13px;font-weight:500;color:rgba(255,255,255,.7)}
 .cl-cta-feature span{color:var(--green);margin-right:6px}
-.cl-cta-btn{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:rgba(204,41,54,.9);color:#fff;border-radius:14px;font-size:16px;font-weight:800;text-decoration:none;transition:background .2s,transform .15s;letter-spacing:-.3px}
-.cl-cta-btn:hover{background:rgba(204,41,54,1);transform:scale(1.02)}
+.cl-cta-btn{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:#ffffff;color:#000000;border-radius:14px;font-size:16px;font-weight:800;text-decoration:none;transition:background .2s,transform .15s;letter-spacing:-.3px}
+.cl-cta-btn:hover{background:rgba(230,230,230,1);transform:scale(1.02)}
 .cl-cta-note{font-size:12px;color:rgba(255,255,255,.25);margin-top:18px;line-height:1.5}
 .cl-vip-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:999px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:24px}
 
@@ -1168,8 +1168,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   transition: all .2s var(--ease);
 }
 .audit-type-tab.active {
-  background: rgba(204,41,54,.9);
-  color: #fff;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
 }
 .audit-type-tab:not(.active):hover { color: rgba(255,255,255,.7); }
 
@@ -1227,10 +1228,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .guest-run-btn {
   width: 100%;
   padding: 16px;
-  background: rgba(204,41,54,.9);
+  background: #ffffff;
   border: none;
   border-radius: 12px;
-  color: #fff;
+  color: #000000;
   font-family: var(--font);
   font-size: 15px;
   font-weight: 800;
@@ -1238,7 +1239,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   transition: background .2s, transform .15s;
   letter-spacing: -.2px;
 }
-.guest-run-btn:hover { background: rgba(204,41,54,1); transform: scale(1.01); }
+.guest-run-btn:hover { background: rgba(230,230,230,1); transform: scale(1.01); }
 .guest-error { font-size: 13px; color: #ff6666; text-align: center; margin-top: 8px; display: none; }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1247,7 +1248,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 #guest-report-section { display: none; background: var(--bg); }
 
 .guest-report-hero {
-  background: linear-gradient(135deg, #0a0a0a 0%, rgba(204,41,54,.1) 100%);
+  background: linear-gradient(135deg, #0a0a0a 0%, rgba(255,255,255,.03) 100%);
   padding: clamp(40px,6vw,80px) var(--px);
   border-bottom: 1px solid var(--b);
   text-align: center;
@@ -1449,8 +1450,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .guest-rev-note { font-size: 11px; color: var(--muted); line-height: 1.4; }
 .guest-rev-disclaimer { font-size: 11px; color: rgba(255,255,255,.2); margin-top: 12px; line-height: 1.5; }
 .guest-cta-section {
-  background: linear-gradient(135deg, rgba(204,41,54,.12) 0%, rgba(212,175,55,.06) 100%);
-  border-top: 2px solid rgba(204,41,54,.2);
+  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, rgba(255,255,255,.01) 100%);
+  border-top: 1px solid rgba(255,255,255,.08);
   padding: clamp(40px,5vw,72px) var(--px);
   text-align: center;
 }
@@ -1461,8 +1462,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   align-items: center;
   gap: 10px;
   padding: 18px 40px;
-  background: rgba(204,41,54,.9);
-  color: #fff;
+  background: #ffffff;
+  color: #000000;
   border-radius: 14px;
   font-size: 16px;
   font-weight: 800;
@@ -1470,7 +1471,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   transition: background .2s, transform .15s;
   letter-spacing: -.3px;
 }
-.guest-cta-btn:hover { background: rgba(204,41,54,1); transform: scale(1.02); }
+.guest-cta-btn:hover { background: rgba(230,230,230,1); transform: scale(1.02); }
 .guest-cta-note { font-size: 12px; color: rgba(255,255,255,.2); margin-top: 16px; }
 .guest-run-again-bar {
   text-align: center;
@@ -1911,6 +1912,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="main-section" id="ad-library-section" style="display:none">
         <div class="main-section-title">Competitor Ad Activity
           <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.1);margin-left:8px">META AD LIBRARY</span>
+          <span style="font-size:10px;font-weight:600;letter-spacing:1px;padding:3px 8px;border-radius:999px;background:rgba(255,153,0,.08);color:rgba(255,153,0,.6);border:1px solid rgba(255,153,0,.15);margin-left:6px">SAMPLE · UP TO 6 ADS</span>
         </div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6" id="ad-library-intro"></div>
         <div id="ad-library-cards" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -1993,7 +1995,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
       <!-- Free Tip -->
       <div class="free-tip-card" id="free-tip-card" style="display:none">
-        <div class="ft-eyebrow">⚡ FREE WIN — DO THIS TODAY</div>
+        <div class="ft-eyebrow">FREE WIN — DO THIS TODAY</div>
         <div class="ft-action" id="ft-action"></div>
         <div class="ft-impact" id="ft-impact"></div>
       </div>
@@ -2072,7 +2074,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     </p>
 
     <div class="privacy-badge">
-      <div class="privacy-icon">🔒</div>
+      <div class="privacy-icon" style="font-size:11px;font-weight:800;letter-spacing:1px;color:rgba(0,204,102,.8)">READ ONLY</div>
       <div class="privacy-text">
         <strong>We never post, publish, or store anything.</strong> This is a read-only connection used only for this report session. When you close this window, all access tokens are cleared from memory permanently. No accounts are retained.
       </div>
@@ -2275,7 +2277,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
     <!-- Ad Activity -->
     <div class="guest-section" id="gr-ads-section" style="display:none">
-      <div class="guest-section-title">Paid Ad Activity in This Market</div>
+      <div class="guest-section-title">
+        Paid Ad Activity in This Market
+        <span style="font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.08);margin-left:8px;vertical-align:middle">SAMPLE · UP TO 6 ADS</span>
+      </div>
       <div id="gr-ads-intro" style="padding:12px 20px 0;font-size:13px;color:var(--muted);line-height:1.6"></div>
       <div id="gr-ads-list"></div>
     </div>
@@ -3245,20 +3250,39 @@ function renderReport(d) {
   // ── Revenue Breakdown (transparent methodology) ────────────────
   const bdBody = document.getElementById('rev-breakdown-body');
   if (bdBody && rev.est_sessions_month) {
-    const sessions   = rev.est_sessions_month;
-    const avgPrice   = rev.avg_tattoo_value;
-    const curBase    = rev.current_base;
-    const optSess    = Math.round(sessions * 1.45);
-    const potBase    = rev.potential_base;
-    const gap        = rev.opportunity_base;
-    const city       = rev.city_benchmark || 'your market';
-    const reviews    = b.reviews || 0;
+    const sessions        = rev.est_sessions_month;
+    const avgPrice        = rev.adj_avg_price   || rev.avg_tattoo_value;
+    const baseAvgPrice    = rev.base_avg_price  || avgPrice;
+    const curBase         = rev.current_base;
+    const optSess         = Math.round(sessions * 1.45);
+    const potBase         = rev.potential_base;
+    const gap             = rev.opportunity_base;
+    const city            = rev.city_benchmark  || 'your market';
+    const reviews         = b.reviews || 0;
+    const seasonalMult    = rev.seasonal_mult   || 1.0;
+    const seasonalLabel   = rev.seasonal_label  || 'Standard';
+    const seasonalReason  = rev.seasonal_reason || '';
+    const styleMult       = rev.style_mult      || 1.0;
+    const styleLabel      = rev.style_label     || 'Standard mix';
+    const stylePremiumPct = rev.style_premium_pct || 0;
+
     // Determine volume tier label
     const volTier = reviews >= 200 ? '200+ reviews = high-volume artist'
       : reviews >= 100 ? '100–199 reviews = established artist'
       : reviews >= 50  ? '50–99 reviews = growing artist'
       : reviews >= 25  ? '25–49 reviews = early-stage artist'
       :                  'under 25 reviews = new or low-visibility artist';
+
+    // Seasonal color signal
+    const sColor = seasonalMult >= 1.10 ? '#00cc66' : seasonalMult >= 1.00 ? 'rgba(255,255,255,.7)' : '#ff9900';
+    const sMult  = seasonalMult >= 1.00 ? `+${Math.round((seasonalMult-1)*100)}%` : `${Math.round((seasonalMult-1)*100)}%`;
+
+    // Style premium display
+    const styleHtml = stylePremiumPct > 0
+      ? `<em>${styleLabel} style detected — <strong style="color:#00cc66">+${stylePremiumPct}% price premium</strong> vs generic mix. Avg price adjusted: $${baseAvgPrice} → <strong>$${avgPrice}</strong>/session</em>`
+      : stylePremiumPct < 0
+      ? `<em>${styleLabel} work — <strong style="color:#ff9900">${stylePremiumPct}% vs standard</strong>. Flash sessions are shorter, lowering avg value. Adjusted: $${baseAvgPrice} → $${avgPrice}/session</em>`
+      : `<em>${styleLabel} — no style premium applied. Price stays at $${avgPrice}/session</em>`;
 
     bdBody.innerHTML = `
       <div class="rev-step">
@@ -3267,24 +3291,34 @@ function renderReport(d) {
           <div class="rev-step-label">Estimate your current session volume</div>
           <div class="rev-step-value">
             You have <strong>${reviews.toLocaleString()} Google reviews</strong> — we use this as a volume proxy.<br>
-            <em>${volTier} → ~${sessions} sessions/month estimated</em>
+            <em>${volTier} → ~${sessions} sessions/month baseline</em>
           </div>
         </div>
       </div>
       <div class="rev-step">
         <div class="rev-step-num">2</div>
         <div class="rev-step-content">
-          <div class="rev-step-label">Apply city market benchmark</div>
+          <div class="rev-step-label">Seasonal demand adjustment — <span style="color:${sColor}">${seasonalLabel} ${sMult}</span></div>
           <div class="rev-step-value">
-            Average tattoo price in <strong>${city}</strong>: <strong>$${avgPrice}</strong>/session<br>
-            <em>Source: industry surveys, local studio pricing, market analysis (2024)</em>
+            ${seasonalReason || 'Current month demand signal applied to session volume.'}<br>
+            <em>Seasonal multiplier: ×${seasonalMult} → <strong>${sessions} sessions</strong> this month</em>
           </div>
         </div>
       </div>
       <div class="rev-step">
         <div class="rev-step-num">3</div>
         <div class="rev-step-content">
-          <div class="rev-step-label">Calculate current monthly revenue estimate</div>
+          <div class="rev-step-label">City benchmark + style premium</div>
+          <div class="rev-step-value">
+            Base avg price in <strong>${city}</strong>: $${baseAvgPrice}/session<br>
+            ${styleHtml}
+          </div>
+        </div>
+      </div>
+      <div class="rev-step">
+        <div class="rev-step-num">4</div>
+        <div class="rev-step-content">
+          <div class="rev-step-label">Current monthly revenue estimate</div>
           <div class="rev-step-value">
             ${sessions} sessions × $${avgPrice} = <strong>${fmt$(sessions * avgPrice)}/month</strong><br>
             <em>Conservative figure = ${fmt$(curBase)}/month (75% of raw estimate)</em>
@@ -3292,7 +3326,7 @@ function renderReport(d) {
         </div>
       </div>
       <div class="rev-step">
-        <div class="rev-step-num">4</div>
+        <div class="rev-step-num">5</div>
         <div class="rev-step-content">
           <div class="rev-step-label">Optimized potential (what full setup unlocks)</div>
           <div class="rev-step-value">
@@ -3302,7 +3336,7 @@ function renderReport(d) {
         </div>
       </div>
       <div class="rev-step">
-        <div class="rev-step-num">5</div>
+        <div class="rev-step-num">6</div>
         <div class="rev-step-content">
           <div class="rev-step-label">Your monthly revenue gap</div>
           <div class="rev-step-value">
@@ -3312,9 +3346,9 @@ function renderReport(d) {
         </div>
       </div>
       <div class="rev-disclaimer">
-        <strong style="color:rgba(255,255,255,.5)">What this is:</strong> An honest estimate based on your Google review count (volume proxy), city market benchmarks, and industry research on how booking systems and local SEO affect session volume.
-        This is NOT a guarantee — your actual revenue depends on your pricing, availability, and location. We show you this number to help you see the size of the opportunity, not to inflate it.
-        Want exact numbers? We'll tell you on a free strategy call with your real data.
+        <strong style="color:rgba(255,255,255,.5)">What this is:</strong> An honest estimate built from your Google review count (volume proxy), city market benchmarks, live seasonal demand signals, and style-based price premiums.
+        This is NOT a guarantee — your actual revenue depends on your pricing, availability, and schedule. We show you this number to help you see the size of the opportunity.
+        Want exact numbers? We'll talk on a free strategy call.
       </div>
     `;
   }
@@ -3415,7 +3449,7 @@ function renderReport(d) {
   socialHtml += `
     <div class="social-card">
       <div class="social-card-header">
-        <div class="social-platform-icon ig-icon">📸</div>
+        <div class="social-platform-icon ig-icon" style="font-size:11px;font-weight:800;letter-spacing:-.5px">IG</div>
         <div class="social-platform-name">Instagram</div>
       </div>
       ${igFol !== null && igFol !== undefined ? `
@@ -3598,8 +3632,8 @@ function renderReport(d) {
         <div class="rm-sub-label">EXPECTED RESULT</div>
         <div class="rm-text">${step.result}</div>
         <div class="rm-pills">
-          <div class="rm-pill timeline">⏱ ${step.timeline}</div>
-          <div class="rm-pill service">✦ ${step.service}</div>
+          <div class="rm-pill timeline">TIMELINE: ${step.timeline}</div>
+          <div class="rm-pill service">${step.service}</div>
         </div>
       </div>
     </div>
@@ -3650,7 +3684,7 @@ function renderReport(d) {
   if (ft.action) {
     document.getElementById('free-tip-card').style.display = 'block';
     document.getElementById('ft-action').textContent = ft.action;
-    document.getElementById('ft-impact').textContent  = '💡 ' + ft.impact;
+    document.getElementById('ft-impact').textContent  = ft.impact;
   }
 
   // ── Competitors ────────────────────────────────────────────────
@@ -3693,7 +3727,10 @@ function renderReport(d) {
     const uniqueAdv = [...new Set(ads.map(a => a.page_name).filter(Boolean))];
     document.getElementById('ad-library-intro').innerHTML =
       `<strong style="color:#fff">${uniqueAdv.length} competitor${uniqueAdv.length !== 1 ? 's are' : ' is'} currently running Meta Ads</strong> targeting tattoo clients in ${b.city || 'your market'}. ` +
-      `Every day you're not advertising, these artists are paying to appear in front of your next client.`;
+      `Every day you're not advertising, these artists are paying to appear in front of your next client.` +
+      `<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.3);font-style:italic">` +
+      `Note — Meta's public Ad Library API returns up to 6 results per query. More ads may be running. This shows active competitors, not the full market.` +
+      `</div>`;
 
     document.getElementById('ad-library-cards').innerHTML = ads.map(ad => {
       const spendStr  = ad.spend_low  ? `$${ad.spend_low}–$${ad.spend_high}/mo est.` : null;
@@ -3701,14 +3738,13 @@ function renderReport(d) {
       const dateStr   = ad.started    ? `Since ${ad.started}` : null;
       return `
         <div class="ad-card">
-          <div class="ad-card-icon">📢</div>
           <div class="ad-card-body">
             <div class="ad-page-name">${ad.page_name}</div>
             ${ad.body ? `<div class="ad-body-preview">"${ad.body}${ad.body.length >= 120 ? '...' : ''}"</div>` : ''}
             <div class="ad-meta-row">
-              ${spendStr  ? `<div class="ad-pill spend">💰 ${spendStr}</div>` : ''}
-              ${impsStr   ? `<div class="ad-pill imps">👁 ${impsStr}</div>` : ''}
-              ${dateStr   ? `<div class="ad-pill date">📅 ${dateStr}</div>` : ''}
+              ${spendStr  ? `<div class="ad-pill spend">Est. Spend: ${spendStr}</div>` : ''}
+              ${impsStr   ? `<div class="ad-pill imps">Reach: ${impsStr}</div>` : ''}
+              ${dateStr   ? `<div class="ad-pill date">${dateStr}</div>` : ''}
               ${ad.snapshot_url ? `<a class="ad-view-link" href="${ad.snapshot_url}" target="_blank" rel="noopener">View Ad →</a>` : ''}
             </div>
           </div>

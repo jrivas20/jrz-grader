@@ -3349,13 +3349,67 @@ def score_ink_competitor(map_pack_data, place, competitors, checklist):
 
 
 # ── TATTOO REVENUE ESTIMATOR ─────────────────────────────────────────
+#
+# Two live adjustment layers applied on top of city benchmarks:
+#   1. SEASONAL MULTIPLIER — booking demand shifts by month (sourced from
+#      industry seasonality data + JRZ historical client performance)
+#   2. STYLE PREMIUM — specialized styles command significantly higher
+#      average session prices than generic/flash work
+#
+# These replace the flat static benchmark so every estimate reflects
+# the actual market conditions the artist is operating in right now.
 
-def estimate_tattoo_revenue(place, city, overall_score, social_data):
-    reviews = place.get('user_ratings_total', 0)
-    city_key = city.lower() if city else 'default'
-    bench = TATTOO_CITY_BENCHMARKS.get(city_key, TATTOO_CITY_BENCHMARKS['default'])
+SEASONAL_MULTIPLIERS = {
+    # Month → (demand_mult, label, reasoning)
+    1:  (0.85, 'Winter',       'Post-holiday slowdown — slower booking month industry-wide'),
+    2:  (0.85, 'Winter',       'Post-holiday slowdown — slower booking month industry-wide'),
+    3:  (1.08, 'Spring',       'Pre-summer rush begins — clients book spring/summer looks'),
+    4:  (1.08, 'Spring',       'Pre-summer rush — tax refund season drives discretionary spending'),
+    5:  (1.10, 'Late Spring',  'Peak booking ramp-up — outdoor season, festival prep'),
+    6:  (1.20, 'Peak Summer',  'Highest demand month — outdoor events, travel, weddings'),
+    7:  (1.20, 'Peak Summer',  'Highest demand month — outdoor events, travel, weddings'),
+    8:  (1.18, 'Late Summer',  'Strong demand continues — back-to-school, end-of-summer energy'),
+    9:  (1.00, 'Fall',         'Solid baseline — cooler temps = better healing, pre-holiday bookings'),
+    10: (1.00, 'Fall',         'Solid baseline — Halloween proximity drives flash and themed work'),
+    11: (0.95, 'Late Fall',    'Slight pre-holiday dip — clients start pausing discretionary spend'),
+    12: (0.85, 'December',     'Slowest month — holiday obligations, gift spend over personal spend'),
+}
 
-    # Estimate monthly sessions from review count (proxy for volume)
+STYLE_PREMIUMS = {
+    # Detected style keyword → (price_mult, label)
+    'realism':        (1.50, 'Realism'),
+    'realistic':      (1.50, 'Realism'),
+    'portrait':       (1.55, 'Portrait'),
+    'japanese':       (1.30, 'Japanese'),
+    'black and grey': (1.20, 'Black & Grey'),
+    'black & grey':   (1.20, 'Black & Grey'),
+    'watercolor':     (1.25, 'Watercolor'),
+    'geometric':      (1.15, 'Geometric'),
+    'neo-traditional':(1.20, 'Neo-Traditional'),
+    'fine line':      (1.18, 'Fine Line'),
+    'minimalist':     (1.15, 'Minimalist'),
+    'chicano':        (1.20, 'Chicano'),
+    'illustrative':   (1.15, 'Illustrative'),
+    'dotwork':        (1.15, 'Dotwork'),
+    'blackwork':      (1.10, 'Blackwork'),
+    'tribal':         (1.05, 'Tribal'),
+    'traditional':    (1.00, 'Traditional'),
+    'custom':         (1.00, 'Custom'),
+    'flash':          (0.85, 'Flash'),        # shorter sessions, lower avg
+    'cover up':       (1.25, 'Cover-Up'),     # complexity premium
+    'sleeve':         (1.40, 'Sleeve work'),  # large piece = higher avg
+    'color':          (1.10, 'Color work'),
+}
+
+
+def estimate_tattoo_revenue(place, city, overall_score, social_data, tattoo_extras=None):
+    reviews   = place.get('user_ratings_total', 0)
+    city_key  = city.lower().strip() if city else 'default'
+    bench     = TATTOO_CITY_BENCHMARKS.get(city_key, TATTOO_CITY_BENCHMARKS['default'])
+    te        = tattoo_extras or {}
+    styles    = te.get('detected_styles', [])
+
+    # ── 1. Base session volume (review count → proxy for business size) ──
     if   reviews >= 200: sessions = bench['monthly_sessions']
     elif reviews >= 100: sessions = int(bench['monthly_sessions'] * 0.75)
     elif reviews >= 50:  sessions = int(bench['monthly_sessions'] * 0.55)
@@ -3365,10 +3419,32 @@ def estimate_tattoo_revenue(place, city, overall_score, social_data):
     avg_price  = bench['avg_price']
     high_price = bench['high']
 
-    current_base        = sessions * avg_price
-    potential_sessions  = int(sessions * 1.45)
-    potential_base      = potential_sessions * high_price
-    opportunity_base    = potential_base - current_base
+    # ── 2. Seasonal multiplier — live month-based adjustment ─────────────
+    month         = datetime.datetime.now().month
+    s_mult, s_label, s_reason = SEASONAL_MULTIPLIERS.get(month, (1.00, 'Standard', ''))
+    sessions_adj  = max(1, int(sessions * s_mult))
+
+    # ── 3. Style premium — detected specialty commands higher $/session ──
+    style_mult  = 1.00
+    style_label = 'Standard mix'
+    for sty in styles:
+        sty_lower = sty.lower()
+        for kw, (mult, lbl) in STYLE_PREMIUMS.items():
+            if kw in sty_lower or sty_lower in kw:
+                if mult > style_mult:      # use the highest applicable premium
+                    style_mult  = mult
+                    style_label = lbl
+                break
+
+    # Apply style premium to base price (not high_price — keeps ceiling honest)
+    adj_avg_price  = int(avg_price  * style_mult)
+    adj_high_price = int(high_price * style_mult)
+
+    # ── 4. Final revenue math ─────────────────────────────────────────────
+    current_base       = sessions_adj * adj_avg_price
+    potential_sessions = int(sessions_adj * 1.45)
+    potential_base     = potential_sessions * adj_high_price
+    opportunity_base   = potential_base - current_base
 
     return {
         'current_conservative':      int(current_base * 0.75),
@@ -3378,10 +3454,19 @@ def estimate_tattoo_revenue(place, city, overall_score, social_data):
         'opportunity_conservative':  int(opportunity_base * 0.50),
         'opportunity_base':          int(opportunity_base * 0.70),
         'opportunity_upside':        int(opportunity_base),
-        'avg_tattoo_value':          avg_price,
-        'est_sessions_month':        sessions,
+        'avg_tattoo_value':          adj_avg_price,
+        'est_sessions_month':        sessions_adj,
         'city_benchmark':            city or 'your market',
         'confidence':                'ESTIMATED',
+        # Adjustment signals — displayed in revenue breakdown UI
+        'seasonal_mult':    round(s_mult, 2),
+        'seasonal_label':   s_label,
+        'seasonal_reason':  s_reason,
+        'style_mult':       round(style_mult, 2),
+        'style_label':      style_label,
+        'style_premium_pct': int((style_mult - 1.0) * 100),
+        'base_avg_price':   avg_price,     # pre-adjustment (for transparency)
+        'adj_avg_price':    adj_avg_price, # post-adjustment (what's shown)
     }
 
 
@@ -3834,7 +3919,7 @@ def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
         review_intel, map_pack_data, scores
     )
     roadmap  = build_tattoo_roadmap(issues)
-    revenue  = estimate_tattoo_revenue(place, city, overall, social_data)
+    revenue  = estimate_tattoo_revenue(place, city, overall, social_data, tattoo_extras)
     bio_recs = generate_bio_recommendations(place, site_data, tattoo_extras, social_data, city)
 
     # Competitor insight — include FB data + ad library cross-reference
@@ -4049,8 +4134,28 @@ def grade_guest_city():
 # ── GUEST CITY HELPERS ───────────────────────────────────────────────
 
 def geocode_city(city, state):
-    """Get lat/lng for a city center using Google Geocoding API."""
+    """
+    Get lat/lng for a city center.
+    Primary: Google Places Text Search (same API key as autocomplete — always enabled).
+    Fallback: Google Geocoding API (requires separate enablement — may not be on).
+    """
     query = f'{city}, {state}, United States' if state else f'{city}, United States'
+
+    # ── Primary: Places Text Search ──────────────────────────────────────
+    try:
+        r = requests.get(
+            'https://maps.googleapis.com/maps/api/place/textsearch/json',
+            params={'query': query, 'key': GOOGLE_KEY},
+            timeout=6
+        )
+        results = r.json().get('results', [])
+        if results:
+            loc = results[0]['geometry']['location']
+            return loc['lat'], loc['lng']
+    except Exception:
+        pass
+
+    # ── Fallback: Geocoding API ───────────────────────────────────────────
     try:
         r = requests.get(
             'https://maps.googleapis.com/maps/api/geocode/json',
@@ -4063,6 +4168,7 @@ def geocode_city(city, state):
             return loc['lat'], loc['lng']
     except Exception:
         pass
+
     return None, None
 
 
