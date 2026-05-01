@@ -730,6 +730,54 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   padding-left: 4px;
 }
 
+/* ── SOCIAL PRESENCE ── */
+.social-card {
+  background: var(--bg2);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width:540px){ .social-grid { grid-template-columns: 1fr; } }
+.social-platform { }
+.sp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--b);
+}
+.sp-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.sp-icon.fb { background: rgba(24,119,242,.15); }
+.sp-icon.ig { background: rgba(225,48,108,.15); }
+.sp-platform-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.8); }
+.sp-handle { font-size: 11px; color: var(--muted); }
+.sp-stats { display: flex; flex-direction: column; gap: 10px; }
+.sp-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.sp-stat-label { color: var(--muted); }
+.sp-stat-val   { font-weight: 700; }
+.sp-stat-val.good { color: var(--green); }
+.sp-stat-val.warn { color: var(--orange); }
+.sp-stat-val.bad  { color: #ff5555; }
+.sp-stat-val.neutral { color: rgba(255,255,255,.6); }
+.social-no-data { font-size: 13px; color: var(--muted); padding: 8px 0; }
+
 /* ── MAP PACK ── */
 .map-pack-section { margin-bottom: 52px; }
 .map-pack-grid { display: flex; flex-direction: column; gap: 16px; }
@@ -1478,6 +1526,17 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="rankings-note">Rankings checked against top 30 Google organic results in your local market.</div>
       </div>
 
+      <!-- Social Presence -->
+      <div id="social-section" style="display:none">
+        <div class="report-sec-label">
+          <div class="rsl-line"></div>
+          <div class="rsl-txt">Social Media Presence</div>
+        </div>
+        <div class="social-card">
+          <div class="social-grid" id="social-grid"></div>
+        </div>
+      </div>
+
       <!-- Map Pack Visibility -->
       <div class="map-pack-section" id="map-pack-section" style="display:none">
         <div class="report-sec-label">
@@ -2039,6 +2098,130 @@ function renderReport(d) {
         </div>
       </div>`
     ).join('');
+  }
+
+  // Social Presence
+  const sp = d.social_presence || {};
+  const fbFollowers = sp.facebook_followers;
+  const igFollowers = sp.instagram_followers;
+
+  if (fbFollowers != null || igFollowers != null || (sp.social_links && sp.social_links.length)) {
+    document.getElementById('social-section').style.display = 'block';
+    let socialHTML = '';
+
+    // Facebook card
+    if (fbFollowers != null) {
+      const fbLastPost = sp.facebook_last_post_days;
+      const fbPostCls  = fbLastPost == null ? 'neutral' : fbLastPost <= 7 ? 'good' : fbLastPost <= 30 ? 'warn' : 'bad';
+      const fbFolCls   = fbFollowers >= 1000 ? 'good' : fbFollowers >= 500 ? 'warn' : 'bad';
+
+      socialHTML += `
+        <div class="social-platform">
+          <div class="sp-header">
+            <div class="sp-icon fb">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877f2">
+                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="sp-platform-name">Facebook</div>
+              ${sp.facebook_page_name ? `<div class="sp-handle">${esc(sp.facebook_page_name)}</div>` : ''}
+            </div>
+          </div>
+          <div class="sp-stats">
+            <div class="sp-stat-row">
+              <div class="sp-stat-label">Followers</div>
+              <div class="sp-stat-val ${fbFolCls}">${fbFollowers.toLocaleString()}</div>
+            </div>
+            ${sp.facebook_fans != null ? `
+            <div class="sp-stat-row">
+              <div class="sp-stat-label">Page Likes</div>
+              <div class="sp-stat-val neutral">${sp.facebook_fans.toLocaleString()}</div>
+            </div>` : ''}
+            <div class="sp-stat-row">
+              <div class="sp-stat-label">Last Post</div>
+              <div class="sp-stat-val ${fbPostCls}">${
+                fbLastPost == null ? 'No data' :
+                fbLastPost === 0 ? 'Today' :
+                fbLastPost === 1 ? 'Yesterday' :
+                fbLastPost + ' days ago'
+              }</div>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      const hasFb = (sp.social_links || []).includes('Facebook');
+      socialHTML += `
+        <div class="social-platform">
+          <div class="sp-header">
+            <div class="sp-icon fb">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877f2">
+                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+              </svg>
+            </div>
+            <div class="sp-platform-name">Facebook</div>
+          </div>
+          <div class="social-no-data">${hasFb ? 'Page detected — metrics require managed access.' : 'No Facebook page linked from website.'}</div>
+        </div>`;
+    }
+
+    // Instagram card
+    if (igFollowers != null) {
+      const igLastPost = sp.instagram_last_post_days;
+      const igPostCls  = igLastPost == null ? 'neutral' : igLastPost <= 7 ? 'good' : igLastPost <= 21 ? 'warn' : 'bad';
+      const igFolCls   = igFollowers >= 2000 ? 'good' : igFollowers >= 1000 ? 'warn' : 'bad';
+
+      socialHTML += `
+        <div class="social-platform">
+          <div class="sp-header">
+            <div class="sp-icon ig">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#e1306c">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="sp-platform-name">Instagram</div>
+              ${sp.instagram_username ? `<div class="sp-handle">@${esc(sp.instagram_username)}</div>` : ''}
+            </div>
+          </div>
+          <div class="sp-stats">
+            <div class="sp-stat-row">
+              <div class="sp-stat-label">Followers</div>
+              <div class="sp-stat-val ${igFolCls}">${igFollowers.toLocaleString()}</div>
+            </div>
+            ${sp.instagram_media_count != null ? `
+            <div class="sp-stat-row">
+              <div class="sp-stat-label">Total Posts</div>
+              <div class="sp-stat-val neutral">${sp.instagram_media_count.toLocaleString()}</div>
+            </div>` : ''}
+            <div class="sp-stat-row">
+              <div class="sp-stat-label">Last Post</div>
+              <div class="sp-stat-val ${igPostCls}">${
+                igLastPost == null ? 'No data' :
+                igLastPost === 0 ? 'Today' :
+                igLastPost === 1 ? 'Yesterday' :
+                igLastPost + ' days ago'
+              }</div>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      const hasIg = (sp.social_links || []).includes('Instagram');
+      socialHTML += `
+        <div class="social-platform">
+          <div class="sp-header">
+            <div class="sp-icon ig">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#e1306c">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </div>
+            <div class="sp-platform-name">Instagram</div>
+          </div>
+          <div class="social-no-data">${hasIg ? 'Page detected — connect Instagram Business Account to Facebook Page for metrics.' : 'No Instagram linked from website.'}</div>
+        </div>`;
+    }
+
+    document.getElementById('social-grid').innerHTML = socialHTML;
   }
 
   // Map Pack Visibility

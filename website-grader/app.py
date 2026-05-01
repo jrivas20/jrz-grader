@@ -2,6 +2,7 @@ import os
 import re
 import time
 import hashlib
+import datetime
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -15,6 +16,7 @@ GHL_WEBHOOK   = os.environ.get('GHL_WEBHOOK',
     'https://services.leadconnectorhq.com/hooks/d7iUPfamAaPlSBNj6IhT/webhook-trigger/jrz-grader')
 DFS_LOGIN     = os.environ.get('DATAFORSEO_LOGIN', '')
 DFS_PASSWORD  = os.environ.get('DATAFORSEO_PASSWORD', '')
+FB_TOKEN      = os.environ.get('FB_ACCESS_TOKEN', '')
 
 CACHE = {}
 
@@ -171,10 +173,19 @@ def grade():
         except Exception:
             map_pack_data = []
 
-    # 8. Build Report
+    # 8. Social Presence (Facebook Graph API)
+    social_data = {}
+    if FB_TOKEN and site_data.get('scraped'):
+        fb_url = site_data.get('social_urls', {}).get('Facebook', '')
+        try:
+            social_data = check_social_presence(fb_url)
+        except Exception:
+            social_data = {}
+
+    # 9. Build Report
     report = build_report(place, pagespeed, site_data, competitors, keyword_rankings,
                           place_id, type_label, backlink_data,
-                          review_intel, gbp_description, map_pack_data)
+                          review_intel, gbp_description, map_pack_data, social_data)
 
     CACHE[cache_key] = {'ts': time.time(), 'data': report}
 
@@ -314,6 +325,127 @@ def check_map_pack(biz_name, type_label, city, state):
             })
 
     return results
+
+
+# ─────────────────────────────────────────────────────────────────
+#  SOCIAL PRESENCE  (Facebook Graph API)
+# ─────────────────────────────────────────────────────────────────
+
+def extract_fb_page_id(fb_url):
+    """Extract Facebook page ID or username from a profile URL."""
+    if not fb_url:
+        return ''
+    try:
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(fb_url)
+        path   = parsed.path.strip('/')
+        # facebook.com/profile.php?id=123456
+        if 'profile.php' in path:
+            return parse_qs(parsed.query).get('id', [''])[0]
+        parts = [p for p in path.split('/') if p]
+        # facebook.com/pages/Name/123456
+        if 'pages' in parts:
+            idx = parts.index('pages')
+            if len(parts) > idx + 2:
+                return parts[idx + 2]
+        # facebook.com/username
+        skip = {'home', 'groups', 'events', 'marketplace', 'watch', 'gaming'}
+        if parts and parts[0] not in skip:
+            return parts[0]
+    except Exception:
+        pass
+    return ''
+
+
+def check_social_presence(fb_url=''):
+    """
+    Pull public Facebook Page metrics + connected Instagram Business Account.
+    Public fields (fan_count, followers_count) work for any page.
+    Posts + Instagram data work when the token has page management access.
+    """
+    empty = {
+        'facebook_followers': None, 'facebook_fans': None,
+        'facebook_page_name': None, 'facebook_last_post_days': None,
+        'facebook_posts_sampled': 0,
+        'instagram_followers': None, 'instagram_media_count': None,
+        'instagram_username': None, 'instagram_last_post_days': None,
+    }
+    if not FB_TOKEN or not fb_url:
+        return empty
+
+    page_id = extract_fb_page_id(fb_url)
+    if not page_id:
+        return empty
+
+    result = dict(empty)
+    try:
+        resp = requests.get(
+            f'https://graph.facebook.com/v19.0/{page_id}',
+            params={
+                'fields': ('fan_count,followers_count,name,'
+                           'posts.limit(5){created_time},'
+                           'instagram_business_account'),
+                'access_token': FB_TOKEN
+            },
+            timeout=10
+        )
+        data = resp.json()
+
+        if 'error' in data:
+            return result
+
+        result['facebook_fans']      = data.get('fan_count', 0)
+        result['facebook_followers'] = data.get('followers_count', 0)
+        result['facebook_page_name'] = data.get('name', '')
+
+        # Post recency — requires page management or public content access
+        posts = data.get('posts', {}).get('data', [])
+        result['facebook_posts_sampled'] = len(posts)
+        if posts:
+            now = time.time()
+            timestamps = []
+            for post in posts:
+                ct = post.get('created_time', '')
+                if ct:
+                    try:
+                        ts = datetime.datetime.strptime(ct[:19], '%Y-%m-%dT%H:%M:%S').timestamp()
+                        timestamps.append(ts)
+                    except Exception:
+                        pass
+            if timestamps:
+                result['facebook_last_post_days'] = int((now - max(timestamps)) / 86400)
+
+        # Instagram Business Account — requires page admin access
+        ig_id = (data.get('instagram_business_account') or {}).get('id')
+        if ig_id:
+            ig_resp = requests.get(
+                f'https://graph.facebook.com/v19.0/{ig_id}',
+                params={
+                    'fields': 'followers_count,media_count,username,media.limit(3){timestamp}',
+                    'access_token': FB_TOKEN
+                },
+                timeout=10
+            )
+            ig = ig_resp.json()
+            if 'followers_count' in ig:
+                result['instagram_followers']   = ig.get('followers_count', 0)
+                result['instagram_media_count'] = ig.get('media_count', 0)
+                result['instagram_username']    = ig.get('username', '')
+                media = ig.get('media', {}).get('data', [])
+                if media:
+                    try:
+                        ts = datetime.datetime.strptime(
+                            media[0].get('timestamp', '')[:19],
+                            '%Y-%m-%dT%H:%M:%S'
+                        ).timestamp()
+                        result['instagram_last_post_days'] = int((time.time() - ts) / 86400)
+                    except Exception:
+                        pass
+
+    except Exception:
+        pass
+
+    return result
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -490,7 +622,7 @@ def scrape_website(url, biz_name='', biz_city=''):
         'og_title': False, 'og_description': False, 'og_image': False,
         'twitter_card': False, 'favicon': False,
         'phone_on_site': False, 'address_on_site': False, 'hours_on_site': False,
-        'social_links': [], 'has_contact_form': False, 'has_schema': False,
+        'social_links': [], 'social_urls': {}, 'has_contact_form': False, 'has_schema': False,
         'has_testimonials': False, 'has_cta': False, 'word_count': 0,
         'has_about': False, 'has_faq': False,
         'has_booking_widget': False, 'has_online_menu': False,
@@ -620,14 +752,16 @@ def scrape_website(url, biz_name='', biz_city=''):
         }
 
         found_social    = {}
+        found_social_urls = {}
         found_directory = {}
         found_delivery  = {}
 
         for a in soup.find_all('a', href=True):
             href = a.get('href', '')
             for domain, label in social_map.items():
-                if domain in href:
-                    found_social[label] = True
+                if domain in href and label not in found_social_urls:
+                    found_social[label]     = True
+                    found_social_urls[label] = href
             for domain, label in directory_map.items():
                 if domain in href:
                     found_directory[label] = True
@@ -636,6 +770,7 @@ def scrape_website(url, biz_name='', biz_city=''):
                     found_delivery[label] = True
 
         r['social_links']    = list(found_social.keys())
+        r['social_urls']     = found_social_urls
         r['directory_links'] = list(found_directory.keys())
         r['delivery_links']  = list(found_delivery.keys())
 
@@ -1484,6 +1619,32 @@ def get_jrz_action(issue, site_data, pagespeed, place):
             'service':  'Local SEO Content'
         }
 
+    if 'facebook' in title and ('follower' in title or 'not posted' in title):
+        return {
+            'fix':      ('JRZ takes over your Facebook Page management — optimized About section, '
+                         'consistent branded content (3 to 4 posts per week), local hashtags, '
+                         'and a 90-day follower growth campaign targeting your city and demographic. '
+                         'All content created, scheduled, and published by our team.'),
+            'timeline': '5 to 7 business days to launch full calendar',
+            'result':   ('Pages with consistent posting average 4x more organic reach. '
+                         'Follower growth campaigns targeting local audiences typically add '
+                         '200 to 500 qualified local followers within 90 days.'),
+            'service':  'Social Media Management'
+        }
+
+    if 'instagram' in title and ('follower' in title or 'not posted' in title):
+        return {
+            'fix':      ('JRZ manages your Instagram presence end-to-end: optimized bio with '
+                         'local keyword targeting, geo-tagged content, 3 to 5 branded posts per '
+                         'week, Story campaigns, and Reels creation. All content is aligned with '
+                         'your brand voice and service offerings.'),
+            'timeline': '5 to 7 business days to launch full calendar',
+            'result':   ('Consistent posting at 3 to 5 times per week generates 3x more profile '
+                         'visits and 2x more direct inquiries. Local follower growth of '
+                         '300 to 800 followers in 90 days for actively managed accounts.'),
+            'service':  'Social Media Management'
+        }
+
     if 'business description' in title or 'no business description' in title:
         return {
             'fix':      ('JRZ writes a keyword-optimized 750-character Google Business Profile '
@@ -1662,7 +1823,8 @@ def build_roadmap(issues, site_data, pagespeed, place):
 
 def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
                  place_id, type_label='business', backlink_data=None,
-                 review_intel=None, gbp_description='', map_pack_data=None):
+                 review_intel=None, gbp_description='', map_pack_data=None,
+                 social_data=None):
     name    = place.get('name', '')
     rating  = place.get('rating', 0)
     reviews = place.get('user_ratings_total', 0)
@@ -1824,6 +1986,52 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
                        'viewing a business profile. A missing number eliminates an entire lead '
                        'channel and raises credibility concerns for potential customers.'),
             'fix':    'JRZ adds your phone number with call tracking enabled so you can measure leads from Google directly.'
+        })
+
+    # Social Media Issues
+    sd = social_data or {}
+    fb_followers = sd.get('facebook_followers')
+    ig_followers = sd.get('instagram_followers')
+    fb_last_post = sd.get('facebook_last_post_days')
+    ig_last_post = sd.get('instagram_last_post_days')
+
+    if fb_followers is not None and fb_followers < 500:
+        issues.append({
+            'severity': 'warning', 'category': 'Social Media',
+            'title':  f'Facebook Page has only {fb_followers:,} followers — below local authority threshold',
+            'detail': ('A Facebook Page with fewer than 500 followers signals low community '
+                       'trust and reduces the effectiveness of any paid ads you run. Facebook '
+                       'uses page engagement as a quality signal that affects your ad costs '
+                       'and organic reach — a weak page costs you more for every campaign.'),
+            'fix':    'JRZ runs a targeted local follower growth campaign and optimizes your page profile to attract qualified local followers organically.'
+        })
+    if fb_last_post is not None and fb_last_post > 30:
+        issues.append({
+            'severity': 'warning', 'category': 'Social Media',
+            'title':  f'Facebook Page has not posted in {fb_last_post} days',
+            'detail': ('An inactive Facebook Page signals an inactive business to both '
+                       'potential customers and the Facebook algorithm. Pages that post '
+                       'consistently receive 4 to 6 times more organic reach than those '
+                       'that go silent for weeks at a time.'),
+            'fix':    'JRZ creates and schedules 12 posts per month — branded content, promos, reviews, and local relevance posts — fully managed, no effort from you.'
+        })
+    if ig_followers is not None and ig_followers < 1000:
+        issues.append({
+            'severity': 'warning', 'category': 'Social Media',
+            'title':  f'Instagram has only {ig_followers:,} followers — limited local reach',
+            'detail': ('For local businesses, 1,000 to 5,000 engaged local followers is the '
+                       'threshold where Instagram becomes a meaningful lead channel. Below that, '
+                       'the platform has minimal impact on walk-in traffic or direct inquiries.'),
+            'fix':    'JRZ builds a local Instagram growth strategy: optimized bio, geo-tagged content, targeted hashtags, and engagement sequences to grow qualified followers.'
+        })
+    if ig_last_post is not None and ig_last_post > 21:
+        issues.append({
+            'severity': 'warning', 'category': 'Social Media',
+            'title':  f'Instagram has not posted in {ig_last_post} days',
+            'detail': ('The Instagram algorithm deprioritizes inactive accounts in local '
+                       'discovery. Accounts that post 3 to 5 times per week receive 3x more '
+                       'profile visits and 2x more DMs than accounts that post sporadically.'),
+            'fix':    'JRZ takes over your Instagram content calendar — 3 to 5 posts per week, Stories, and Reels — fully branded and locally targeted.'
         })
 
     # GBP Depth Issues
@@ -2089,6 +2297,17 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
         'competitors':       comp_list,
         'competitor_insight': comp_insight,
         'free_tip':          free_tip,
+        'social_presence': {
+            'facebook_followers':     sd.get('facebook_followers'),
+            'facebook_fans':          sd.get('facebook_fans'),
+            'facebook_page_name':     sd.get('facebook_page_name'),
+            'facebook_last_post_days': sd.get('facebook_last_post_days'),
+            'instagram_followers':    sd.get('instagram_followers'),
+            'instagram_media_count':  sd.get('instagram_media_count'),
+            'instagram_username':     sd.get('instagram_username'),
+            'instagram_last_post_days': sd.get('instagram_last_post_days'),
+            'social_links':           site_data.get('social_links', []),
+        },
         'review_intel': {
             'velocity':          ri.get('velocity', 'No data'),
             'velocity_score':    ri.get('velocity_score', 0),
