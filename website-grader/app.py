@@ -3141,6 +3141,16 @@ def _fetch_single_competitor(place, exclude_handle):
             if ir.status_code == 200:
                 user = ir.json().get('data', {}).get('user', {})
                 comp['ig_followers'] = user.get('edge_followed_by', {}).get('count')
+                comp['ig_posts']     = user.get('edge_owner_to_timeline_media', {}).get('count')
+                # Last post date from timeline
+                edges = user.get('edge_owner_to_timeline_media', {}).get('edges', [])
+                if edges:
+                    try:
+                        ts = edges[0].get('node', {}).get('taken_at_timestamp')
+                        if ts:
+                            comp['ig_last_post_days'] = int((time.time() - ts) / 86400)
+                    except Exception:
+                        pass
         except Exception:
             pass
 
@@ -3249,6 +3259,182 @@ def generate_content_calendar(posting_patterns, type_engagement, city, styles):
         'best_time': best_time,
         'best_type': best_type,
     }
+
+def generate_reel_hooks(styles, type_engagement, city=''):
+    """
+    Generate 5 proven Reel hook openings personalised to the artist's
+    detected style(s) and best-performing content format.
+    Rule-based — no AI API cost.
+    """
+    STYLE_HOOKS = {
+        'realism': [
+            "She cried when she saw it for the first time",
+            "The reference photo vs the actual tattoo — can you tell the difference?",
+            "POV: You finally got the realism piece you've been saving for",
+            "Before vs after — this cover-up changed everything",
+            "The detail on this one took hours and it was worth every second",
+        ],
+        'realistic': [
+            "She cried when she saw it for the first time",
+            "The reference photo vs the actual tattoo — can you tell the difference?",
+            "POV: You finally got the portrait piece you've been saving for",
+            "Before vs after — the healing on this one is insane",
+            "The eyes are what make a portrait tattoo — watch how I do it",
+        ],
+        'fine line': [
+            "Fine line doesn't have to fade — here's why mine don't",
+            "POV: You finally got the delicate piece you've been wanting",
+            "The needle work on this one is insane — watch till the end",
+            "She wanted something minimal but meaningful — this is it",
+            "How I get lines this clean — the technique most artists skip",
+        ],
+        'fineline': [
+            "Fine line doesn't have to fade — here's why mine don't",
+            "POV: You finally got the delicate piece you've been wanting",
+            "The needle work on this one is insane — watch till the end",
+            "She wanted something minimal but meaningful — this is it",
+            "How I get lines this clean — the technique most artists skip",
+        ],
+        'traditional': [
+            "Old school never goes out of style — here's proof",
+            "POV: You got your first traditional piece and now you want a sleeve",
+            "The bold lines hit different — traditional done right",
+            "Why traditional tattoos age the best of any style",
+            "She wanted classic — we gave her timeless",
+        ],
+        'neo-traditional': [
+            "Neo-trad with a modern twist — watch how this comes together",
+            "The color mixing on this one is something else",
+            "POV: You wanted something that stands out in any room",
+            "Old school structure, new school detail — the best of both",
+            "How I blend neo-trad with my own style",
+        ],
+        'blackwork': [
+            "All black. No shading. Pure contrast — watch this",
+            "Blackwork hits different when the lines are this clean",
+            "POV: You finally committed to the bold piece you kept putting off",
+            "The saturation on this one took 4 passes — every one worth it",
+            "Why blackwork ages better than any other style",
+        ],
+        'black and grey': [
+            "No color. Just contrast. This is how black and grey is done",
+            "The shading on this one — watch till the end",
+            "POV: You chose black and grey and now you can't stop",
+            "How I get this much depth without a single drop of color",
+            "Before vs after — this healed exactly how I told her it would",
+        ],
+        'black & grey': [
+            "No color. Just contrast. This is how black and grey is done",
+            "The shading on this one — watch till the end",
+            "POV: You chose black and grey and now you can't stop",
+            "How I get this much depth without a single drop of color",
+            "Before vs after — this healed exactly how I told her it would",
+        ],
+        'watercolor': [
+            "Watercolor tattoos done right — no outline needed",
+            "The way this color moves — watch the full process",
+            "POV: You wanted something that looks like actual paint on skin",
+            "She brought me a watercolor painting. I made it permanent.",
+            "Watercolor fades if you do it wrong — here's how I make sure it doesn't",
+        ],
+        'japanese': [
+            "Japanese traditional — the technique behind the style",
+            "This sleeve took 40 hours — here's the condensed version",
+            "POV: You started with one small Japanese piece and now you want a full sleeve",
+            "The flow of Japanese work is unlike anything else in tattooing",
+            "Irezumi inspired — traditional technique, modern artist",
+        ],
+        'geometric': [
+            "Every line is freehand — no ruler, no guide, no stencil",
+            "The symmetry on this one is insane — watch till the end",
+            "POV: You wanted precision and actually got it",
+            "How I draw perfect geometric patterns on curved skin",
+            "Sacred geometry meets skin — this is the result",
+        ],
+        'minimalist': [
+            "Less is more — and this piece proves it",
+            "POV: You wanted something small and it ended up being your favourite",
+            "The placement makes this minimalist piece hit different",
+            "Simple lines, big meaning — this is what minimalist tattoos are about",
+            "She wanted something she could hide at work — this is perfect",
+        ],
+        'chicano': [
+            "Chicano style runs in my blood — here's the process",
+            "The script on this one — pure hand lettering, 3 hours straight",
+            "POV: You finally got your Chicano piece done right",
+            "The detail in chicano work — watch how this comes together",
+            "Old school Chicano, new school technique",
+        ],
+        'portrait': [
+            "She cried when she saw her mom's face on her arm",
+            "The eyes are what make a portrait tattoo — here's how I do it",
+            "POV: You turned a photo into something permanent",
+            "Reference vs result — portrait realism done right",
+            "How I capture real expression in a portrait tattoo",
+        ],
+        'cover up': [
+            "She hated her old tattoo for 8 years — watch the transformation",
+            "Cover-up or collaboration? You decide — watch this",
+            "POV: You finally fixed the tattoo you've been hiding under sleeves",
+            "Before vs after — the best part of this job",
+            "Nobody believed this could be covered — I proved them wrong",
+        ],
+        'sleeve': [
+            "This sleeve took 6 sessions — here's the full journey",
+            "POV: You started with one piece and it became a full sleeve",
+            "How I plan a cohesive sleeve from blank skin to finished",
+            "The flow on this arm sleeve — every element connected",
+            "She trusted me with her whole arm — here's what we built",
+        ],
+        'flash': [
+            "Flash drop — available this week only, DM to claim",
+            "I designed 6 new flash pieces — which one are you getting?",
+            "Same-day tattoo available — these flash designs are ready to go",
+            "Flash tattoos don't mean cheap — here's what quality flash looks like",
+            "Friday flash drop — first come, first served",
+        ],
+    }
+
+    DEFAULT_HOOKS = [
+        "The process video nobody asked for but everyone needed — watch till the end",
+        "POV: You finally booked the piece you've been thinking about for years",
+        "Before vs after — this is why I do what I do",
+        "She drove 2 hours for this appointment. Here's what we made.",
+        "First look reaction — this never gets old",
+    ]
+
+    selected = []
+    used     = set()
+
+    for style in (styles or []):
+        hooks = STYLE_HOOKS.get(style.lower(), [])
+        for h in hooks:
+            if h not in used and len(selected) < 5:
+                selected.append({'hook': h, 'tag': style.title()})
+                used.add(h)
+        if len(selected) >= 5:
+            break
+
+    for h in DEFAULT_HOOKS:
+        if len(selected) >= 5:
+            break
+        if h not in used:
+            selected.append({'hook': h, 'tag': 'Universal'})
+            used.add(h)
+
+    best_format = 'Reel'
+    if type_engagement:
+        ranked = sorted(type_engagement.items(), key=lambda x: -x[1].get('avg_total', 0))
+        if ranked:
+            best_format = ranked[0][0]
+
+    return {
+        'hooks':       selected[:5],
+        'best_format': best_format,
+        'styles_used': styles[:3] if styles else [],
+        'city':        city,
+    }
+
 
 # ── CITY AUDIT LOG ───────────────────────────────────────────────────
 # In-memory city audit log. Accumulates real market data as artists
@@ -3768,6 +3954,13 @@ def grade_ig_only():
             detected_styles,
         )
 
+        # ── Step 10: Reel hook library ────────────────────────────────────
+        reel_hooks = generate_reel_hooks(
+            detected_styles,
+            ig_competitive.get('type_engagement', {}),
+            city,
+        )
+
         return jsonify({
             'ig_only':     True,
             'report_type': 'instagram',
@@ -3803,6 +3996,7 @@ def grade_ig_only():
             'tiktok_gap':           tiktok_gap,
             'competitor_ig':        competitor_ig,
             'content_calendar':     content_calendar,
+            'reel_hooks':           reel_hooks,
         })
 
     except Exception as e:

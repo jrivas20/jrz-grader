@@ -1942,6 +1942,28 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   border:1px solid rgba(255,68,68,.15);border-radius:8px;font-size:12px;
   color:rgba(255,150,150,.8);line-height:1.6 }
 
+/* Reel hook library */
+.igr-hook-intro { font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px }
+.igr-hook-card { display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;margin-bottom:8px;transition:border-color .2s }
+.igr-hook-card:hover { border-color:rgba(255,255,255,.14) }
+.igr-hook-num { width:24px;height:24px;border-radius:50%;background:rgba(131,58,180,.15);
+  border:1px solid rgba(131,58,180,.25);color:rgba(180,100,255,.9);
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px }
+.igr-hook-body { flex:1 }
+.igr-hook-text { font-size:13px;font-weight:600;color:#fff;line-height:1.5;margin-bottom:4px }
+.igr-hook-tag { font-size:10px;font-weight:700;letter-spacing:1px;
+  color:rgba(131,58,180,.7);text-transform:uppercase }
+.igr-hook-copy { margin-left:auto;flex-shrink:0;padding:5px 12px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;color:rgba(255,255,255,.5);font-family:var(--font);
+  font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;
+  transition:all .2s }
+.igr-hook-copy:hover { background:rgba(255,255,255,.1);color:#fff }
+.igr-hook-copy.copied { color:var(--green);border-color:rgba(0,204,102,.3) }
+
 /* TikTok gap */
 .igr-tiktok-card { display:flex;align-items:center;gap:14px;padding:14px 16px;
   background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);
@@ -2519,6 +2541,13 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div id="igr-comp-you-row"></div>
       <div id="igr-comp-rows"></div>
       <div class="igr-comp-gap-note" id="igr-comp-gap-note" style="display:none"></div>
+    </div>
+
+    <!-- Reel Hook Library (reel_hooks) -->
+    <div class="igr-section" id="igr-hooks-section" style="display:none">
+      <div class="igr-section-label">5 Reel Hooks for Your Style</div>
+      <div class="igr-hook-intro" id="igr-hook-intro"></div>
+      <div id="igr-hook-list"></div>
     </div>
 
     <!-- TikTok Gap (tiktok_gap) -->
@@ -5784,18 +5813,26 @@ function renderIGReport(d) {
         <div class="igr-comp-you-fol">${myFol ? Number(myFol).toLocaleString() + ' followers' : '—'}</div>
       </div>`;
     document.getElementById('igr-comp-rows').innerHTML = compData.map(c => {
-      const compFol = c.ig_followers;
-      const higher  = compFol != null && myFol != null && compFol > myFol;
-      const lower   = compFol != null && myFol != null && compFol <= myFol;
+      const compFol  = c.ig_followers;
+      const compPost = c.ig_posts;
+      const compDays = c.ig_last_post_days;
+      const higher   = compFol != null && myFol != null && compFol > myFol;
+      const lower    = compFol != null && myFol != null && compFol <= myFol;
+      const actLabel = compDays != null
+        ? (compDays <= 3 ? '<span style="color:rgba(255,68,68,.8);font-weight:700">Posted ' + compDays + 'd ago</span>'
+          : compDays <= 7 ? 'Posted ' + compDays + 'd ago'
+          : '<span style="color:rgba(0,204,102,.7)">Last post: ' + compDays + 'd ago</span>')
+        : '';
       return `
         <div class="igr-comp-row">
-          <div>
+          <div style="flex:1;min-width:0">
             <div class="igr-comp-name">${c.name}</div>
             <div class="igr-comp-handle">${c.ig_handle ? '@' + c.ig_handle : c.address || 'No IG found'}</div>
+            ${compPost != null || actLabel ? `<div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:3px">${compPost != null ? compPost.toLocaleString() + ' posts' : ''}${compPost != null && actLabel ? ' · ' : ''}${actLabel}</div>` : ''}
           </div>
           <div class="igr-comp-fol ${higher ? 'higher' : lower ? 'lower' : ''}">
             ${compFol != null ? Number(compFol).toLocaleString() : c.reviews ? c.reviews + ' reviews' : '—'}
-            ${compFol != null ? ' followers' : ''}
+            ${compFol != null ? '<div style="font-size:10px;font-weight:400;opacity:.6">followers</div>' : ''}
           </div>
         </div>`;
     }).join('');
@@ -5806,6 +5843,28 @@ function renderIGReport(d) {
       const biggestGap = Math.max(...higherComps.map(c => c.ig_followers - myFol));
       gapNote.textContent = `${higherComps.length} artist${higherComps.length > 1 ? 's' : ''} in your area ${higherComps.length > 1 ? 'have' : 'has'} more followers — the biggest gap is ${Number(biggestGap).toLocaleString()} followers. Tattoo clients follow multiple artists before they commit to booking. Every Reel you post is a chance to pull them away from a competitor and onto your calendar. Process videos and before/after reveals are the fastest-growing content in your niche.`;
     }
+  }
+
+  // ── Reel Hook Library ─────────────────────────────────────────
+  const hooksData = d.reel_hooks || {};
+  const hooksSec  = document.getElementById('igr-hooks-section');
+  const hooksList = document.getElementById('igr-hook-list');
+  const hooksIntro = document.getElementById('igr-hook-intro');
+  if (hooksData.hooks && hooksData.hooks.length > 0) {
+    hooksSec.style.display = 'block';
+    const stylesStr = (hooksData.styles_used || []).join(', ');
+    hooksIntro.textContent = stylesStr
+      ? `Built for your style${hooksData.styles_used.length > 1 ? 's' : ''}: ${stylesStr}. Copy any hook and use it as the first line of your next Reel caption or spoken intro. First 3 seconds decide if they watch.`
+      : `Proven opening lines for tattoo Reels. Copy any hook and use it as the first caption line or spoken intro. The first 3 seconds decide if they keep watching.`;
+    hooksList.innerHTML = hooksData.hooks.map((h, i) => `
+      <div class="igr-hook-card">
+        <div class="igr-hook-num">${i + 1}</div>
+        <div class="igr-hook-body">
+          <div class="igr-hook-text" id="igr-hook-text-${i}">${h.hook}</div>
+          <div class="igr-hook-tag">${h.tag}</div>
+        </div>
+        <button class="igr-hook-copy" id="igr-hook-btn-${i}" onclick="copyHook(${i})">COPY</button>
+      </div>`).join('');
   }
 
   // ── TikTok Gap ────────────────────────────────────────────────
@@ -6092,6 +6151,29 @@ function copyIGBio(i) {
         btn.textContent = 'COPY TO CLIPBOARD';
         btn.classList.remove('copied');
       }, 2200);
+    }
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+function copyHook(i) {
+  const text = document.getElementById('igr-hook-text-' + i)?.textContent || '';
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('igr-hook-btn-' + i);
+    if (btn) {
+      btn.textContent = 'COPIED!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 2000);
     }
   }).catch(() => {
     const ta = document.createElement('textarea');
