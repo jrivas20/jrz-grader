@@ -2842,7 +2842,7 @@ def grade_tattoo():
     map_pack_data = []
     if DFS_LOGIN and DFS_PASSWORD and city:
         try:
-            map_pack_data = check_map_pack(place.get('name', ''), 'tattoo studio', city, state)
+            map_pack_data = check_map_pack(place.get('name', ''), 'tattoo artist', city, state)
         except Exception:
             map_pack_data = []
 
@@ -2997,9 +2997,19 @@ def check_tattoo_rankings(biz_name, city, state):
 # Docs: https://www.facebook.com/ads/library/api/
 
 def check_ad_library(city, state):
-    """Query Meta Ad Library for competitor tattoo ads near the artist's city."""
+    """
+    Query Meta Ad Library for competitor tattoo ads near the artist's city.
+    Filters to only return ads that are:
+    1. Tattoo-related (page_name or body contains tattoo keywords)
+    2. Geographically relevant (city name appears in body, OR ad_reached_countries = US with city search)
+    """
     if not FB_TOKEN or not city:
         return []
+
+    TATTOO_AD_KEYWORDS = {'tattoo', 'ink', 'inking', 'tattooed', 'tattooist', 'tattoo artist',
+                          'tattoo studio', 'tattoo shop', 'piercing', 'body art'}
+    city_lower = city.lower()
+
     try:
         resp = requests.get(
             'https://graph.facebook.com/v19.0/ads_archive',
@@ -3013,20 +3023,52 @@ def check_ad_library(city, state):
                     'ad_creative_bodies,ad_delivery_start_time,'
                     'impressions,spend,currency'
                 ),
-                'limit': 8,
+                'limit': 20,   # fetch more, then post-filter
             },
             timeout=10
         )
         data = resp.json()
         if 'error' in data:
             return []
+
         ads = data.get('data', [])
         results = []
+
         for ad in ads:
+            page_name  = (ad.get('page_name') or '').lower()
+            bodies     = ad.get('ad_creative_bodies') or []
+            body_text  = ' '.join(bodies).lower()
+            combined   = page_name + ' ' + body_text
+
+            # ── Filter 1: Must be tattoo-related ──────────────────────────
+            is_tattoo = any(kw in combined for kw in TATTOO_AD_KEYWORDS)
+            if not is_tattoo:
+                continue
+
+            # ── Filter 2: Must be city-relevant ───────────────────────────
+            # Accept if city appears in the ad copy, OR if the page name contains
+            # any part of the city name (e.g. "Orlando Ink" for city=Orlando),
+            # OR if we got here via a city-specific search (all results are US-targeted).
+            # We allow all US-targeted tattoo ads from the city search to pass if the
+            # ad copy doesn't mention a different specific city.
+            city_parts = [c.strip() for c in city_lower.split() if len(c.strip()) > 3]
+            city_in_ad = any(cp in combined for cp in city_parts)
+            # If city isn't in the ad but the ad is clearly tattoo-related from a
+            # city-specific search, we still include it (it's a US-wide tattoo ad
+            # shown in that market, still relevant competitive intelligence)
+            # But exclude ads that mention completely unrelated cities explicitly
+            # (heuristic: skip if a major city is in body but NOT our city)
+            MAJOR_CITIES = {'new york', 'los angeles', 'chicago', 'houston', 'dallas',
+                            'phoenix', 'seattle', 'boston', 'denver', 'portland',
+                            'atlanta', 'miami', 'las vegas', 'san diego', 'austin'}
+            other_city_mentioned = any(mc in body_text for mc in MAJOR_CITIES if mc != city_lower)
+            if other_city_mentioned and not city_in_ad:
+                continue   # skip ads clearly for a different city
+
             spend = ad.get('spend', {})
             imps  = ad.get('impressions', {})
-            bodies = ad.get('ad_creative_bodies') or []
             body_preview = bodies[0][:120] if bodies else ''
+
             results.append({
                 'page_name':    ad.get('page_name', 'Unknown'),
                 'snapshot_url': ad.get('ad_snapshot_url', ''),
@@ -3038,6 +3080,10 @@ def check_ad_library(city, state):
                 'currency':     ad.get('currency', 'USD'),
                 'body':         body_preview,
             })
+
+            if len(results) >= 6:
+                break
+
         return results
     except Exception:
         return []
@@ -3581,6 +3627,157 @@ def build_tattoo_roadmap(issues):
     return steps
 
 
+# ── INSTAGRAM BIO AI RECOMMENDATIONS ─────────────────────────────────
+# Rule-based smart copy — no external AI API required.
+# Generates 3 bio variants + a scored breakdown of what's missing.
+
+def generate_bio_recommendations(place, site_data, tattoo_extras, social_data, city):
+    """
+    Analyzes the artist's current signals and generates:
+    - 3 ready-to-paste Instagram bio templates
+    - A scored checklist of what an optimized bio should have
+    - Specific copy recommendations per gap
+    """
+    name     = place.get('name', '')
+    styles   = tattoo_extras.get('detected_styles', [])
+    has_bk   = tattoo_extras.get('has_tattoo_booking', False) or site_data.get('has_booking_widget', False)
+    bk_plat  = tattoo_extras.get('booking_platform', '')
+    website  = place.get('website', '')
+    phone    = place.get('formatted_phone_number', '')
+    rating   = place.get('rating', 0)
+    reviews  = place.get('user_ratings_total', 0)
+    ig_fol   = (social_data or {}).get('instagram_followers')
+    city_str = city or 'your city'
+
+    # ── Derive artist short name ──────────────────────────────────────
+    # Extract first word if studio name; else use full name
+    short_name = name.split()[0] if name else 'Artist'
+
+    # ── Primary style phrase ─────────────────────────────────────────
+    if styles:
+        top_style = styles[0].title()
+        style_phrase = f'{top_style} Tattoo Artist'
+    else:
+        style_phrase = 'Custom Tattoo Artist'
+
+    # ── Booking CTA line ─────────────────────────────────────────────
+    if has_bk and bk_plat:
+        booking_line = f'Book via {bk_plat} — link below ↓'
+    elif has_bk:
+        booking_line = 'Online booking — link below ↓'
+    elif website:
+        booking_line = f'DM to book · full portfolio at {website.replace("https://","").replace("http://","").split("/")[0]}'
+    elif phone:
+        booking_line = f'DM or call to book · {phone}'
+    else:
+        booking_line = 'DM to book your consultation'
+
+    # ── Review social proof ───────────────────────────────────────────
+    if reviews >= 100:
+        proof_line = f'⭐ {rating}/5 · {reviews}+ Google reviews'
+    elif reviews >= 25:
+        proof_line = f'⭐ {rating}/5 on Google'
+    else:
+        proof_line = ''
+
+    # ── Multi-style line ─────────────────────────────────────────────
+    if len(styles) >= 2:
+        style_list = ' · '.join(s.title() for s in styles[:3])
+    elif styles:
+        style_list = styles[0].title()
+    else:
+        style_list = 'Custom Work · All Styles Welcome'
+
+    # ── Generate 3 bio variants ───────────────────────────────────────
+    bios = []
+
+    # Variant 1: Clean + Local
+    v1_lines = [
+        f'{style_phrase}',
+        f'📍 {city_str}',
+        style_list,
+        booking_line,
+    ]
+    if proof_line:
+        v1_lines.insert(2, proof_line)
+    bios.append({
+        'label': 'Clean + Local (recommended)',
+        'bio':   '\n'.join(v1_lines),
+        'why':   'Shows your style, city, and booking path in under 5 seconds. Local clients know immediately you\'re near them.',
+    })
+
+    # Variant 2: Personality-forward
+    v2_lines = [
+        f'Custom ink. Serious art.',
+        f'{style_list}',
+        f'📍 {city_str} · DM for availability',
+        booking_line,
+    ]
+    if proof_line:
+        v2_lines.insert(2, proof_line)
+    bios.append({
+        'label': 'Bold + Direct',
+        'bio':   '\n'.join(v2_lines),
+        'why':   'Works well for artists with strong visual portfolios. The hook leads with attitude, not job title.',
+    })
+
+    # Variant 3: Conversion-maxed
+    v3_lines = [
+        f'🎨 {style_phrase} — {city_str}',
+        f'Specializing in: {style_list}',
+        f'Limited slots available',
+        booking_line,
+    ]
+    if proof_line:
+        v3_lines.append(proof_line)
+    bios.append({
+        'label': 'Urgency + Booking',
+        'bio':   '\n'.join(v3_lines),
+        'why':   'Creates urgency with "limited slots" and leads every line toward a booking action.',
+    })
+
+    # ── Bio gap checklist ─────────────────────────────────────────────
+    gaps = []
+    if not styles:
+        gaps.append({
+            'issue': 'No tattoo style mentioned in bio',
+            'impact': 'Clients don\'t know your specialty — they skip to the next artist',
+            'fix':    f'Add your primary style: "Realism · Black & Grey · Traditional" — this alone increases profile-to-DM conversion.',
+        })
+    if not city:
+        gaps.append({
+            'issue': 'No location in bio',
+            'impact': 'Local clients don\'t know you\'re near them. Instagram shows you in local results but your bio doesn\'t confirm it.',
+            'fix':    f'Add "📍 [Your City]" on its own line. This is the #1 thing missing from most tattoo artist bios.',
+        })
+    if not has_bk:
+        gaps.append({
+            'issue': 'No booking link or clear booking CTA',
+            'impact': 'Clients who want to book have to DM and wait — most won\'t. You\'re losing warm leads hourly.',
+            'fix':    'Add a Calendly, Booksy, or Vagaro link as your link-in-bio. "Book now — link below ↓" on the last line.',
+        })
+    if not proof_line:
+        gaps.append({
+            'issue': 'No social proof or credibility signal',
+            'impact': 'New visitors have no reason to trust you over other artists with visible reviews.',
+            'fix':    f'Once you hit 25+ Google reviews, add "⭐ {rating}/5 on Google" to your bio.',
+        })
+    if not website:
+        gaps.append({
+            'issue': 'No website linked',
+            'impact': 'Instagram link-in-bio is your only lead channel — one algorithm change and it\'s gone.',
+            'fix':    'JRZ Ink Systems builds your artist website in 48h and wires it to your booking system and Google profile.',
+        })
+
+    return {
+        'bio_variants':   bios,
+        'bio_gaps':       gaps,
+        'style_detected': styles,
+        'city_used':      city_str,
+        'has_booking':    has_bk,
+    }
+
+
 # ── TATTOO REPORT BUILDER ─────────────────────────────────────────────
 
 def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
@@ -3636,8 +3833,9 @@ def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
         place, site_data, tattoo_extras, social_data,
         review_intel, map_pack_data, scores
     )
-    roadmap = build_tattoo_roadmap(issues)
-    revenue = estimate_tattoo_revenue(place, city, overall, social_data)
+    roadmap  = build_tattoo_roadmap(issues)
+    revenue  = estimate_tattoo_revenue(place, city, overall, social_data)
+    bio_recs = generate_bio_recommendations(place, site_data, tattoo_extras, social_data, city)
 
     # Competitor insight — include FB data + ad library cross-reference
     ad_lib = ad_library or []
@@ -3745,9 +3943,10 @@ def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
         'luis_farrera_proof': {
             'ctr': '5.06%', 'cpl': '$14.83', 'leads': 84, 'days': 30
         },
-        'free_tip':    free_tip,
-        'gbp_description': gbp_desc,
-        'ad_library':  ad_library or [],
+        'free_tip':         free_tip,
+        'gbp_description':  gbp_desc,
+        'ad_library':       ad_library or [],
+        'bio_recommendations': bio_recs,
     }
 
 
@@ -3773,6 +3972,379 @@ def fire_ghl_ink(report):
             'issues_count':     len(report['issues']),
             'revenue_opportunity': report['revenue'].get('opportunity_base', 0),
             'tags': [f"grade:{s['grade']}", 'ink-grader-lead', 'tattoo-artist', 'needs-followup']
+        }, timeout=5)
+    except Exception:
+        pass
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  JRZ INK SYSTEMS — GUEST CITY AUDIT ENGINE
+#  A tattoo artist scouts a new city before booking a guest spot.
+#  Returns: market opportunity score, competition breakdown, revenue estimate.
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/api/grade-guest-city', methods=['POST'])
+def grade_guest_city():
+    data  = request.get_json(force=True)
+    city  = data.get('city', '').strip()
+    state = data.get('state', '').strip()
+    style = data.get('style', '').strip()
+
+    if not city:
+        return jsonify({'error': 'City is required'}), 400
+
+    city_display = f'{city}, {state}' if state else city
+    cache_key    = hashlib.md5(f'guest:{city_display.lower()}'.encode()).hexdigest()
+    if cache_key in CACHE and time.time() - CACHE[cache_key]['ts'] < 600:
+        return jsonify(CACHE[cache_key]['data'])
+
+    # 1. Geocode city center
+    lat, lng = geocode_city(city, state)
+    if not lat:
+        return jsonify({'error': f'Could not locate "{city_display}". Try including the state abbreviation.'}), 400
+
+    # 2. Find tattoo artists in city
+    artists = find_tattoo_artists_in_city(lat, lng)
+
+    # 3. Map pack — who owns the 3-pack for "tattoo artist [city]"?
+    map_pack = []
+    if DFS_LOGIN and DFS_PASSWORD:
+        try:
+            map_pack = check_city_map_pack(city, state)
+        except Exception:
+            pass
+
+    # 4. Meta Ad Library — who's running ads in this city?
+    ads = []
+    if FB_TOKEN:
+        try:
+            ads = check_ad_library(city, state)
+        except Exception:
+            pass
+
+    # 5. City pricing benchmarks
+    benchmarks = get_city_benchmarks(city)
+
+    # 6. Demand signal (DataForSEO SERP)
+    serp_data = {}
+    if DFS_LOGIN and DFS_PASSWORD:
+        try:
+            serp_data = check_guest_city_demand(city, state)
+        except Exception:
+            pass
+
+    # 7. Build and return report
+    report = build_guest_city_report(city, state, style, artists, map_pack, ads,
+                                      benchmarks, serp_data, lat, lng)
+    CACHE[cache_key] = {'ts': time.time(), 'data': report}
+
+    try:
+        fire_ghl_guest_city(report)
+    except Exception:
+        pass
+
+    return jsonify(report)
+
+
+# ── GUEST CITY HELPERS ───────────────────────────────────────────────
+
+def geocode_city(city, state):
+    """Get lat/lng for a city center using Google Geocoding API."""
+    query = f'{city}, {state}, United States' if state else f'{city}, United States'
+    try:
+        r = requests.get(
+            'https://maps.googleapis.com/maps/api/geocode/json',
+            params={'address': query, 'key': GOOGLE_KEY},
+            timeout=6
+        )
+        results = r.json().get('results', [])
+        if results:
+            loc = results[0]['geometry']['location']
+            return loc['lat'], loc['lng']
+    except Exception:
+        pass
+    return None, None
+
+
+def find_tattoo_artists_in_city(lat, lng):
+    """Nearby Search for tattoo artists within 15 km of city center."""
+    try:
+        r = requests.get(
+            'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+            params={
+                'location': f'{lat},{lng}',
+                'radius':   15000,
+                'type':     'tattoo_parlor',
+                'keyword':  'tattoo',
+                'key':      GOOGLE_KEY,
+            },
+            timeout=8
+        )
+        results   = r.json().get('results', [])
+        TATTOO_KW = {'tattoo', 'ink', 'piercing', 'tat'}
+        artists   = [
+            {
+                'name':    a.get('name', ''),
+                'rating':  a.get('rating', 0),
+                'reviews': a.get('user_ratings_total', 0),
+                'address': a.get('vicinity', ''),
+            }
+            for a in results
+            if a.get('business_status') == 'OPERATIONAL'
+            and (
+                'tattoo_parlor' in a.get('types', []) or
+                any(kw in a.get('name', '').lower() for kw in TATTOO_KW)
+            )
+            and not any(xt in (a.get('types') or []) for xt in [
+                'lodging', 'hotel', 'restaurant', 'gas_station',
+                'grocery_or_supermarket', 'bank', 'hospital',
+            ])
+        ]
+        return artists[:20]
+    except Exception:
+        return []
+
+
+def check_city_map_pack(city, state):
+    """Who's in Google's 3-pack for 'tattoo artist [city]'?"""
+    if not (DFS_LOGIN and DFS_PASSWORD):
+        return []
+    keyword = f'tattoo artist {city}'
+    try:
+        resp = requests.post(
+            'https://api.dataforseo.com/v3/serp/google/local_pack/live/advanced',
+            auth=(DFS_LOGIN, DFS_PASSWORD),
+            json=[{
+                'keyword':       keyword,
+                'location_name': f'{city},{state},United States' if state else f'{city},United States',
+                'language_name': 'English',
+            }],
+            timeout=15
+        )
+        data       = resp.json()
+        result_obj = (((data.get('tasks') or [{}])[0].get('result') or [{}])[0])
+        items      = result_obj.get('items') or []
+        pack_items = [i for i in items if i.get('type') == 'local_pack']
+        pack = []
+        for item in pack_items:
+            rating_obj = item.get('rating') or {}
+            pack.append({
+                'name':    item.get('title', ''),
+                'rating':  rating_obj.get('value')       if isinstance(rating_obj, dict) else None,
+                'reviews': rating_obj.get('votes_count') if isinstance(rating_obj, dict) else None,
+                'address': item.get('address', ''),
+            })
+        return pack
+    except Exception:
+        return []
+
+
+def check_guest_city_demand(city, state):
+    """DataForSEO SERP for 'tattoo artist [city]' — demand proxy."""
+    if not (DFS_LOGIN and DFS_PASSWORD):
+        return {}
+    keyword = f'tattoo artist {city}'
+    try:
+        resp = requests.post(
+            'https://api.dataforseo.com/v3/serp/google/organic/live/advanced',
+            auth=(DFS_LOGIN, DFS_PASSWORD),
+            json=[{
+                'keyword':       keyword,
+                'location_name': f'{city},{state},United States' if state else f'{city},United States',
+                'language_name': 'English',
+                'depth':         10,
+            }],
+            timeout=12
+        )
+        data        = resp.json()
+        task_result = (data.get('tasks') or [{}])[0].get('result') or []
+        total_count = int((task_result[0].get('se_results_count', 0)) if task_result else 0)
+        items       = (task_result[0].get('items') or []) if task_result else []
+        top_results = [
+            {
+                'title':  i.get('title', ''),
+                'domain': i.get('domain', ''),
+                'rank':   i.get('rank_absolute'),
+            }
+            for i in items[:5] if i.get('type') == 'organic'
+        ]
+        return {'keyword': keyword, 'result_count': total_count, 'top_results': top_results}
+    except Exception:
+        return {}
+
+
+def get_city_benchmarks(city):
+    """Return pricing/volume benchmarks for a given city."""
+    city_key = city.lower().strip()
+    if city_key in TATTOO_CITY_BENCHMARKS:
+        return TATTOO_CITY_BENCHMARKS[city_key]
+    for key in TATTOO_CITY_BENCHMARKS:
+        if key != 'default' and (key in city_key or city_key in key):
+            return TATTOO_CITY_BENCHMARKS[key]
+    return TATTOO_CITY_BENCHMARKS['default']
+
+
+def calculate_opportunity_score(artists, map_pack, ads, benchmarks):
+    """
+    Score a city as a guest artist opportunity. Returns 0–100.
+    4 components: Demand signal (35) + Competition barrier (35) +
+                  Revenue potential (20) + Market activity (10)
+    """
+    # ── Demand signal (0-35) ── More artists = proven client base
+    n = len(artists)
+    if   n == 0:  demand_score = 10   # unknown market
+    elif n <= 5:  demand_score = 18   # small / emerging
+    elif n <= 10: demand_score = 28   # healthy market
+    elif n <= 20: demand_score = 35   # strong demand
+    else:         demand_score = 25   # high demand but very saturated
+
+    # ── Competition barrier (0-35) ── Lower avg reviews = easier to stand out
+    has_r = [a for a in artists if a.get('reviews', 0) > 0]
+    avg_reviews = sum(a['reviews'] for a in has_r) / len(has_r) if has_r else 0
+    avg_rating  = sum(a['rating']  for a in has_r) / len(has_r) if has_r else 0
+
+    if   avg_reviews == 0:  barrier_score = 20
+    elif avg_reviews < 50:  barrier_score = 35   # new market — low barrier
+    elif avg_reviews < 150: barrier_score = 25   # moderate barrier
+    elif avg_reviews < 300: barrier_score = 15   # high barrier
+    else:                   barrier_score = 8    # very established
+
+    # ── Revenue potential (0-20) ── Higher session prices = better earnings
+    avg_price = benchmarks.get('avg_price', 200)
+    if   avg_price >= 320: rev_score = 20
+    elif avg_price >= 260: rev_score = 16
+    elif avg_price >= 220: rev_score = 12
+    elif avg_price >= 180: rev_score = 8
+    else:                  rev_score = 5
+
+    # ── Market activity (0-10) ── Ads running = active paying client demand
+    n_ads = len(ads)
+    if   n_ads == 0:  activity_score = 5
+    elif n_ads <= 2:  activity_score = 8
+    else:             activity_score = 10
+
+    return {
+        'total':          min(demand_score + barrier_score + rev_score + activity_score, 100),
+        'demand_score':   demand_score,
+        'barrier_score':  barrier_score,
+        'rev_score':      rev_score,
+        'activity_score': activity_score,
+        'avg_reviews':    round(avg_reviews, 1),
+        'avg_rating':     round(avg_rating, 1),
+        'artist_count':   n,
+    }
+
+
+def get_opportunity_verdict(score):
+    """Plain-language verdict for the opportunity score."""
+    if score >= 70:
+        return {
+            'label':    'STRONG OPPORTUNITY',
+            'color':    '#00cc66',
+            'headline': 'This city is worth the trip.',
+            'body':     ('Proven tattoo demand, accessible competition, and solid earning potential. '
+                         'Guest artists with a strong IG presence can build a clientele here fast. '
+                         'JRZ Ink Systems can run city-targeted Meta Ads ahead of your arrival to pre-book slots.'),
+        }
+    elif score >= 50:
+        return {
+            'label':    'MODERATE OPPORTUNITY',
+            'color':    '#ff9900',
+            'headline': 'Viable — with the right positioning.',
+            'body':     ('This market has demand but also established local artists. '
+                         'Guest artists who specialize in a niche style not well-represented locally '
+                         'can carve out strong bookings. Pre-arrival Instagram content targeting this city is key.'),
+        }
+    elif score >= 30:
+        return {
+            'label':    'PROCEED WITH CAUTION',
+            'color':    '#ff6644',
+            'headline': 'High barriers or limited demand.',
+            'body':     ('The local market is either very established (artists with 300+ reviews) '
+                         'or the client base is smaller than average. Doable with a loyal existing IG following, '
+                         'but cold entry is difficult. Consider a nearby larger market first.'),
+        }
+    else:
+        return {
+            'label':    'NOT RECOMMENDED',
+            'color':    '#ff4444',
+            'headline': 'This city is not optimal right now.',
+            'body':     ('Limited tattoo demand, very few active artists, or below-average session pricing. '
+                         'Your time is better spent in a higher-yield market. Try a nearby major city.'),
+        }
+
+
+def build_guest_city_report(city, state, style, artists, map_pack, ads,
+                              benchmarks, serp_data, lat, lng):
+    opp     = calculate_opportunity_score(artists, map_pack, ads, benchmarks)
+    verdict = get_opportunity_verdict(opp['total'])
+
+    avg_price  = benchmarks.get('avg_price', 200)
+    high_price = benchmarks.get('high', 300)
+    max_sess   = benchmarks.get('monthly_sessions', 32)
+
+    # 2-week guest stint estimate (50% of full-time monthly volume)
+    g2w_low  = int(max_sess * 0.50 * 0.55 * avg_price)
+    g2w_high = int(max_sess * 0.50 * 0.80 * high_price)
+
+    # Seasonal timing note
+    month = datetime.datetime.now().month
+    if   month in [6, 7, 8]:  season = ('🔥 Peak Season — bookings run 20–30% higher nationwide in summer. '
+                                          'Strong timing for a guest spot.')
+    elif month in [12, 1, 2]: season = ('❄️ Slower season in most markets. '
+                                          'Consider a shorter 1-week trial — or target warmer-weather cities.')
+    elif month in [3, 4, 5]:  season = ('🌱 Spring secondary peak — clients book early for summer looks. '
+                                          'Good timing, especially for color and fine-line work.')
+    else:                      season = ('🍂 Fall is excellent for tattooing — cooler temps = better healing, '
+                                          'and clients book before the holidays. Solid window.')
+
+    top_artists = sorted(artists, key=lambda x: x.get('reviews', 0), reverse=True)[:5]
+
+    return {
+        'type':         'guest_city',
+        'city':         city,
+        'state':        state,
+        'city_display': f'{city}, {state}' if state else city,
+        'style':        style or None,
+        'opportunity':  {**opp, **verdict},
+        'benchmarks': {
+            'avg_price':        avg_price,
+            'high_price':       high_price,
+            'monthly_sessions': max_sess,
+        },
+        'revenue_estimate': {
+            'low':       g2w_low,
+            'high':      g2w_high,
+            'avg_price': avg_price,
+            'note':      f'Based on {city} market benchmarks for a 2-week guest stint',
+        },
+        'competition': {
+            'artist_count': opp['artist_count'],
+            'avg_reviews':  opp['avg_reviews'],
+            'avg_rating':   opp['avg_rating'],
+            'top_artists':  top_artists,
+        },
+        'map_pack':     map_pack,
+        'ad_activity':  {'count': len(ads), 'ads': ads[:4]},
+        'demand':       serp_data,
+        'seasonal_note': season,
+    }
+
+
+def fire_ghl_guest_city(report):
+    """GHL lead capture for guest city audit — fire to same ink webhook."""
+    try:
+        requests.post(GHL_INK_WEBHOOK, json={
+            'name':              f'Guest Audit — {report["city_display"]}',
+            'firstName':         'Guest',
+            'source':            'jrz-ink-guest-city',
+            'city':              report.get('city', ''),
+            'state':             report.get('state', ''),
+            'opportunity_score': report['opportunity']['total'],
+            'verdict':           report['opportunity']['label'],
+            'artist_count':      report['competition']['artist_count'],
+            'avg_price':         report['benchmarks']['avg_price'],
+            'tags':              ['guest-city-audit', 'ink-grader-lead', 'tattoo-artist'],
         }, timeout=5)
     except Exception:
         pass
