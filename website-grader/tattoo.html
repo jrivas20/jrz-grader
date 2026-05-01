@@ -2137,7 +2137,59 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   margin-bottom: 12px;
 }
 .lg-unlock-btn:hover { background: rgba(230,230,230,1); transform: scale(1.01); }
+.lg-unlock-btn.dimmed { background: rgba(255,255,255,.08); color: rgba(255,255,255,.28); cursor: not-allowed; pointer-events: none; }
+.lg-unlock-btn.dimmed:hover { transform: none; }
 .lg-privacy { font-size: 11px; color: rgba(255,255,255,.2); line-height: 1.5; }
+
+/* ── LEAD POPUP OVERLAY ─────────────────────────────────────────── */
+#lead-popup-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: rgba(0,0,0,.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#lead-popup-overlay.open { display: flex; }
+#lead-popup-box {
+  background: #111111;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 560px;
+  position: relative;
+  box-shadow: 0 40px 120px rgba(0,0,0,.9);
+  animation: modal-in .3s var(--ease);
+}
+#lead-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+#lead-popup-header .lph-left { flex: 1; }
+#lead-popup-header .lph-tag { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 4px; }
+#lead-popup-header .lph-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+#lead-popup-close { background: rgba(255,255,255,.06); border: none; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.4); font-size: 16px; cursor: pointer; transition: all .15s; flex-shrink: 0; }
+#lead-popup-close:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+/* ── IG HEALTH SCORE ─────────────────────────────────────────────── */
+.igr-health-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.06); }
+.igr-health-circle { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+.igr-health-num { font-size: 22px; font-weight: 900; line-height: 1; }
+.igr-health-lbl { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); margin-top: 2px; text-transform: uppercase; }
+.igr-health-breakdown { flex: 1; min-width: 200px; }
+.igr-hb-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; color: rgba(255,255,255,.42); }
+.igr-hb-label { width: 86px; flex-shrink: 0; }
+.igr-hb-track { flex: 1; height: 4px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; }
+.igr-hb-fill { height: 100%; border-radius: 99px; transition: width .9s var(--ease); }
+.igr-hb-score { width: 30px; text-align: right; flex-shrink: 0; font-weight: 600; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://links.jrzmarketing.com/js/form_embed.js"></script>
@@ -2364,37 +2416,54 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       </div>
     </div>
 
-    <p class="lg-unlock-text">Leave your details below to unlock the full breakdown — booking gaps, Google visibility, Instagram audit, and your revenue opportunity.</p>
+    <p class="lg-unlock-text">Drop your info below — takes 20 seconds. We send your full breakdown straight to your inbox and you get instant access to the report.</p>
 
-    <!-- GHL Inline Form -->
-    <div class="lg-form-wrap">
-      <iframe
-        src="https://links.jrzmarketing.com/widget/form/3FCTNG4eH5pHYrBhrdlF"
-        style="width:100%;height:690px;border:none"
-        id="inline-3FCTNG4eH5pHYrBhrdlF"
-        data-layout="{'id':'INLINE'}"
-        data-trigger-type="alwaysShow"
-        data-trigger-value=""
-        data-activation-type="alwaysActivated"
-        data-activation-value=""
-        data-deactivation-type="neverDeactivate"
-        data-deactivation-value=""
-        data-form-name="jrz ink system"
-        data-height="690"
-        data-layout-iframe-id="inline-3FCTNG4eH5pHYrBhrdlF"
-        data-form-id="3FCTNG4eH5pHYrBhrdlF"
-        title="jrz ink system">
-      </iframe>
-    </div>
+    <!-- Primary CTA — opens lead popup -->
+    <button class="lg-unlock-btn" id="lg-open-form-btn" onclick="openLeadPopup()">
+      Fill Out Form to Unlock Report →
+    </button>
 
-    <!-- Unlock button — artist clicks after submitting the form -->
-    <button class="lg-unlock-btn" id="lg-unlock-btn" onclick="unlockReport()">
+    <!-- Fallback unlock button — enabled only after form is submitted -->
+    <button class="lg-unlock-btn dimmed" id="lg-unlock-btn" onclick="unlockReport()" style="margin-top:10px;font-size:13px;">
       View My Full Report →
     </button>
     <div class="lg-privacy">No spam. Your info is used only to deliver your report and send personalized tips from JRZ Ink Systems.</div>
 
   </div>
 </section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  LEAD POPUP OVERLAY
+  Modal with GHL popup form — gating the report behind lead capture.
+════════════════════════════════════════════════════════════════ -->
+<div id="lead-popup-overlay">
+  <div id="lead-popup-box">
+    <div id="lead-popup-header">
+      <div class="lph-left">
+        <div class="lph-tag">Step 1 of 2 · Unlock Your Full Audit</div>
+        <div class="lph-title">Where should we send your report?</div>
+      </div>
+      <button id="lead-popup-close" onclick="closeLGPopup()">✕</button>
+    </div>
+    <iframe
+      src="https://links.jrzmarketing.com/widget/form/3FCTNG4eH5pHYrBhrdlF"
+      style="display:block;width:100%;height:700px;border:none"
+      id="popup-3FCTNG4eH5pHYrBhrdlF"
+      data-layout="{'id':'POPUP'}"
+      data-trigger-type="alwaysShow"
+      data-trigger-value=""
+      data-activation-type="alwaysActivated"
+      data-activation-value=""
+      data-deactivation-type="neverDeactivate"
+      data-deactivation-value=""
+      data-form-name="jrz ink system"
+      data-height="732"
+      data-layout-iframe-id="popup-3FCTNG4eH5pHYrBhrdlF"
+      data-form-id="3FCTNG4eH5pHYrBhrdlF"
+      title="jrz ink system">
+    </iframe>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════════
   IG-ONLY REPORT SECTION
@@ -2407,6 +2476,14 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     <div class="igr-eyebrow">INSTAGRAM ANALYTICS AUDIT · JRZ INK SYSTEMS</div>
     <div class="igr-handle" id="igr-handle">@handle</div>
     <div class="igr-city" id="igr-city"></div>
+    <!-- IG Health Score (populated by renderIGReport) -->
+    <div class="igr-health-row" id="igr-health-row" style="display:none">
+      <div class="igr-health-circle" id="igr-health-circle">
+        <div class="igr-health-num" id="igr-health-num">—</div>
+        <div class="igr-health-lbl">IG Health</div>
+      </div>
+      <div class="igr-health-breakdown" id="igr-health-breakdown"></div>
+    </div>
   </div>
 
   <div class="igr-body">
@@ -3290,6 +3367,7 @@ let fbAppId           = '';
 let oauthEnabled      = false;
 let pendingReportData = null;  // holds API response while interstitial is shown
 let oiConnecting      = false; // true while interstitial OAuth popup is open
+let leadFormDone      = false; // true after GHL form is submitted — gates unlockReport()
 // IG mode globals
 let igSearchMode    = false;  // true when artist is in IG handle tab flow
 let pendingIGHandle = '';     // stored while OAuth popup is open
@@ -3324,6 +3402,25 @@ fetch(`${API}/api/config`).then(r => r.json()).then(c => {
 // Clear tokens if user closes or navigates away
 window.addEventListener('beforeunload', clearOAuthData);
 window.addEventListener('message', handleOAuthMessage);
+
+// ── GHL LEAD FORM SUBMIT LISTENER ────────────────────────────────
+window.addEventListener('message', function(e) {
+  const msg = e.data;
+  if (!msg) return;
+  const type = typeof msg === 'object'
+    ? (msg.type || msg.event || '')
+    : (typeof msg === 'string' ? msg : '');
+  const formMatch = typeof msg === 'object' &&
+    (msg.formId === '3FCTNG4eH5pHYrBhrdlF' || msg.id === '3FCTNG4eH5pHYrBhrdlF');
+  if (type === 'lcFormSubmit' || type === 'FORM_SUBMITTED' ||
+      type === 'form_submitted' || type === 'SUBMITTED' || formMatch) {
+    leadFormDone = true;
+    closeLGPopup();
+    const unlockBtn = document.getElementById('lg-unlock-btn');
+    if (unlockBtn) unlockBtn.classList.remove('dimmed');
+    if (pendingReportData) setTimeout(unlockReport, 400);
+  }
+});
 
 // ── SEARCH MODE SWITCH ────────────────────────────────────────────
 function switchSearchMode(mode) {
@@ -3670,6 +3767,17 @@ input.addEventListener('keydown', e => {
 document.getElementById('ig-handle-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') startIGModeOAuth();
 });
+
+// ── FIX 6: WARMUP PING — fires on first focus to wake Render free tier ──
+let warmupSent = false;
+function _warmup() {
+  if (!warmupSent) {
+    warmupSent = true;
+    fetch(`${API}/health`).catch(() => {});
+  }
+}
+input.addEventListener('focus', _warmup);
+document.getElementById('ig-handle-input').addEventListener('focus', _warmup);
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) acList.style.display = 'none';
 });
@@ -3907,6 +4015,7 @@ function runAgain() {
   pendingIGHandle   = '';
   pendingIGCity     = '';
   pendingIGToken    = null;
+  leadFormDone      = false;
   input.value = '';
   document.getElementById('ig-handle-input').value = '';
   document.getElementById('ig-city-input').value   = '';
@@ -3938,6 +4047,16 @@ function dismissUpgradeBar() {
 // ─────────────────────────────────────────────────────────────────
 // LEAD GATE
 // ─────────────────────────────────────────────────────────────────
+
+function openLeadPopup() {
+  const overlay = document.getElementById('lead-popup-overlay');
+  if (overlay) overlay.classList.add('open');
+  window.scrollTo({ top: 0 });
+}
+function closeLGPopup() {
+  const overlay = document.getElementById('lead-popup-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
 
 function showLeadGate() {
   document.getElementById('search-section').style.display    = 'none';
@@ -3974,9 +4093,16 @@ function showLeadGate() {
   lg.style.flexDirection = 'column';
   lg.style.alignItems    = 'center';
   window.scrollTo({ top: 0 });
+
+  if (leadFormDone) {
+    if (pendingReportData) setTimeout(unlockReport, 200);
+  } else {
+    setTimeout(openLeadPopup, 400);
+  }
 }
 
 function unlockReport() {
+  if (!leadFormDone) { openLeadPopup(); return; }
   document.getElementById('lead-gate-section').style.display = 'none';
   if (!pendingReportData) return;
   if (pendingReportData.report_type === 'instagram') {
@@ -5230,6 +5356,51 @@ function renderReport(d) {
       ci.textContent = d.competitor_insight;
       ci.style.display = 'block';
     }
+
+    // ── Fix 7: You vs Top 3 gap table ────────────────────────────
+    const youInPack = (d.map_pack || []).some(mp => mp.in_pack);
+    const existGapTbl = document.getElementById('comp-gap-tbl');
+    if (existGapTbl) existGapTbl.remove();
+    const gapWrap = document.createElement('div');
+    gapWrap.id = 'comp-gap-tbl';
+    gapWrap.style.cssText = 'margin-top:20px;overflow-x:auto';
+    const topComps = comps.slice(0, 3);
+    gapWrap.innerHTML = `
+      <div style="font-size:10px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">You vs Top Artists Nearby</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+            <th style="text-align:left;padding:6px 10px 8px 0;color:rgba(255,255,255,.28);font-weight:600">Artist</th>
+            <th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,.28);font-weight:600">Rating</th>
+            <th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,.28);font-weight:600">Reviews</th>
+            <th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,.28);font-weight:600">Map Pack</th>
+            <th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,.28);font-weight:600">Running Ads</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04)">
+            <td style="padding:8px 10px 8px 0;font-weight:700;color:#fff">${b.name} <span style="font-size:9px;font-weight:800;letter-spacing:1px;background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px;color:rgba(255,255,255,.5)">YOU</span></td>
+            <td style="text-align:center;padding:8px;color:#fff;font-weight:700">★ ${b.rating}</td>
+            <td style="text-align:center;padding:8px;color:#fff;font-weight:700">${(b.reviews||0).toLocaleString()}</td>
+            <td style="text-align:center;padding:8px">${youInPack ? '<span style="color:rgba(0,204,102,.9);font-weight:700;font-size:11px">✓ Yes</span>' : '<span style="color:rgba(255,68,68,.7);font-size:11px">✗ No</span>'}</td>
+            <td style="text-align:center;padding:8px;color:rgba(255,255,255,.25);font-size:11px">—</td>
+          </tr>
+          ${topComps.map(c => {
+            const revBetter = (c.reviews||0) > (b.reviews||0);
+            const ratBetter = parseFloat(c.rating||0) > parseFloat(b.rating||0);
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+              <td style="padding:8px 10px 8px 0;color:rgba(255,255,255,.7)">${c.name}</td>
+              <td style="text-align:center;padding:8px;color:${ratBetter ? 'rgba(255,100,100,.8)' : 'rgba(0,204,102,.8)'};font-weight:600">★ ${c.rating}</td>
+              <td style="text-align:center;padding:8px;color:${revBetter ? 'rgba(255,100,100,.8)' : 'rgba(0,204,102,.8)'};font-weight:600">${(c.reviews||0).toLocaleString()}</td>
+              <td style="text-align:center;padding:8px;color:rgba(255,255,255,.25);font-size:11px">—</td>
+              <td style="text-align:center;padding:8px">${c.running_ads ? '<span style="font-size:10px;font-weight:800;letter-spacing:1px;color:rgba(255,153,0,.9)">ADS</span>' : '<span style="color:rgba(255,255,255,.2);font-size:11px">—</span>'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    const compCard = document.getElementById('comp-card');
+    if (compCard) compCard.appendChild(gapWrap);
   }
 
   // ── Meta Ad Library ───────────────────────────────────────────
@@ -5295,6 +5466,36 @@ function renderReport(d) {
 
   // ── Instagram Bio AI Recommendations ──────────────────────────
   renderBioRecs(d.bio_recommendations);
+
+  // ── Fix 8: Inline CTA card after roadmap ─────────────────────
+  (function injectInlineCTA() {
+    const existCta = document.getElementById('report-inline-cta');
+    if (existCta) existCta.remove();
+    const score8 = sc.overall || 0;
+    const urgLine = score8 < 50
+      ? 'Critical gaps are costing you bookings every week.'
+      : score8 < 70
+      ? 'Several fixes could fill your calendar within 30 days.'
+      : 'Solid foundation — targeted upgrades will max out your calendar.';
+    const ctaDiv = document.createElement('div');
+    ctaDiv.id = 'report-inline-cta';
+    ctaDiv.style.cssText = 'margin:28px 0 0;padding:24px 28px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;text-align:center';
+    ctaDiv.innerHTML = `
+      <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Your Next Step</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.3">${urgLine}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:18px;max-width:480px;margin-left:auto;margin-right:auto">JRZ Ink Systems handles your Google profile, booking system, Instagram, and ads. We charge $1,000/month + 10% of every session we book for you. You only pay more when you earn more.</div>
+      <a href="https://jrzinksystems.com/home-577937" target="_blank"
+        style="display:inline-block;padding:13px 28px;background:#fff;color:#000;font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:.5px;border-radius:8px;text-decoration:none;transition:opacity .15s"
+        onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        Book a Free Strategy Call →
+      </a>
+      <div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:10px">No contracts · Pay only when you get bookings</div>
+    `;
+    const roadmapSec = document.getElementById('roadmap-steps')?.parentElement;
+    if (roadmapSec && roadmapSec.parentNode) {
+      roadmapSec.parentNode.insertBefore(ctaDiv, roadmapSec.nextSibling);
+    }
+  })();
 
   // Store report globally (used by checklist + OAuth enhance)
   currentReport = d;
@@ -5909,9 +6110,28 @@ function renderIGReport(d) {
       </div>`).join('');
   }
 
-  // ── TikTok Gap ────────────────────────────────────────────────
-  if (d.tiktok_gap === true) {
-    document.getElementById('igr-tiktok-section').style.display = 'block';
+  // ── TikTok — real data from tiktok_data ──────────────────────
+  const tikData = d.tiktok_data || {};
+  const tikSec  = document.getElementById('igr-tiktok-section');
+  if (tikSec && (tikData.has_account !== undefined || d.tiktok_gap !== undefined)) {
+    tikSec.style.display = 'block';
+    const tikBody = tikSec.querySelector('.igr-tiktok-body');
+    if (tikBody) {
+      if (tikData.has_account === true) {
+        tikBody.innerHTML = `
+          <div class="igr-tiktok-title" style="color:rgba(0,204,102,.9)">TikTok Account Found</div>
+          <div class="igr-tiktok-sub">
+            ${tikData.followers != null ? `<strong style="color:#fff">${Number(tikData.followers).toLocaleString()}</strong> followers on TikTok. ` : ''}
+            ${tikData.profile_url ? `<a href="${tikData.profile_url}" target="_blank" style="color:rgba(255,255,255,.35);font-size:11px;text-decoration:underline">${tikData.profile_url}</a>` : ''}
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,.3);line-height:1.5">Post your most recent Reel to TikTok as well — same video, zero extra effort, double the reach.</div>`;
+      } else {
+        tikBody.innerHTML = `
+          <div class="igr-tiktok-title">No TikTok Account Found</div>
+          <div class="igr-tiktok-sub">Tattoo content does extremely well on TikTok — process videos, before/afters, and transformations regularly hit 100k+ views with zero ad spend. Your competitors who post on both platforms are building a pipeline you don't have.</div>
+          <div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,.3)">Create @${d.username || d.handle || 'yourhandle'} on TikTok and post your next session video there.</div>`;
+      }
+    }
   }
 
   // ── 30-Day Content Calendar ───────────────────────────────────
@@ -6095,6 +6315,115 @@ function renderIGReport(d) {
         </div>`).join('');
     }
   }
+
+  // ── Fix 10: No GMB banner ─────────────────────────────────────
+  if (d.no_gmb === true) {
+    const igBody = document.querySelector('.igr-body');
+    const existGmb = document.getElementById('igr-no-gmb-banner');
+    if (existGmb) existGmb.remove();
+    const gmbBanner = document.createElement('div');
+    gmbBanner.id = 'igr-no-gmb-banner';
+    gmbBanner.style.cssText = 'background:rgba(255,68,68,.07);border:1px solid rgba(255,68,68,.2);border-radius:10px;padding:14px 18px;margin:0 0 20px;font-size:12px;color:rgba(255,140,140,.85);line-height:1.6';
+    gmbBanner.innerHTML = `<strong style="display:block;margin-bottom:4px;font-size:13px">Google Business Profile Not Found</strong>We couldn't find a Google listing linked to this Instagram account. Without a Google profile, you don't appear in local tattoo searches — clients who search "tattoo artist near me" will never find you. <strong style="color:rgba(255,180,180,.8)">Claim your free Google Business Profile to unlock local SEO.</strong>`;
+    if (igBody && igBody.firstChild) igBody.insertBefore(gmbBanner, igBody.firstChild);
+  }
+
+  // ── Fix 3: Creator nudge card for personal IG accounts ────────
+  if (isPublic) {
+    const igBody = document.querySelector('.igr-body');
+    const existNudge = document.getElementById('igr-creator-nudge');
+    if (existNudge) existNudge.remove();
+    const nudge = document.createElement('div');
+    nudge.id = 'igr-creator-nudge';
+    nudge.style.cssText = 'background:rgba(131,58,180,.08);border:1px solid rgba(131,58,180,.25);border-radius:12px;padding:16px 20px;margin:0 0 20px';
+    nudge.innerHTML = `
+      <div style="font-size:10px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:rgba(131,58,180,.8);margin-bottom:8px">Unlock Full Analytics</div>
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">Switch to a Creator Account to See Real Metrics</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:12px">You're on a personal account. Switching to Creator or Business unlocks: live engagement rate, best time to post, content mix breakdown, competitor comparison, and revenue gap — the 6 signals that directly drive bookings.</div>
+      <div style="font-size:12px;font-weight:600;color:rgba(131,58,180,.7);line-height:1.5">Instagram → Settings → Account type → Switch to Creator → Come back and re-audit for full analysis.</div>`;
+    const igRefNode = document.getElementById('igr-no-gmb-banner') || igBody?.firstChild;
+    if (igBody && igRefNode) igBody.insertBefore(nudge, igRefNode.nextSibling || igRefNode);
+    else if (igBody && igBody.firstChild) igBody.insertBefore(nudge, igBody.firstChild);
+  }
+
+  // ── Fix 5: IG Health Score ────────────────────────────────────
+  (function renderIGHealthScore() {
+    const freq    = igComp.posting_frequency  || {};
+    const eng     = igComp.engagement         || {};
+    const consist = igComp.consistency        || {};
+    const bioSc   = igComp.bio_score;
+    const bioScNum= (typeof bioSc === 'object' && bioSc !== null) ? (bioSc.score || 0) : (typeof bioSc === 'number' ? bioSc : 0);
+    const bd      = igComp.content_breakdown  || {};
+    const ppw     = freq.posts_per_week;
+    const bench   = freq.benchmark || 5.0;
+    const er      = eng.engagement_rate;
+    const erBen   = eng.benchmark_engagement || 3.0;
+    const reelsPct= bd.reels_pct || 0;
+    const lastDay2= igComp.last_post_days ?? profile.last_post_days ?? null;
+    const followers2 = profile.followers;
+
+    // Frequency (25 pts)
+    let freqScore  = 0;
+    if (ppw != null && bench > 0) freqScore = Math.min(Math.round((ppw / bench) * 25), 25);
+    else if (isPublic && lastDay2 != null) freqScore = lastDay2 <= 7 ? 15 : lastDay2 <= 14 ? 8 : 3; // rough estimate
+
+    // Engagement (20 pts)
+    let engScore = 0;
+    if (er != null && erBen > 0) engScore = Math.min(Math.round((er / erBen) * 20), 20);
+
+    // Bio (20 pts)
+    const bioScore5 = Math.round((bioScNum / 100) * 20);
+
+    // Reel % (15 pts): 30% reels = full 15 pts
+    let reelScore = 0;
+    if (!isPublic) reelScore = Math.min(Math.round((reelsPct / 30) * 15), 15);
+
+    // Last post recency (10 pts)
+    let recencyScore = 0;
+    if (lastDay2 != null) {
+      recencyScore = lastDay2 <= 3 ? 10 : lastDay2 <= 7 ? 7 : lastDay2 <= 14 ? 4 : 0;
+    }
+
+    // Follower tier (10 pts): 10k = 10 pts, proportional below
+    let folScore = 0;
+    if (followers2 != null) folScore = Math.min(Math.round((followers2 / 10000) * 10), 10);
+
+    const total = freqScore + engScore + bioScore5 + reelScore + recencyScore + folScore;
+    if (total === 0 && isPublic) return; // nothing to show
+
+    const healthCircle  = document.getElementById('igr-health-circle');
+    const healthNum     = document.getElementById('igr-health-num');
+    const healthBd      = document.getElementById('igr-health-breakdown');
+    const healthRow     = document.getElementById('igr-health-row');
+    if (!healthNum || !healthRow) return;
+
+    healthRow.style.display = 'flex';
+    healthNum.textContent   = total;
+    const hColor = total >= 70 ? 'var(--green)' : total >= 45 ? 'var(--amber)' : 'var(--red)';
+    healthNum.style.color   = hColor;
+    if (healthCircle) healthCircle.style.borderColor = hColor;
+
+    const rows = [
+      { label: 'Posting Freq',  score: freqScore,   max: 25 },
+      { label: 'Engagement',    score: engScore,     max: 20 },
+      { label: 'Bio Quality',   score: bioScore5,    max: 20 },
+      { label: 'Reel Mix',      score: reelScore,    max: 15 },
+      { label: 'Recency',       score: recencyScore, max: 10 },
+      { label: 'Followers',     score: folScore,     max: 10 },
+    ].filter(r => r.max > 0 && !(isPublic && r.max === 15)); // hide Reel Mix for public
+
+    if (healthBd) {
+      healthBd.innerHTML = rows.map(r => {
+        const pct   = Math.round((r.score / r.max) * 100);
+        const rCol  = pct >= 75 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--red)';
+        return `<div class="igr-hb-row">
+          <div class="igr-hb-label">${r.label}</div>
+          <div class="igr-hb-track"><div class="igr-hb-fill" style="width:${pct}%;background:${rCol}"></div></div>
+          <div class="igr-hb-score" style="color:${rCol}">${r.score}/${r.max}</div>
+        </div>`;
+      }).join('');
+    }
+  })();
 
   // ── Public mode banner ────────────────────────────────────────
   if (isPublic) {

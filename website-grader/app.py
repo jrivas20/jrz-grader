@@ -2994,17 +2994,35 @@ TATTOO_STYLE_KEYWORDS = [
 ]
 
 TATTOO_CITY_BENCHMARKS = {
-    'new york':     {'avg_price': 350, 'high': 520, 'monthly_sessions': 60},
-    'los angeles':  {'avg_price': 320, 'high': 490, 'monthly_sessions': 55},
-    'miami':        {'avg_price': 280, 'high': 420, 'monthly_sessions': 48},
-    'chicago':      {'avg_price': 260, 'high': 390, 'monthly_sessions': 44},
-    'houston':      {'avg_price': 230, 'high': 345, 'monthly_sessions': 40},
-    'dallas':       {'avg_price': 240, 'high': 360, 'monthly_sessions': 40},
-    'atlanta':      {'avg_price': 250, 'high': 370, 'monthly_sessions': 42},
-    'orlando':      {'avg_price': 220, 'high': 330, 'monthly_sessions': 38},
-    'phoenix':      {'avg_price': 220, 'high': 330, 'monthly_sessions': 36},
-    'denver':       {'avg_price': 260, 'high': 390, 'monthly_sessions': 38},
-    'default':      {'avg_price': 200, 'high': 320, 'monthly_sessions': 32},
+    # Tier 1 — premium markets
+    'new york':      {'avg_price': 350, 'high': 520, 'monthly_sessions': 60},
+    'san francisco': {'avg_price': 340, 'high': 510, 'monthly_sessions': 52},
+    'los angeles':   {'avg_price': 320, 'high': 490, 'monthly_sessions': 55},
+    'boston':        {'avg_price': 310, 'high': 465, 'monthly_sessions': 50},
+    'san diego':     {'avg_price': 300, 'high': 450, 'monthly_sessions': 45},
+    # Tier 2 — strong mid-markets
+    'miami':         {'avg_price': 280, 'high': 420, 'monthly_sessions': 48},
+    'seattle':       {'avg_price': 290, 'high': 435, 'monthly_sessions': 46},
+    'portland':      {'avg_price': 270, 'high': 405, 'monthly_sessions': 44},
+    'philadelphia':  {'avg_price': 270, 'high': 405, 'monthly_sessions': 44},
+    'chicago':       {'avg_price': 260, 'high': 390, 'monthly_sessions': 44},
+    'denver':        {'avg_price': 260, 'high': 390, 'monthly_sessions': 38},
+    'las vegas':     {'avg_price': 260, 'high': 390, 'monthly_sessions': 42},
+    'atlanta':       {'avg_price': 250, 'high': 370, 'monthly_sessions': 42},
+    'dallas':        {'avg_price': 240, 'high': 360, 'monthly_sessions': 40},
+    'austin':        {'avg_price': 240, 'high': 360, 'monthly_sessions': 40},
+    # Tier 3 — value markets
+    'houston':       {'avg_price': 230, 'high': 345, 'monthly_sessions': 40},
+    'nashville':     {'avg_price': 225, 'high': 340, 'monthly_sessions': 36},
+    'charlotte':     {'avg_price': 220, 'high': 330, 'monthly_sessions': 36},
+    'orlando':       {'avg_price': 220, 'high': 330, 'monthly_sessions': 38},
+    'phoenix':       {'avg_price': 220, 'high': 330, 'monthly_sessions': 36},
+    'tampa':         {'avg_price': 215, 'high': 325, 'monthly_sessions': 36},
+    'san antonio':   {'avg_price': 210, 'high': 315, 'monthly_sessions': 35},
+    'jacksonville':  {'avg_price': 200, 'high': 300, 'monthly_sessions': 32},
+    'kissimmee':     {'avg_price': 210, 'high': 315, 'monthly_sessions': 34},
+    # Default fallback — all other US cities
+    'default':       {'avg_price': 200, 'high': 320, 'monthly_sessions': 32},
 }
 
 GHL_INK_WEBHOOK = os.environ.get(
@@ -3028,6 +3046,59 @@ def _std(lst):
         return 0.0
     mean = sum(lst) / n
     return (sum((x - mean) ** 2 for x in lst) / n) ** 0.5
+
+
+def check_tiktok_presence(handle):
+    """
+    Verify whether a TikTok account exists for a given username.
+    Uses a standard browser GET — no scraping API required.
+    200 = profile exists (account found), 404 = no account.
+    Also attempts to extract follower count from the page JSON payload.
+    Returns: {has_account, handle, followers, profile_url} or {has_account: False}
+    """
+    if not handle:
+        return {'has_account': False}
+    try:
+        resp = requests.get(
+            f'https://www.tiktok.com/@{handle}',
+            headers={
+                'User-Agent': (
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                    'AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/122.0.0.0 Safari/537.36'
+                ),
+                'Accept':          'text/html,application/xhtml+xml',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer':         'https://www.google.com/',
+            },
+            timeout=7,
+            allow_redirects=True
+        )
+        if resp.status_code == 404:
+            return {'has_account': False}
+        if resp.status_code == 200:
+            followers = None
+            try:
+                # TikTok embeds SIGI_STATE JSON with follower count
+                m = re.search(r'"followerCount"\s*:\s*(\d+)', resp.text)
+                if m:
+                    followers = int(m.group(1))
+                else:
+                    m2 = re.search(r'"fans"\s*:\s*(\d+)', resp.text)
+                    if m2:
+                        followers = int(m2.group(1))
+            except Exception:
+                pass
+            return {
+                'has_account': True,
+                'handle':      handle,
+                'followers':   followers,
+                'profile_url': f'https://www.tiktok.com/@{handle}',
+            }
+        # Any other status — treat as unknown
+        return {'has_account': False, 'status': resp.status_code}
+    except Exception as e:
+        return {'has_account': False, 'error': str(e)}
 
 
 def analyze_hashtags(captions, city=''):
@@ -3945,9 +4016,9 @@ def grade_ig_only():
         }
         bio_recs = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
 
-        # ── Step 7: TikTok gap ────────────────────────────────────────────
-        bio_and_site = (ig_bio + ' ' + (ig_info.get('website', '') or '')).lower()
-        tiktok_gap   = 'tiktok' not in bio_and_site
+        # ── Step 7: TikTok presence check ────────────────────────────────
+        tiktok_data  = check_tiktok_presence(ig_username)
+        tiktok_gap   = not tiktok_data.get('has_account', False)
 
         # ── Step 8: Competitor IG lookup (non-blocking) ───────────────────
         competitor_ig = []
@@ -4005,6 +4076,7 @@ def grade_ig_only():
             'bio_recommendations':  bio_recs,
             'hashtag_analysis':     hashtag_analysis,
             'tiktok_gap':           tiktok_gap,
+            'tiktok_data':          tiktok_data,
             'competitor_ig':        competitor_ig,
             'content_calendar':     content_calendar,
             'reel_hooks':           reel_hooks,
@@ -4145,7 +4217,10 @@ def grade_ig_public():
                   'dm to book', 'link in bio', 'linktree', 'contact', 'inquiry', 'commission']
     CITY_KW    = ['miami', 'orlando', 'kissimmee', 'florida', ' fl ', 'new york', ' ny ',
                   'chicago', 'houston', 'dallas', 'atlanta', 'denver', 'phoenix', ' la ',
-                  'los angeles', 'austin', 'nashville', 'charlotte', 'tampa', 'jacksonville']
+                  'los angeles', 'austin', 'nashville', 'charlotte', 'tampa', 'jacksonville',
+                  'las vegas', 'seattle', 'boston', 'san diego', 'san francisco', 'portland',
+                  'san antonio', 'philadelphia', 'detroit', 'minneapolis', 'sacramento',
+                  ' tx ', ' ga ', ' nc ', ' wa ', ' ma ', ' ca ', ' pa ', ' nv ']
     bio_has_booking = any(kw in bio_lower for kw in BOOKING_KW)
     bio_has_city    = any(kw in bio_lower for kw in CITY_KW)
     bio_has_style   = bool(detected_styles)
@@ -4197,6 +4272,9 @@ def grade_ig_public():
     }
     bio_recs = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
 
+    # ── TikTok presence check ────────────────────────────────────────
+    tiktok_data = check_tiktok_presence(ig_username)
+
     return jsonify({
         'ig_only':     True,
         'report_type': 'instagram',
@@ -4234,6 +4312,7 @@ def grade_ig_public():
         },
         'revenue_gap': None,   # not computable without post frequency
         'bio_recommendations': bio_recs,
+        'tiktok_data':         tiktok_data,
         'note': (
             f'@{ig_username} is a personal Instagram account — not connected to a Facebook Page '
             'as a Business or Creator account. Post frequency, engagement rate, and content mix '
