@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import json
 import hashlib
 import datetime
 import requests
@@ -2869,6 +2870,14 @@ GHL_INK_WEBHOOK = os.environ.get(
     'https://services.leadconnectorhq.com/hooks/d7iUPfamAaPlSBNj6IhT/webhook-trigger/jrz-ink-grader'
 )
 
+
+def _detect_styles_from_bio(bio_text):
+    """Detect tattoo styles mentioned in IG bio text (used by grade-ig-only)."""
+    if not bio_text:
+        return []
+    bio_lower = bio_text.lower()
+    return [s for s in TATTOO_STYLE_KEYWORDS if s in bio_lower][:6]
+
 # ── CITY AUDIT LOG ───────────────────────────────────────────────────
 # In-memory city audit log. Accumulates real market data as artists
 # run Guest City Audits. Resets on server restart — view at /api/city-insights.
@@ -3238,6 +3247,388 @@ def list_ig_pages():
     return jsonify({
         'pages':  pages,
         'has_ig': has_ig
+    })
+
+
+@app.route('/api/grade-ig-only', methods=['POST'])
+def grade_ig_only():
+    """
+    Pure Instagram analytics audit — zero Google data.
+    Artist has authenticated via Meta OAuth and selected their FB Page.
+    Returns deep IG metrics: posting frequency, engagement, content mix,
+    bio quality score, gap analysis, and revenue opportunity from low post frequency.
+    Personal IG accounts (not linked to a FB Page) cannot be reached by this API.
+    """
+    data    = request.get_json(silent=True) or {}
+    token   = (data.get('token')   or '').strip()
+    city    = (data.get('city')    or '').strip()
+    handle  = (data.get('handle')  or '').strip().lstrip('@')
+    page_id = (data.get('page_id') or '').strip()
+
+    if not token:
+        return jsonify({'error': 'No token provided'}), 400
+
+    try:
+        # ── Step 1: Resolve IG Business Account ──────────────────────
+        pages_resp = requests.get(
+            'https://graph.facebook.com/v19.0/me/accounts',
+            params={
+                'access_token': token,
+                'fields': 'id,name,fan_count,followers_count,instagram_business_account'
+            },
+            timeout=8
+        )
+        pages = pages_resp.json().get('data', [])
+
+        ig_id   = None
+        fb_page = {}
+        for page in pages:
+            if page_id and page.get('id') != page_id:
+                continue
+            ig_acct = page.get('instagram_business_account', {})
+            if ig_acct and ig_acct.get('id'):
+                ig_id = ig_acct['id']
+                fb_page = {
+                    'page_name': page.get('name', ''),
+                    'fans':      page.get('fan_count'),
+                    'followers': page.get('followers_count'),
+                }
+                break
+
+        if not ig_id:
+            return jsonify({
+                'error':   'no_ig_account',
+                'message': 'No Instagram Business Account found on this page.'
+            }), 404
+
+        # ── Step 2: IG Profile ────────────────────────────────────────
+        ig_resp = requests.get(
+            f'https://graph.facebook.com/v19.0/{ig_id}',
+            params={
+                'access_token': token,
+                'fields': (
+                    'id,username,name,biography,website,'
+                    'profile_picture_url,followers_count,follows_count,media_count'
+                )
+            },
+            timeout=8
+        )
+        ig_info = ig_resp.json()
+
+        # ── Step 3: Last 25 posts with full engagement data ───────────
+        media_resp = requests.get(
+            f'https://graph.facebook.com/v19.0/{ig_id}/media',
+            params={
+                'access_token': token,
+                'fields': 'id,timestamp,media_type,like_count,comments_count,permalink,caption',
+                'limit': 25
+            },
+            timeout=8
+        )
+        media_list = media_resp.json().get('data', [])
+
+        # ── Step 4: Deep IG analysis ──────────────────────────────────
+        ig_competitive = analyze_ig_competitive(ig_info, media_list, [])
+
+        # ── Step 5: Revenue opportunity from posting frequency gap ────
+        ig_username   = ig_info.get('username', '') or handle
+        city_key      = city.lower().strip() if city else 'default'
+        bench         = TATTOO_CITY_BENCHMARKS.get(city_key, TATTOO_CITY_BENCHMARKS['default'])
+        avg_price     = bench['avg_price']
+
+        posts_per_week       = ig_competitive.get('posts_per_week', 0)
+        benchmark_ppw        = 5.0
+        missing_ppw          = max(0.0, benchmark_ppw - posts_per_week)
+        # Model: every 4 posts → ~1 booking inquiry → ~25% convert
+        # So posts → sessions/month = posts_per_week * 0.25 * 4
+        current_sessions_mo  = round(posts_per_week * 0.25 * 4, 1)
+        optimal_sessions_mo  = round(benchmark_ppw  * 0.25 * 4, 1)
+        missing_sessions_mo  = round(missing_ppw    * 0.25 * 4, 1)
+        revenue_gap          = int(missing_sessions_mo * avg_price)
+        current_revenue_est  = int(current_sessions_mo * avg_price)
+        optimal_revenue_est  = int(optimal_sessions_mo * avg_price)
+
+        # ── Step 6: Bio analysis + recommendations ─────────────────────
+        ig_bio          = ig_info.get('biography', '') or ''
+        detected_styles = _detect_styles_from_bio(ig_bio)
+        has_booking_link = bool(ig_info.get('website', ''))
+
+        fake_place = {
+            'name':                   ig_info.get('name', '') or f'@{ig_username}',
+            'website':                ig_info.get('website', ''),
+            'formatted_phone_number': '',
+            'rating': 0, 'user_ratings_total': 0,
+        }
+        fake_extras = {
+            'detected_styles':    detected_styles,
+            'has_tattoo_booking': has_booking_link,
+            'booking_platform':   '',
+        }
+        bio_recs = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
+
+        return jsonify({
+            'ig_only':     True,
+            'report_type': 'instagram',
+            'ig_mode':     True,
+            'username':    ig_username,
+            'city':        city,
+            'profile': {
+                'username':    ig_username,
+                'name':        ig_info.get('name', ''),
+                'biography':   ig_info.get('biography', ''),
+                'website':     ig_info.get('website', ''),
+                'followers':   ig_info.get('followers_count', 0),
+                'following':   ig_info.get('follows_count', 0),
+                'media_count': ig_info.get('media_count', 0),
+            },
+            'facebook':        fb_page,
+            'ig_competitive':  ig_competitive,
+            'revenue_gap': {
+                'posts_per_week':           round(posts_per_week, 1),
+                'benchmark_posts_per_week': benchmark_ppw,
+                'missing_posts_per_week':   round(missing_ppw, 1),
+                'missing_sessions_month':   missing_sessions_mo,
+                'revenue_gap':              revenue_gap,
+                'avg_session_price':        avg_price,
+                'current_sessions_month':   current_sessions_mo,
+                'current_revenue_est':      current_revenue_est,
+                'optimal_sessions_month':   optimal_sessions_mo,
+                'optimal_revenue_est':      optimal_revenue_est,
+                'city':                     city or 'your market',
+            },
+            'bio_recommendations': bio_recs,
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Instagram audit failed: {str(e)}'}), 502
+
+
+@app.route('/api/grade-ig-public', methods=['POST'])
+def grade_ig_public():
+    """
+    Public Instagram profile scraper — no OAuth required.
+    Used for personal IG accounts (not Business/Creator) that cannot be reached
+    through the Meta Graph API's /me/accounts → instagram_business_account chain.
+    Returns limited data: followers, bio, post count — no engagement/frequency.
+    Two attempts: Instagram's internal web API, then HTML page parse.
+    """
+    data   = request.get_json(silent=True) or {}
+    handle = (data.get('handle') or '').strip().lstrip('@')
+    city   = (data.get('city')   or '').strip()
+
+    if not handle:
+        return jsonify({'error': 'Handle is required'}), 400
+
+    profile_data = {}
+
+    # ── Method 1: Instagram internal web API ────────────────────────
+    try:
+        resp = requests.get(
+            'https://i.instagram.com/api/v1/users/web_profile_info/',
+            params={'username': handle},
+            headers={
+                'X-IG-App-ID':    '936619743392459',
+                'User-Agent':     (
+                    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) '
+                    'AppleWebKit/605.1.15 (KHTML, like Gecko) '
+                    'CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1'
+                ),
+                'Accept':         '*/*',
+                'Accept-Language':'en-US,en;q=0.9',
+                'Referer':        'https://www.instagram.com/',
+                'Origin':         'https://www.instagram.com',
+            },
+            timeout=10
+        )
+        if resp.status_code == 200:
+            jd   = resp.json()
+            user = jd.get('data', {}).get('user', {})
+            if user:
+                bio_links = user.get('bio_links', []) or []
+                website   = (user.get('external_url', '') or
+                             (bio_links[0].get('url', '') if bio_links else ''))
+                profile_data = {
+                    'username':    user.get('username', handle),
+                    'full_name':   user.get('full_name', ''),
+                    'biography':   user.get('biography', ''),
+                    'website':     website,
+                    'followers':   user.get('edge_followed_by', {}).get('count', 0),
+                    'following':   user.get('edge_follow', {}).get('count', 0),
+                    'media_count': user.get('edge_owner_to_timeline_media', {}).get('count', 0),
+                    'is_private':  user.get('is_private', False),
+                    'is_business': (user.get('is_business', False) or
+                                   user.get('is_professional_account', False)),
+                }
+    except Exception:
+        pass
+
+    # ── Method 2: HTML page parse (ld+json schema) ──────────────────
+    if not profile_data:
+        try:
+            resp2 = requests.get(
+                f'https://www.instagram.com/{handle}/',
+                headers={
+                    'User-Agent': (
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                        'AppleWebKit/537.36 (KHTML, like Gecko) '
+                        'Chrome/122.0.0.0 Safari/537.36'
+                    ),
+                    'Accept':         'text/html,application/xhtml+xml',
+                    'Accept-Language':'en-US,en;q=0.9',
+                },
+                timeout=10
+            )
+            if resp2.status_code == 200:
+                soup = BeautifulSoup(resp2.text, 'lxml')
+                for script in soup.find_all('script', type='application/ld+json'):
+                    try:
+                        jd = json.loads(script.string or '{}')
+                        if '@type' in jd:
+                            interactions = jd.get('interactionStatistic', [])
+                            follower_obj = next(
+                                (s for s in interactions
+                                 if 'FollowAction' in s.get('interactionType', '')), {}
+                            )
+                            profile_data = {
+                                'username':    handle,
+                                'full_name':   jd.get('name', ''),
+                                'biography':   jd.get('description', ''),
+                                'website':     jd.get('url', ''),
+                                'followers':   follower_obj.get('userInteractionCount', 0),
+                                'following':   0,
+                                'media_count': 0,
+                                'is_private':  False,
+                                'is_business': False,
+                            }
+                            break
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
+    if not profile_data:
+        return jsonify({
+            'error': 'could_not_fetch',
+            'message': (
+                f'Could not load public profile for @{handle}. '
+                'Instagram may have blocked the request, or the account is private. '
+                'Ask the artist to convert to a Business/Creator account and link to a Facebook Page '
+                'to unlock the full OAuth-based audit.'
+            )
+        }), 404
+
+    if profile_data.get('is_private'):
+        return jsonify({
+            'error': 'private_account',
+            'message': f'@{handle} is a private account — public audit is not available.'
+        }), 403
+
+    # ── Bio analysis ────────────────────────────────────────────────
+    ig_username     = profile_data.get('username', handle)
+    bio_text        = profile_data.get('biography', '') or ''
+    detected_styles = _detect_styles_from_bio(bio_text)
+    has_booking_link = bool(profile_data.get('website', ''))
+    bio_lower       = bio_text.lower()
+
+    BOOKING_KW = ['book', 'calendly', 'vagaro', 'booksy', 'schedule', 'appointment',
+                  'dm to book', 'link in bio', 'linktree', 'contact', 'inquiry', 'commission']
+    CITY_KW    = ['miami', 'orlando', 'kissimmee', 'florida', ' fl ', 'new york', ' ny ',
+                  'chicago', 'houston', 'dallas', 'atlanta', 'denver', 'phoenix', ' la ',
+                  'los angeles', 'austin', 'nashville', 'charlotte', 'tampa', 'jacksonville']
+    bio_has_booking = any(kw in bio_lower for kw in BOOKING_KW)
+    bio_has_city    = any(kw in bio_lower for kw in CITY_KW)
+    bio_has_style   = bool(detected_styles)
+    bio_has_link    = has_booking_link
+    bio_score       = (bio_has_booking * 35 + bio_has_link * 25 +
+                       bio_has_city * 20 + bio_has_style * 20)
+
+    gaps = []
+    if not bio_has_booking:
+        gaps.append({
+            'category': 'Booking Link in Bio', 'artist_val': 'Missing',
+            'benchmark': '100% of top artists', 'impact': 'critical',
+            'action': ('Add your booking link as the FIRST item in your bio — '
+                       'Calendly, Vagaro, Booksy, or a Linktree that links to your booking page.')
+        })
+    if not bio_has_city:
+        gaps.append({
+            'category': 'City in Bio', 'artist_val': 'Missing',
+            'benchmark': 'Top artists include city', 'impact': 'warning',
+            'action': ('Add your city to your bio (e.g., "📍 Kissimmee, FL"). '
+                       'This directly affects Instagram local search discovery.')
+        })
+    if not bio_has_style:
+        gaps.append({
+            'category': 'Style in Bio', 'artist_val': 'Missing',
+            'benchmark': 'Top artists list specialty', 'impact': 'warning',
+            'action': ('Add your specialty style (e.g., "Fine Line Specialist" or '
+                       '"Realism & Black & Grey") — clients search by style.')
+        })
+    if not bio_has_link:
+        gaps.append({
+            'category': 'Website Link', 'artist_val': 'Missing',
+            'benchmark': 'Top artists link website or booking page', 'impact': 'warning',
+            'action': ('Add a link to your booking page or portfolio website. '
+                       'Without a link, interested clients have to DM — and most won\'t.')
+        })
+
+    # ── Bio AI recommendations ───────────────────────────────────────
+    fake_place = {
+        'name':                   profile_data.get('full_name', '') or f'@{ig_username}',
+        'website':                profile_data.get('website', ''),
+        'formatted_phone_number': '',
+        'rating': 0, 'user_ratings_total': 0,
+    }
+    fake_extras = {
+        'detected_styles':    detected_styles,
+        'has_tattoo_booking': has_booking_link,
+        'booking_platform':   '',
+    }
+    bio_recs = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
+
+    return jsonify({
+        'ig_only':     True,
+        'report_type': 'instagram',
+        'ig_mode':     True,
+        'public_mode': True,       # limited data — no engagement or post frequency
+        'username':    ig_username,
+        'city':        city,
+        'profile': {
+            'username':    ig_username,
+            'name':        profile_data.get('full_name', ''),
+            'biography':   bio_text,
+            'website':     profile_data.get('website', ''),
+            'followers':   profile_data.get('followers', 0),
+            'following':   profile_data.get('following', 0),
+            'media_count': profile_data.get('media_count', 0),
+            'is_business': profile_data.get('is_business', False),
+        },
+        'facebook':    {},
+        'ig_competitive': {
+            'followers':       profile_data.get('followers', 0),
+            'following':       profile_data.get('following', 0),
+            'posts_total':     profile_data.get('media_count', 0),
+            'posts_per_week':  None,   # not available from public data
+            'last_post_days':  None,
+            'reel_pct':        None,
+            'engagement_rate': None,
+            'bio':             bio_text,
+            'bio_score':       bio_score,
+            'bio_has_booking': bio_has_booking,
+            'bio_has_city':    bio_has_city,
+            'bio_has_style':   bio_has_style,
+            'bio_has_link':    bio_has_link,
+            'gaps':            gaps,
+            'recent_posts':    [],
+        },
+        'revenue_gap': None,   # not computable without post frequency
+        'bio_recommendations': bio_recs,
+        'note': (
+            f'@{ig_username} is a personal Instagram account — not connected to a Facebook Page '
+            'as a Business or Creator account. Post frequency, engagement rate, and content mix '
+            'are not available without Business account access. '
+            'Bio analysis and gap checklist are based on public profile data only.'
+        )
     })
 
 

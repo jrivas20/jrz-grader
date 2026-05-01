@@ -1631,6 +1631,231 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   min-height: 20px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   IG-ONLY REPORT SECTION
+═══════════════════════════════════════════════════════════════════ */
+#ig-report-section {
+  display: none;
+  padding: 0 0 80px;
+  background: var(--bg);
+}
+.igr-header {
+  padding: clamp(32px,5vw,64px) var(--px) 40px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  max-width: 880px;
+  margin: 0 auto;
+  width: 100%;
+}
+.igr-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+.igr-handle {
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+.igr-city {
+  font-size: 13px;
+  color: var(--muted);
+}
+.igr-body {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 var(--px);
+}
+.igr-section {
+  padding: 32px 0 0;
+  border-top: 1px solid rgba(255,255,255,.05);
+  margin-top: 28px;
+}
+.igr-section:first-child { border-top: none; margin-top: 0; }
+.igr-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
+  margin-bottom: 16px;
+}
+/* Profile card */
+.igr-profile-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+@media(max-width:600px){.igr-profile-card{grid-template-columns:1fr;gap:12px}}
+.igr-stat { text-align: center; }
+.igr-stat-val { font-size: clamp(22px,3.5vw,32px); font-weight: 900; line-height: 1; margin-bottom: 4px; }
+.igr-stat-lbl { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .5px; }
+.igr-bio-block {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: 13px;
+  color: rgba(255,255,255,.55);
+  line-height: 1.65;
+  font-style: italic;
+}
+.igr-website-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,.45);
+  font-style: normal;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Metrics grid */
+.igr-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.igr-metric {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 18px 16px;
+}
+.igr-metric-val {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.igr-metric-lbl { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .3px; margin-bottom: 6px; }
+.igr-metric-bench { font-size: 11px; color: rgba(255,255,255,.3); }
+.igr-metric.good .igr-metric-val { color: var(--green); }
+.igr-metric.warn .igr-metric-val { color: var(--amber); }
+.igr-metric.bad  .igr-metric-val { color: var(--red); }
+/* Content breakdown */
+.igr-content-bars { display: flex; flex-direction: column; gap: 10px; }
+.igr-cbar { display: flex; align-items: center; gap: 12px; }
+.igr-cbar-lbl { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.55); width: 80px; flex-shrink: 0; }
+.igr-cbar-track { flex: 1; height: 6px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; }
+.igr-cbar-fill { height: 100%; border-radius: 99px; transition: width 1s var(--ease); }
+.igr-cbar-val { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6); width: 36px; text-align: right; flex-shrink: 0; }
+/* Gap cards */
+.igr-gap-card {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.igr-gap-card.critical { border-left: 3px solid #ff4444; }
+.igr-gap-card.warning  { border-left: 3px solid #ff9900; }
+.igr-gap-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.igr-gap-dot.critical { background: #ff4444; }
+.igr-gap-dot.warning  { background: #ff9900; }
+.igr-gap-cat { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: 4px; }
+.igr-gap-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.9); margin-bottom: 6px; line-height: 1.3; }
+.igr-gap-action { font-size: 12px; color: rgba(255,255,255,.5); line-height: 1.6; }
+/* Revenue opportunity */
+.igr-rev-box {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  padding: 24px;
+}
+.igr-rev-headline {
+  font-size: clamp(18px, 3vw, 26px);
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+.igr-rev-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+.igr-rev-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media(max-width:520px){.igr-rev-cols{grid-template-columns:1fr}}
+.igr-rev-col { text-align: center; }
+.igr-rev-col-amt { font-size: clamp(20px,3vw,28px); font-weight: 900; margin-bottom: 4px; }
+.igr-rev-col-lbl { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .3px; }
+.igr-rev-col.highlight .igr-rev-col-amt { color: var(--green); }
+.igr-rev-math { font-size: 12px; color: rgba(255,255,255,.3); line-height: 1.7; border-top: 1px solid rgba(255,255,255,.06); padding-top: 14px; }
+/* Recent posts mini-grid */
+.igr-posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.igr-post-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 12px;
+}
+.igr-post-type { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,.3); text-transform: uppercase; margin-bottom: 6px; }
+.igr-post-type.VIDEO { color: rgba(131,58,180,.7); }
+.igr-post-type.IMAGE { color: rgba(255,255,255,.3); }
+.igr-post-type.CAROUSEL_ALBUM { color: rgba(252,180,69,.6); }
+.igr-post-eng { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.igr-post-ts  { font-size: 11px; color: var(--muted); }
+/* Bio score */
+.igr-bio-score-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.igr-bio-score-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.15);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.igr-bio-score-num { font-size: 22px; font-weight: 900; line-height: 1; }
+.igr-bio-score-lbl { font-size: 9px; color: var(--muted); font-weight: 700; letter-spacing: 1px; }
+.igr-bio-checks { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.igr-bio-check { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.igr-bio-check .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.igr-bio-check .dot.pass { background: var(--green); }
+.igr-bio-check .dot.fail { background: rgba(255,255,255,.2); }
+/* CTA */
+.igr-cta {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: center;
+  margin-top: 32px;
+}
+.igr-cta-headline { font-size: clamp(18px,3vw,24px); font-weight: 900; margin-bottom: 10px; }
+.igr-cta-sub { font-size: 13px; color: rgba(255,255,255,.5); line-height: 1.65; margin-bottom: 20px; max-width: 540px; margin-left: auto; margin-right: auto; }
+.igr-cta-btn {
+  display: inline-block;
+  padding: 14px 32px;
+  background: #fff;
+  color: #000;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  margin-bottom: 12px;
+}
+.igr-run-again {
+  font-size: 12px;
+  color: rgba(255,255,255,.3);
+  cursor: pointer;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+}
+.igr-run-again:hover { color: rgba(255,255,255,.6); }
+
 /* ── IG MODE OAUTH INFO BANNER ──────────────────────────────────── */
 .ig-oauth-note {
   display: flex;
@@ -2010,6 +2235,126 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       View My Full Report →
     </button>
     <div class="lg-privacy">No spam. Your info is used only to deliver your report and send personalized tips from JRZ Ink Systems.</div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  IG-ONLY REPORT SECTION
+  Shows pure Instagram analytics when artist uses IG handle tab.
+  No Google data — only IG metrics, gaps, and revenue opportunity.
+════════════════════════════════════════════════════════════════ -->
+<section id="ig-report-section" style="display:none">
+  <!-- Header -->
+  <div class="igr-header">
+    <div class="igr-eyebrow">INSTAGRAM ANALYTICS AUDIT · JRZ INK SYSTEMS</div>
+    <div class="igr-handle" id="igr-handle">@handle</div>
+    <div class="igr-city" id="igr-city"></div>
+  </div>
+
+  <div class="igr-body">
+
+    <!-- Profile Stats -->
+    <div class="igr-section">
+      <div class="igr-section-label">Profile Overview</div>
+      <div class="igr-profile-card">
+        <div class="igr-stat">
+          <div class="igr-stat-val" id="igr-followers">—</div>
+          <div class="igr-stat-lbl">Followers</div>
+        </div>
+        <div class="igr-stat">
+          <div class="igr-stat-val" id="igr-posts-total">—</div>
+          <div class="igr-stat-lbl">Total Posts</div>
+        </div>
+        <div class="igr-stat">
+          <div class="igr-stat-val" id="igr-last-post">—</div>
+          <div class="igr-stat-lbl">Days Since Last Post</div>
+        </div>
+      </div>
+      <div class="igr-bio-block" id="igr-bio-block" style="display:none">
+        <span id="igr-bio-text"></span>
+        <a class="igr-website-link" id="igr-website-link" href="#" target="_blank" rel="noopener" style="display:none">
+          🔗 <span id="igr-website-text"></span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Core Metrics -->
+    <div class="igr-section">
+      <div class="igr-section-label">Performance Metrics</div>
+      <div class="igr-metrics-grid" id="igr-metrics-grid"></div>
+    </div>
+
+    <!-- Content Breakdown -->
+    <div class="igr-section">
+      <div class="igr-section-label">Content Mix (last 25 posts)</div>
+      <div class="igr-content-bars" id="igr-content-bars"></div>
+    </div>
+
+    <!-- Bio Quality -->
+    <div class="igr-section">
+      <div class="igr-section-label">Bio Quality Score</div>
+      <div class="igr-bio-score-wrap">
+        <div class="igr-bio-score-circle" id="igr-bio-score-circle">
+          <div class="igr-bio-score-num" id="igr-bio-score-num">—</div>
+          <div class="igr-bio-score-lbl">/ 100</div>
+        </div>
+        <div class="igr-bio-checks" id="igr-bio-checks"></div>
+      </div>
+    </div>
+
+    <!-- Gap Analysis -->
+    <div class="igr-section" id="igr-gaps-section">
+      <div class="igr-section-label" id="igr-gaps-label">What to Fix</div>
+      <div id="igr-gaps-list"></div>
+    </div>
+
+    <!-- Revenue Opportunity -->
+    <div class="igr-section">
+      <div class="igr-section-label">Revenue You're Missing</div>
+      <div class="igr-rev-box">
+        <div class="igr-rev-headline">You're leaving <span id="igr-rev-gap">$0</span>/month on the table</div>
+        <div class="igr-rev-sub" id="igr-rev-sub"></div>
+        <div class="igr-rev-cols">
+          <div class="igr-rev-col">
+            <div class="igr-rev-col-amt" id="igr-rev-current">$0</div>
+            <div class="igr-rev-col-lbl">Est. Current (from IG)</div>
+          </div>
+          <div class="igr-rev-col highlight">
+            <div class="igr-rev-col-amt" id="igr-rev-miss">$0</div>
+            <div class="igr-rev-col-lbl">Monthly Gap</div>
+          </div>
+          <div class="igr-rev-col">
+            <div class="igr-rev-col-amt" id="igr-rev-optimal">$0</div>
+            <div class="igr-rev-col-lbl">At Benchmark (5×/wk)</div>
+          </div>
+        </div>
+        <div class="igr-rev-math" id="igr-rev-math"></div>
+      </div>
+    </div>
+
+    <!-- Recent Posts -->
+    <div class="igr-section" id="igr-posts-section" style="display:none">
+      <div class="igr-section-label">Recent Posts (last 8)</div>
+      <div class="igr-posts-grid" id="igr-posts-grid"></div>
+    </div>
+
+    <!-- Bio AI Recommendations -->
+    <div class="igr-section" id="igr-bio-recs-section" style="display:none">
+      <div class="igr-section-label">Bio Upgrade Templates</div>
+      <div id="igr-bio-gaps-list"></div>
+      <div id="igr-bio-variants-list" style="margin-top:12px"></div>
+    </div>
+
+    <!-- CTA -->
+    <div class="igr-cta">
+      <div class="igr-cta-headline">Your Instagram data is working against you.</div>
+      <div class="igr-cta-sub">JRZ Ink Systems builds your content calendar, optimizes your bio and booking funnel, and runs paid ads to fill your calendar — with live performance tracking. We only win when you win.</div>
+      <button class="igr-cta-btn" onclick="window.open('https://jrzinksystems.com/home-577937','_blank')">Get a Free Strategy Call →</button>
+      <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:6px">$1,000/mo + 10% per session booked · No contracts</div>
+      <br>
+      <button class="igr-run-again" onclick="runAgain()">← Audit a Different Account</button>
+    </div>
 
   </div>
 </section>
@@ -2781,7 +3126,9 @@ async function showIGPageSelector(token, pages) {
   const errEl = document.getElementById('ig-search-error');
 
   if (pagesWithIG.length === 0) {
-    // No pages have IG connected
+    // No pages have IG connected — offer public scrape fallback
+    const savedHandle = pendingIGHandle;
+    const savedCity   = pendingIGCity;
     errEl.innerHTML = `
       <strong style="color:rgba(255,200,80,.9)">No Instagram Business Account found.</strong><br>
       <span style="font-size:12px;line-height:1.6;display:block;margin-top:4px">
@@ -2790,6 +3137,20 @@ async function showIGPageSelector(token, pages) {
         2. Connected to a <strong>Facebook Page</strong> you manage<br><br>
         You can do this in Instagram Settings → Account → Switch to Professional Account.
       </span>
+      ${savedHandle ? `
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px">
+          Or analyze <strong style="color:rgba(255,255,255,.7)">@${savedHandle}</strong> as a public profile — limited data, no engagement stats.
+        </div>
+        <button onclick="gradeIGPublic('${savedHandle}','${savedCity}')"
+          style="padding:9px 18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+                 border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;
+                 cursor:pointer;transition:background .15s"
+          onmouseover="this.style.background='rgba(255,255,255,.14)'"
+          onmouseout="this.style.background='rgba(255,255,255,.08)'">
+          Analyze Public Profile →
+        </button>
+      </div>` : ''}
     `;
     errEl.style.display = 'block';
     resEl.style.display = 'none';
@@ -2928,24 +3289,24 @@ async function gradeByIGPage(token, pageData) {
   selectedName = pageData.ig_username ? '@' + pageData.ig_username : pageData.page_name;
 
   showLoading();
-  // IG-specific loading steps
+  // IG-specific loading steps (no Google data)
   const stepsEl = document.querySelector('.loading-steps');
   if (stepsEl) stepsEl.innerHTML = `
     <div class="l-step active" id="ls-0"><div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="l-step-text">Pulling your Instagram posts + engagement<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-1"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="l-step-text">Analyzing your follower count and bio<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-2"><div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="l-step-text">Searching for your Google Business listing<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-3"><div class="l-step-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="l-step-text">Pulling reviews and reputation data<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-4"><div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div><div class="l-step-text">Checking local map pack visibility<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-5"><div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="l-step-text">Running keyword and competitor analysis<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-6"><div class="l-step-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="l-step-text">Calculating revenue opportunity<span class="dot-anim"></span></div></div>
-    <div class="l-step" id="ls-7"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="l-step-text">Building your Ink Systems report<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-1"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="l-step-text">Analyzing follower count and bio quality<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-2"><div class="l-step-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="l-step-text">Measuring posting frequency vs. benchmark<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-3"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div class="l-step-text">Calculating engagement rate + content mix<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-4"><div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="l-step-text">Scoring bio gaps and missing signals<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-5"><div class="l-step-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="l-step-text">Calculating revenue you're leaving on the table<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-6"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><div class="l-step-text">Generating bio upgrade templates<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-7"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="l-step-text">Building your Instagram analytics report<span class="dot-anim"></span></div></div>
   `;
   document.getElementById('loading-biz-tag').textContent = 'JRZ INK SYSTEMS · INSTAGRAM AUDIT';
   document.getElementById('loading-h').innerHTML = `Auditing<br><em style="font-style:normal;color:rgba(255,255,255,.55)">@${pageData.ig_username || pageData.page_name}</em>`;
   startStepAnimation();
 
   try {
-    const r = await fetch(`${API}/api/grade-tattoo-by-ig`, {
+    const r = await fetch(`${API}/api/grade-ig-only`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3158,6 +3519,7 @@ function showLoading() {
   document.getElementById('report-section').style.display    = 'none';
   document.getElementById('checklist-section').style.display = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('ig-report-section').style.display  = 'none';
   document.getElementById('oauth-interstitial').style.display = 'none';
   document.getElementById('lead-gate-section').style.display  = 'none';
 }
@@ -3166,6 +3528,7 @@ function showSearch() {
   document.getElementById('loading-section').style.display  = 'none';
   document.getElementById('report-section').style.display   = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('ig-report-section').style.display  = 'none';
   document.getElementById('oauth-interstitial').style.display = 'none';
   document.getElementById('lead-gate-section').style.display  = 'none';
 }
@@ -3175,6 +3538,7 @@ function showInterstitial() {
   document.getElementById('report-section').style.display    = 'none';
   document.getElementById('checklist-section').style.display = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('ig-report-section').style.display  = 'none';
   const oi = document.getElementById('oauth-interstitial');
   oi.style.display        = 'flex';
   oi.style.flexDirection  = 'column';
@@ -3238,6 +3602,7 @@ function runAgain() {
   document.getElementById('upgrade-bar').style.display      = 'none';
   document.getElementById('checklist-section').style.display  = 'none';
   document.getElementById('lead-gate-section').style.display  = 'none';
+  document.getElementById('ig-report-section').style.display  = 'none';
   document.getElementById('loading-biz-suffix').textContent   = '';
   for (let i = 0; i < 9; i++) {
     const el = document.getElementById('ls-' + i);
@@ -3264,6 +3629,7 @@ function showLeadGate() {
   document.getElementById('report-section').style.display    = 'none';
   document.getElementById('checklist-section').style.display = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('ig-report-section').style.display  = 'none';
   document.getElementById('oauth-interstitial').style.display = 'none';
 
   // Populate score/grade teaser
@@ -3296,7 +3662,12 @@ function showLeadGate() {
 
 function unlockReport() {
   document.getElementById('lead-gate-section').style.display = 'none';
-  if (pendingReportData) renderReport(pendingReportData);
+  if (!pendingReportData) return;
+  if (pendingReportData.report_type === 'instagram') {
+    renderIGReport(pendingReportData);
+  } else {
+    renderReport(pendingReportData);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -4882,6 +5253,409 @@ function guestRunAgain() {
   showSearch();
   switchAuditTab('guest');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═════════════════════════════════════════════════════════════════
+// IG-ONLY REPORT — SHOW + RENDER
+// ═════════════════════════════════════════════════════════════════
+
+function showIGReport() {
+  document.getElementById('search-section').style.display      = 'none';
+  document.getElementById('loading-section').style.display     = 'none';
+  document.getElementById('report-section').style.display      = 'none';
+  document.getElementById('checklist-section').style.display   = 'none';
+  document.getElementById('guest-report-section').style.display = 'none';
+  document.getElementById('oauth-interstitial').style.display  = 'none';
+  document.getElementById('lead-gate-section').style.display   = 'none';
+  document.getElementById('ig-report-section').style.display   = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderIGReport(d) {
+  const profile  = d.profile        || {};
+  const igComp   = d.ig_competitive || {};
+  const revGap   = d.revenue_gap    || null;
+  const bioRecs  = d.bio_recommendations || null;
+  const isPublic = d.public_mode    || false;
+
+  // ── Header ────────────────────────────────────────────────────
+  const handle = d.username || d.handle || '';
+  document.getElementById('igr-handle').textContent = handle ? '@' + handle : 'Instagram Audit';
+  document.getElementById('igr-city').textContent   = d.city ? d.city : '';
+
+  // ── Profile Overview ──────────────────────────────────────────
+  const followers  = profile.followers;
+  const totalPosts = profile.total_posts ?? profile.media_count;
+  const lastDay    = profile.last_post_days;
+
+  document.getElementById('igr-followers').textContent =
+    followers != null ? Number(followers).toLocaleString() : '—';
+  document.getElementById('igr-posts-total').textContent =
+    totalPosts != null ? Number(totalPosts).toLocaleString() : '—';
+  document.getElementById('igr-last-post').textContent =
+    lastDay != null ? lastDay + 'd' : '—';
+
+  // Bio block
+  const bio     = profile.bio     || '';
+  const website = profile.website || '';
+  if (bio || website) {
+    document.getElementById('igr-bio-block').style.display = 'block';
+    document.getElementById('igr-bio-text').textContent    = bio;
+    if (website) {
+      const wLink = document.getElementById('igr-website-link');
+      const wText = document.getElementById('igr-website-text');
+      wLink.href          = website.startsWith('http') ? website : 'https://' + website;
+      wText.textContent   = website.replace(/^https?:\/\//, '');
+      wLink.style.display = 'inline-flex';
+    }
+  }
+
+  // ── Performance Metrics ───────────────────────────────────────
+  const metricsEl  = document.getElementById('igr-metrics-grid');
+  const freq       = igComp.posting_frequency || {};
+  const engagement = igComp.engagement        || {};
+
+  if (!isPublic && (freq.posts_per_week != null || engagement.engagement_rate != null)) {
+    const ppw    = freq.posts_per_week;
+    const bench  = freq.benchmark || 5.0;
+    const er     = engagement.engagement_rate;
+    const erBen  = engagement.benchmark_engagement || 3.0;
+    const avgLk  = engagement.avg_likes;
+    const avgCmt = engagement.avg_comments;
+
+    const ppwClass = ppw == null ? '' : ppw >= bench ? 'good' : ppw >= bench * 0.5 ? 'warn' : 'bad';
+    const erClass  = er  == null ? '' : er  >= erBen  ? 'good' : er  >= erBen  * 0.5 ? 'warn' : 'bad';
+
+    metricsEl.innerHTML = `
+      <div class="igr-metric ${ppwClass}">
+        <div class="igr-metric-val">${ppw != null ? ppw.toFixed(1) : '—'}</div>
+        <div class="igr-metric-lbl">Posts / Week</div>
+        <div class="igr-metric-bench">Benchmark: ${bench}×/wk</div>
+      </div>
+      <div class="igr-metric ${erClass}">
+        <div class="igr-metric-val">${er != null ? er.toFixed(1) + '%' : '—'}</div>
+        <div class="igr-metric-lbl">Engagement Rate</div>
+        <div class="igr-metric-bench">Benchmark: ≥ ${erBen}%</div>
+      </div>
+      ${avgLk != null ? `
+      <div class="igr-metric">
+        <div class="igr-metric-val">${Number(avgLk).toLocaleString()}</div>
+        <div class="igr-metric-lbl">Avg Likes / Post</div>
+        <div class="igr-metric-bench">Last 25 posts</div>
+      </div>` : ''}
+      ${avgCmt != null ? `
+      <div class="igr-metric">
+        <div class="igr-metric-val">${Number(avgCmt).toLocaleString()}</div>
+        <div class="igr-metric-lbl">Avg Comments / Post</div>
+        <div class="igr-metric-bench">Last 25 posts</div>
+      </div>` : ''}
+    `;
+  } else if (isPublic) {
+    metricsEl.innerHTML = `
+      <div class="igr-metric warn">
+        <div class="igr-metric-val" style="font-size:13px;font-weight:600">Public Only</div>
+        <div class="igr-metric-lbl">Engagement data</div>
+        <div class="igr-metric-bench">Requires Business/Creator account</div>
+      </div>
+      <div class="igr-metric warn">
+        <div class="igr-metric-val" style="font-size:13px;font-weight:600">Estimated</div>
+        <div class="igr-metric-lbl">Posting frequency</div>
+        <div class="igr-metric-bench">Connect via OAuth for live data</div>
+      </div>
+    `;
+  }
+
+  // ── Content Breakdown ─────────────────────────────────────────
+  const contentEl  = document.getElementById('igr-content-bars');
+  const breakdown  = igComp.content_breakdown || {};
+  if (!isPublic && (breakdown.reels_pct != null || breakdown.photo_pct != null)) {
+    const reels = breakdown.reels_pct    || 0;
+    const photos = breakdown.photo_pct   || 0;
+    const carousels = breakdown.carousel_pct || 0;
+    contentEl.innerHTML = `
+      <div class="igr-cbar">
+        <div class="igr-cbar-label">Reels</div>
+        <div class="igr-cbar-track"><div class="igr-cbar-fill" style="width:${reels}%;background:linear-gradient(90deg,#833ab4,#fd1d1d)"></div></div>
+        <div class="igr-cbar-pct">${reels}%</div>
+      </div>
+      <div class="igr-cbar">
+        <div class="igr-cbar-label">Photos</div>
+        <div class="igr-cbar-track"><div class="igr-cbar-fill" style="width:${photos}%;background:rgba(255,255,255,.35)"></div></div>
+        <div class="igr-cbar-pct">${photos}%</div>
+      </div>
+      <div class="igr-cbar">
+        <div class="igr-cbar-label">Carousels</div>
+        <div class="igr-cbar-track"><div class="igr-cbar-fill" style="width:${carousels}%;background:rgba(255,153,0,.7)"></div></div>
+        <div class="igr-cbar-pct">${carousels}%</div>
+      </div>
+      ${reels < 30 ? `<div style="font-size:12px;color:rgba(255,153,0,.8);margin-top:8px;line-height:1.5">⚠ Reels get 3–5× more reach than photos. Aim for at least 50% Reels.</div>` : ''}
+    `;
+  } else if (isPublic) {
+    contentEl.innerHTML = `<div style="font-size:13px;color:var(--muted)">Content breakdown requires OAuth access.</div>`;
+  }
+
+  // ── Bio Quality ───────────────────────────────────────────────
+  const bioScore  = igComp.bio_score || {};
+  const scoreNum  = bioScore.score  ?? 0;
+  const scoreEl   = document.getElementById('igr-bio-score-num');
+  const circleEl  = document.getElementById('igr-bio-score-circle');
+  scoreEl.textContent      = scoreNum;
+  circleEl.style.borderColor = scoreNum >= 70 ? 'var(--green)' : scoreNum >= 40 ? 'var(--amber)' : 'var(--red)';
+  scoreEl.style.color        = scoreNum >= 70 ? 'var(--green)' : scoreNum >= 40 ? 'var(--amber)' : 'var(--red)';
+
+  const checks   = bioScore.checks || [];
+  const checksEl = document.getElementById('igr-bio-checks');
+  if (checks.length > 0) {
+    checksEl.innerHTML = checks.map(c => `
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:${c.ok ? 'rgba(0,204,102,.8)' : 'rgba(255,68,68,.8)'}">
+        <span style="font-size:14px;flex-shrink:0">${c.ok ? '✓' : '✗'}</span>
+        <span>${c.label}</span>
+      </div>
+    `).join('');
+  } else if (bio) {
+    // Basic bio checks from public data
+    const hasCTA      = /book|dm|contact|schedule|link|tap|click/i.test(bio);
+    const hasStyle    = /tattoo|ink|art|design|realism|fine|line|japanese|traditional/i.test(bio);
+    const hasLocation = /miami|orlando|nyc|new york|fl|florida|tx|texas|ca|california|studio/i.test(bio);
+    checksEl.innerHTML = [
+      { label: 'Has a clear call-to-action', ok: hasCTA },
+      { label: 'Mentions tattoo style or specialty', ok: hasStyle },
+      { label: 'Includes location or city', ok: hasLocation },
+      { label: 'Has booking link or contact method', ok: !!website },
+    ].map(c => `
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:${c.ok ? 'rgba(0,204,102,.8)' : 'rgba(255,68,68,.8)'}">
+        <span style="font-size:14px;flex-shrink:0">${c.ok ? '✓' : '✗'}</span>
+        <span>${c.label}</span>
+      </div>`).join('');
+  }
+
+  // ── Gap Analysis ──────────────────────────────────────────────
+  const gaps     = igComp.gaps || [];
+  const gapsEl   = document.getElementById('igr-gaps-list');
+  const gapsLbl  = document.getElementById('igr-gaps-label');
+  if (gaps.length > 0) {
+    gapsLbl.textContent = `${gaps.length} Thing${gaps.length === 1 ? '' : 's'} Holding You Back`;
+    gapsEl.innerHTML = gaps.map(g => {
+      const pri = (g.priority || '').toLowerCase();
+      const dotColor = pri === 'high' ? 'var(--red)' : pri === 'medium' ? 'var(--amber)' : 'rgba(255,255,255,.3)';
+      return `
+        <div class="igr-gap-card ${pri}">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">${g.issue}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.5">${g.fix}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } else {
+    document.getElementById('igr-gaps-section').style.display = 'none';
+  }
+
+  // ── Revenue Gap ───────────────────────────────────────────────
+  if (revGap && revGap.revenue_gap != null) {
+    const gap    = revGap.revenue_gap;
+    const curr   = revGap.current_revenue_est;
+    const opt    = revGap.optimal_revenue_est;
+    const ppw    = revGap.posts_per_week;
+    const benchP = revGap.benchmark_posts_per_week;
+    const price  = revGap.avg_session_price;
+    const missS  = revGap.missing_sessions_month;
+
+    document.getElementById('igr-rev-gap').textContent     = '$' + Math.round(gap).toLocaleString();
+    document.getElementById('igr-rev-current').textContent = '$' + Math.round(curr).toLocaleString();
+    document.getElementById('igr-rev-miss').textContent    = '$' + Math.round(gap).toLocaleString();
+    document.getElementById('igr-rev-optimal').textContent = '$' + Math.round(opt).toLocaleString();
+    document.getElementById('igr-rev-sub').textContent     =
+      `Posting ${ppw != null ? ppw.toFixed(1) : '?'}×/week vs. ${benchP}× benchmark — you're missing ~${missS} sessions/month.`;
+    document.getElementById('igr-rev-math').textContent    =
+      `Math: (${benchP} − ${ppw != null ? ppw.toFixed(1) : '?'} posts/wk) × 0.25 conversion × 4 weeks × $${price}/session = $${Math.round(gap).toLocaleString()}/mo gap`;
+  } else if (isPublic) {
+    document.getElementById('igr-rev-gap').textContent     = '—';
+    document.getElementById('igr-rev-current').textContent = '—';
+    document.getElementById('igr-rev-miss').textContent    = '—';
+    document.getElementById('igr-rev-optimal').textContent = '—';
+    document.getElementById('igr-rev-sub').textContent     = 'Revenue gap requires engagement data. Connect via OAuth for full analysis.';
+    document.getElementById('igr-rev-math').textContent    = '';
+  }
+
+  // ── Recent Posts ──────────────────────────────────────────────
+  const posts    = (igComp.recent_posts || []).slice(0, 8);
+  const postsEl  = document.getElementById('igr-posts-grid');
+  if (posts.length > 0) {
+    document.getElementById('igr-posts-section').style.display = 'block';
+    postsEl.innerHTML = posts.map(p => {
+      const date   = p.timestamp ? new Date(p.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      const typeTag = p.media_type === 'VIDEO' ? 'Reel' : p.media_type === 'CAROUSEL_ALBUM' ? 'Carousel' : 'Photo';
+      return `
+        <div class="igr-post-card">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.3);margin-bottom:4px">${typeTag.toUpperCase()}</div>
+          <div style="font-size:14px;font-weight:700;color:#fff">${p.like_count != null ? '♥ ' + Number(p.like_count).toLocaleString() : '—'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">${p.comment_count != null ? p.comment_count + ' comments' : ''}</div>
+          ${date ? `<div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:4px">${date}</div>` : ''}
+          ${p.permalink ? `<a href="${p.permalink}" target="_blank" rel="noopener" style="font-size:11px;color:rgba(255,255,255,.3);text-decoration:underline;margin-top:4px;display:block">View →</a>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ── Bio AI Recommendations ────────────────────────────────────
+  if (bioRecs) {
+    const bioGapsEl  = document.getElementById('igr-bio-gaps-list');
+    const bioVarsEl  = document.getElementById('igr-bio-variants-list');
+    const bioRecsSec = document.getElementById('igr-bio-recs-section');
+    const bioGaps    = bioRecs.bio_gaps    || [];
+    const bioVars    = bioRecs.bio_variants || [];
+
+    if (bioGaps.length > 0 || bioVars.length > 0) {
+      bioRecsSec.style.display = 'block';
+
+      if (bioGaps.length === 0) {
+        bioGapsEl.innerHTML = `<div style="font-size:13px;color:var(--green);font-weight:600">✓ Your bio signals look solid. Review the templates below.</div>`;
+      } else {
+        bioGapsEl.innerHTML = bioGaps.map(g => `
+          <div class="bio-gap-card" style="margin-bottom:8px">
+            <div class="bio-gap-dot"></div>
+            <div class="bio-gap-body">
+              <div class="bio-gap-issue">${g.issue}</div>
+              <div class="bio-gap-fix">${g.fix}</div>
+            </div>
+          </div>`).join('');
+      }
+
+      bioVarsEl.innerHTML = bioVars.map((v, i) => `
+        <div class="bio-variant-card" style="margin-bottom:12px">
+          <div class="bio-variant-label">${v.label}</div>
+          <div class="bio-variant-text" id="igr-bio-text-${i}">${v.bio}</div>
+          <div class="bio-variant-why">Why it works: ${v.why}</div>
+          <button class="bio-copy-btn" id="igr-bio-copy-${i}" onclick="copyIGBio(${i})">COPY TO CLIPBOARD</button>
+        </div>`).join('');
+    }
+  }
+
+  // ── Public mode banner ────────────────────────────────────────
+  if (isPublic) {
+    const note = d.note || 'This is a public profile audit. Engagement rate, posting frequency, and revenue estimates require a Business/Creator account connected to a Facebook Page.';
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:rgba(255,153,0,.08);border:1px solid rgba(255,153,0,.2);border-radius:10px;padding:14px 18px;margin:0 0 20px;font-size:12px;color:rgba(255,200,80,.8);line-height:1.6';
+    banner.innerHTML = `<strong style="display:block;margin-bottom:4px">⚠ Public Profile — Limited Data</strong>${note}`;
+    const body = document.querySelector('.igr-body');
+    if (body && body.firstChild) body.insertBefore(banner, body.firstChild);
+  }
+
+  showIGReport();
+}
+
+// ── gradeIGPublic — public scrape for personal accounts ──────────
+async function gradeIGPublic(handle, city) {
+  if (!handle) return;
+
+  // Clear the error/results panel
+  document.getElementById('ig-search-error').style.display = 'none';
+  document.getElementById('ig-results-list').style.display = 'none';
+
+  selectedName = '@' + handle;
+
+  showLoading();
+
+  // IG-specific loading steps for public mode
+  const stepsEl = document.querySelector('.loading-steps');
+  if (stepsEl) stepsEl.innerHTML = `
+    <div class="l-step active" id="ls-0"><div class="l-step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="l-step-text">Looking up @${handle} on Instagram<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-1"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="l-step-text">Reading public profile data<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-2"><div class="l-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="l-step-text">Scoring bio gaps and missing signals<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-3"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><div class="l-step-text">Generating bio upgrade templates<span class="dot-anim"></span></div></div>
+    <div class="l-step" id="ls-4"><div class="l-step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="l-step-text">Building your public profile report<span class="dot-anim"></span></div></div>
+  `;
+  document.getElementById('loading-biz-tag').textContent = 'JRZ INK SYSTEMS · PUBLIC PROFILE AUDIT';
+  document.getElementById('loading-h').innerHTML = `Auditing<br><em style="font-style:normal;color:rgba(255,255,255,.55)">@${handle}</em>`;
+
+  // Animate 5 steps
+  pctCurrent = 0;
+  const pubStepDelays = [0, 2000, 4000, 6000, 8000];
+  const pubStepPcts   = [15, 35, 55, 75, 90];
+  const bar = document.getElementById('loading-bar-fill');
+  pubStepDelays.forEach((delay, i) => {
+    setTimeout(() => {
+      for (let j = 0; j < 5; j++) {
+        const el = document.getElementById('ls-' + j);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (j < i)  el.classList.add('done');
+        if (j === i) el.classList.add('active');
+      }
+      bar.style.width = pubStepPcts[i] + '%';
+      animateCounter(pubStepPcts[i]);
+    }, delay);
+  });
+
+  try {
+    const r = await fetch(`${API}/api/grade-ig-public`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ handle, city })
+    });
+    const data = await r.json();
+
+    // Stop animation
+    clearTimeout(stepTimer);
+    for (let i = 0; i < 5; i++) {
+      const el = document.getElementById('ls-' + i);
+      if (el) { el.classList.remove('active'); el.classList.add('done'); }
+    }
+    bar.style.width = '100%';
+    animateCounter(100);
+
+    if (r.status === 403) {
+      showSearch();
+      const errEl = document.getElementById('ig-search-error');
+      errEl.innerHTML = `<strong>@${handle} is a private account.</strong> This profile can only be audited with OAuth access from the account owner.`;
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!r.ok || data.error) {
+      showSearch();
+      const errEl = document.getElementById('ig-search-error');
+      errEl.innerHTML = `Could not find <strong>@${handle}</strong>. Check the handle and try again.`;
+      errEl.style.display = 'block';
+      return;
+    }
+
+    // Route through lead gate then render
+    pendingReportData = data;
+    oiConnecting      = false;
+    showLeadGate();
+
+  } catch(e) {
+    clearTimeout(stepTimer);
+    showSearch();
+    const errEl = document.getElementById('ig-search-error');
+    errEl.textContent = 'Connection error. Please try again in a moment.';
+    errEl.style.display = 'block';
+  }
+}
+
+function copyIGBio(i) {
+  const text = document.getElementById('igr-bio-text-' + i)?.textContent || '';
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('igr-bio-copy-' + i);
+    if (btn) {
+      btn.textContent = 'COPIED!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'COPY TO CLIPBOARD';
+        btn.classList.remove('copied');
+      }, 2200);
+    }
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
 }
 </script>
 </body>
