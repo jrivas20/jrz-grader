@@ -5604,7 +5604,9 @@ function renderIGReport(d) {
   // ── Profile Overview ──────────────────────────────────────────
   const followers  = profile.followers;
   const totalPosts = profile.total_posts ?? profile.media_count;
-  const lastDay    = profile.last_post_days;
+  // last_post_days lives in ig_competitive (computed from media timestamps), with
+  // profile.last_post_days as fallback for any future API shape changes
+  const lastDay    = igComp.last_post_days ?? profile.last_post_days ?? null;
 
   document.getElementById('igr-followers').textContent =
     followers != null ? Number(followers).toLocaleString() : '—';
@@ -5613,9 +5615,9 @@ function renderIGReport(d) {
   document.getElementById('igr-last-post').textContent =
     lastDay != null ? lastDay + 'd' : '—';
 
-  // Bio block
-  const bio     = profile.bio     || '';
-  const website = profile.website || '';
+  // Bio block — API returns profile.biography (not profile.bio)
+  const bio     = profile.biography || profile.bio || '';
+  const website = profile.website   || '';
   if (bio || website) {
     document.getElementById('igr-bio-block').style.display = 'block';
     document.getElementById('igr-bio-text').textContent    = bio;
@@ -5974,21 +5976,31 @@ function renderIGReport(d) {
   }
 
   // ── Gap Analysis ──────────────────────────────────────────────
+  // API shape: { category, artist_val, benchmark, impact ('critical'/'warning'), action }
+  // Legacy shape: { priority ('high'/'medium'), issue, fix }
+  // Normalise both shapes so either works.
   const gaps     = igComp.gaps || [];
   const gapsEl   = document.getElementById('igr-gaps-list');
   const gapsLbl  = document.getElementById('igr-gaps-label');
   if (gaps.length > 0) {
     gapsLbl.textContent = `${gaps.length} Thing${gaps.length === 1 ? '' : 's'} Holding You Back`;
     gapsEl.innerHTML = gaps.map(g => {
-      const pri = (g.priority || '').toLowerCase();
-      const dotColor = pri === 'high' ? 'var(--red)' : pri === 'medium' ? 'var(--amber)' : 'rgba(255,255,255,.3)';
+      // Normalise severity → colour
+      const rawSev = (g.impact || g.priority || '').toLowerCase();
+      const isCrit = rawSev === 'critical' || rawSev === 'high';
+      const isWarn = rawSev === 'warning'  || rawSev === 'medium';
+      const dotColor = isCrit ? 'var(--red)' : isWarn ? 'var(--amber)' : 'rgba(255,255,255,.3)';
+      const cssClass = isCrit ? 'high' : isWarn ? 'medium' : '';
+      // Normalise text fields
+      const title = g.category || g.issue || '';
+      const body  = g.action   || g.fix   || '';
       return `
-        <div class="igr-gap-card ${pri}">
+        <div class="igr-gap-card ${cssClass}">
           <div style="display:flex;align-items:flex-start;gap:12px">
             <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
             <div>
-              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">${g.issue}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.5">${g.fix}</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">${title}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.5">${body}</div>
             </div>
           </div>
         </div>`;
