@@ -5941,8 +5941,9 @@ function renderIGReport(d) {
   }
 
   // ── Bio Quality ───────────────────────────────────────────────
-  const bioScore  = igComp.bio_score || {};
-  const scoreNum  = bioScore.score  ?? 0;
+  const bioScoreRaw = igComp.bio_score;
+  const bioScore    = (typeof bioScoreRaw === 'object' && bioScoreRaw !== null) ? bioScoreRaw : {};
+  const scoreNum    = bioScore.score ?? (typeof bioScoreRaw === 'number' ? bioScoreRaw : 0);
   const scoreEl   = document.getElementById('igr-bio-score-num');
   const circleEl  = document.getElementById('igr-bio-score-circle');
   scoreEl.textContent      = scoreNum;
