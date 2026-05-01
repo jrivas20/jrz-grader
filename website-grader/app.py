@@ -82,9 +82,14 @@ def grade():
     competitors = []
     loc       = place.get('geometry', {}).get('location', {})
     raw_types = place.get('types', [])
-    skip      = {'point_of_interest', 'establishment', 'food', 'premise',
-                 'locality', 'political', 'sublocality', 'route'}
-    biz_type  = next((t for t in raw_types if t not in skip), 'establishment')
+    biz_type  = get_best_type(raw_types)
+    type_label = infer_type_label(biz_type, place.get('name', ''))
+
+    # Use the most specific search type available
+    search_type = biz_type if biz_type != 'establishment' else 'restaurant'
+    # For broad types, fall back to restaurant for food businesses
+    if search_type in ('food', 'meal_delivery', 'meal_takeaway'):
+        search_type = 'restaurant'
 
     if loc:
         try:
@@ -93,17 +98,18 @@ def grade():
                 params={
                     'location': f"{loc['lat']},{loc['lng']}",
                     'radius':   8000,
-                    'type':     biz_type,
+                    'type':     search_type,
                     'key':      GOOGLE_KEY,
                     'rankby':   'prominence'
                 },
                 timeout=8
             )
-            nearby      = nr.json().get('results', [])
+            nearby = nr.json().get('results', [])
             competitors = [
                 r for r in nearby
                 if r.get('place_id') != place_id
                 and r.get('business_status') == 'OPERATIONAL'
+                and is_valid_competitor(r, raw_types)
             ][:5]
         except Exception:
             competitors = []
@@ -122,22 +128,27 @@ def grade():
         except Exception:
             pagespeed = {}
 
+    # Parse city/state once — reused by scrape and keyword ranking
+    city, state = parse_city_state(place.get('formatted_address', ''))
+
     # 4. Website Scrape
     site_data = {}
     if website:
-        site_data = scrape_website(website)
+        site_data = scrape_website(
+            website,
+            biz_name=place.get('name', ''),
+            biz_city=city
+        )
 
     # 5. Keyword Rankings (Phase 2 — DataForSEO)
     keyword_rankings = []
-    if DFS_LOGIN and DFS_PASSWORD and place.get('formatted_address'):
-        city, state = parse_city_state(place['formatted_address'])
-        if city:
-            keyword_rankings = check_keyword_rankings(
-                place.get('name', ''), biz_type, city, state
-            )
+    if DFS_LOGIN and DFS_PASSWORD and city:
+        keyword_rankings = check_keyword_rankings(
+            place.get('name', ''), type_label, city, state
+        )
 
     # 6. Build Report
-    report = build_report(place, pagespeed, site_data, competitors, keyword_rankings, place_id)
+    report = build_report(place, pagespeed, site_data, competitors, keyword_rankings, place_id, type_label)
 
     CACHE[cache_key] = {'ts': time.time(), 'data': report}
 
@@ -164,10 +175,172 @@ def parse_city_state(address):
 
 
 # ─────────────────────────────────────────────────────────────────
+#  INDUSTRY TYPE INTELLIGENCE
+# ─────────────────────────────────────────────────────────────────
+
+# Cuisine / specific restaurant subtypes Google may return
+CUISINE_TYPES = {
+    'sushi_restaurant', 'japanese_restaurant', 'chinese_restaurant',
+    'mexican_restaurant', 'italian_restaurant', 'american_restaurant',
+    'seafood_restaurant', 'pizza_restaurant', 'fast_food_restaurant',
+    'hamburger_restaurant', 'sandwich_restaurant', 'thai_restaurant',
+    'indian_restaurant', 'korean_restaurant', 'french_restaurant',
+    'mediterranean_restaurant', 'greek_restaurant', 'spanish_restaurant',
+    'latin_american_restaurant', 'barbecue_restaurant', 'vegetarian_restaurant',
+    'vegan_restaurant', 'breakfast_restaurant', 'brunch_restaurant',
+    'steak_house', 'ramen_restaurant',
+}
+
+# Food / dining category types
+FOOD_TYPES = {
+    'restaurant', 'cafe', 'bakery', 'bar', 'meal_delivery',
+    'meal_takeaway', 'food', 'night_club',
+} | CUISINE_TYPES
+
+# Types that should never appear as competitors for food businesses
+NON_FOOD_EXCLUDE = {
+    'grocery_or_supermarket', 'supermarket', 'convenience_store',
+    'gas_station', 'pharmacy', 'drugstore', 'liquor_store',
+    'hardware_store', 'home_goods_store', 'furniture_store',
+    'clothing_store', 'department_store', 'shopping_mall',
+    'bank', 'atm', 'hospital', 'school', 'university', 'church',
+    'car_dealer', 'car_repair', 'parking', 'lodging', 'hotel',
+    'gym', 'beauty_salon', 'hair_care',
+}
+
+# Human-readable labels for Google Place types
+TYPE_LABELS = {
+    'sushi_restaurant':         'sushi restaurant',
+    'japanese_restaurant':      'Japanese restaurant',
+    'chinese_restaurant':       'Chinese restaurant',
+    'mexican_restaurant':       'Mexican restaurant',
+    'italian_restaurant':       'Italian restaurant',
+    'american_restaurant':      'American restaurant',
+    'seafood_restaurant':       'seafood restaurant',
+    'pizza_restaurant':         'pizza restaurant',
+    'fast_food_restaurant':     'fast food restaurant',
+    'hamburger_restaurant':     'burger restaurant',
+    'sandwich_restaurant':      'sandwich restaurant',
+    'thai_restaurant':          'Thai restaurant',
+    'indian_restaurant':        'Indian restaurant',
+    'korean_restaurant':        'Korean restaurant',
+    'french_restaurant':        'French restaurant',
+    'mediterranean_restaurant': 'Mediterranean restaurant',
+    'greek_restaurant':         'Greek restaurant',
+    'spanish_restaurant':       'Spanish restaurant',
+    'latin_american_restaurant':'Latin restaurant',
+    'barbecue_restaurant':      'BBQ restaurant',
+    'vegetarian_restaurant':    'vegetarian restaurant',
+    'vegan_restaurant':         'vegan restaurant',
+    'steak_house':              'steakhouse',
+    'ramen_restaurant':         'ramen restaurant',
+    'restaurant':               'restaurant',
+    'cafe':                     'cafe',
+    'bakery':                   'bakery',
+    'bar':                      'bar',
+    'meal_delivery':            'food delivery',
+    'meal_takeaway':            'takeout restaurant',
+    'hair_care':                'hair salon',
+    'beauty_salon':             'beauty salon',
+    'spa':                      'spa',
+    'gym':                      'gym',
+    'fitness_center':           'fitness center',
+    'dentist':                  'dentist',
+    'doctor':                   'doctor',
+    'lawyer':                   'law firm',
+    'accounting':               'accounting firm',
+    'real_estate_agency':       'real estate agency',
+    'plumber':                  'plumber',
+    'electrician':              'electrician',
+    'roofing_contractor':       'roofing contractor',
+    'general_contractor':       'contractor',
+    'moving_company':           'moving company',
+    'car_repair':               'auto repair shop',
+    'car_dealer':               'car dealership',
+    'hotel':                    'hotel',
+    'lodging':                  'hotel',
+}
+
+# Name keywords → inferred type label (used when Google type is too generic)
+NAME_CUISINE_MAP = [
+    (['sushi', 'omakase', 'maki', 'nigiri'],            'sushi restaurant'),
+    (['ramen', 'noodle', 'udon', 'pho', 'bun'],         'noodle restaurant'),
+    (['pizza', 'pizzeria', 'pie'],                       'pizza restaurant'),
+    (['taco', 'burrito', 'mexican', 'cantina', 'tex-mex'], 'Mexican restaurant'),
+    (['burger', 'smash', 'grill'],                       'burger restaurant'),
+    (['chinese', 'dim sum', 'wok', 'szechuan', 'cantonese'], 'Chinese restaurant'),
+    (['thai'],                                           'Thai restaurant'),
+    (['indian', 'curry', 'tandoor', 'masala'],           'Indian restaurant'),
+    (['korean', 'bbq', 'bulgogi', 'k-'],                 'Korean restaurant'),
+    (['italian', 'trattoria', 'osteria', 'pasta'],       'Italian restaurant'),
+    (['latin', 'colombian', 'peruvian', 'salvadoran', 'cuban', 'dominican'], 'Latin restaurant'),
+    (['asian', 'pan-asian', 'fusion'],                   'Asian fusion restaurant'),
+    (['seafood', 'crab', 'lobster', 'oyster', 'shrimp'], 'seafood restaurant'),
+    (['steak', 'steakhouse', 'churrasco', 'chophouse'],  'steakhouse'),
+    (['vegan', 'plant-based'],                           'vegan restaurant'),
+    (['vegetarian'],                                     'vegetarian restaurant'),
+    (['bbq', 'barbecue', 'smokehouse', 'brisket'],       'BBQ restaurant'),
+    (['french', 'brasserie', 'bistro'],                  'French restaurant'),
+    (['mediterranean', 'greek', 'hummus', 'falafel'],    'Mediterranean restaurant'),
+    (['cafe', 'coffee', 'espresso', 'roastery'],         'cafe'),
+    (['bakery', 'pastry', 'patisserie', 'boulangerie'],  'bakery'),
+    (['bar', 'pub', 'tavern', 'lounge'],                 'bar'),
+]
+
+
+def get_best_type(raw_types):
+    """Return the most specific Google Place type for the business."""
+    skip = {'point_of_interest', 'establishment', 'food', 'premise',
+            'locality', 'political', 'sublocality', 'route'}
+    # Prefer cuisine-specific types first
+    for t in raw_types:
+        if t in CUISINE_TYPES:
+            return t
+    # Then any non-generic type
+    for t in raw_types:
+        if t not in skip:
+            return t
+    return 'establishment'
+
+
+def infer_type_label(biz_type, biz_name=''):
+    """Convert a Google Place type to the best human-readable label,
+    using business name as fallback for generic types."""
+    label = TYPE_LABELS.get(biz_type, biz_type.replace('_', ' '))
+
+    # If still generic, infer from name keywords
+    if label in ('restaurant', 'food', 'establishment', 'meal takeaway', 'meal delivery'):
+        name_lower = biz_name.lower()
+        for keywords, inferred in NAME_CUISINE_MAP:
+            if any(kw in name_lower for kw in keywords):
+                return inferred
+
+    return label
+
+
+def is_valid_competitor(nearby_result, target_raw_types):
+    """True if the nearby business is in the same industry as the target."""
+    result_types = set(nearby_result.get('types', []))
+    target_types = set(target_raw_types)
+
+    target_is_food = bool(target_types & FOOD_TYPES)
+
+    if target_is_food:
+        # Exclude anything that is clearly not a dining establishment
+        if result_types & NON_FOOD_EXCLUDE:
+            return False
+        # Must have at least one food-related type
+        if not (result_types & FOOD_TYPES):
+            return False
+
+    return True
+
+
+# ─────────────────────────────────────────────────────────────────
 #  WEBSITE SCRAPER
 # ─────────────────────────────────────────────────────────────────
 
-def scrape_website(url):
+def scrape_website(url, biz_name='', biz_city=''):
     empty = {
         'scraped': False, 'h1_exists': False, 'h1_text': '',
         'meta_title': '', 'meta_description': '', 'meta_desc_length': 0,
@@ -177,6 +350,9 @@ def scrape_website(url):
         'social_links': [], 'has_contact_form': False, 'has_schema': False,
         'has_testimonials': False, 'has_cta': False, 'word_count': 0,
         'has_about': False, 'has_faq': False,
+        'has_booking_widget': False, 'has_online_menu': False,
+        'has_live_chat': False, 'has_ssl': False,
+        'city_in_content': False, 'name_in_title': False,
     }
     try:
         headers = {
@@ -193,6 +369,9 @@ def scrape_website(url):
         soup = BeautifulSoup(resp.text, 'lxml')
         r    = dict(empty)
         r['scraped'] = True
+
+        # SSL — check the final URL after redirects
+        r['has_ssl'] = resp.url.startswith('https://')
 
         # H1
         h1 = soup.find('h1')
@@ -224,8 +403,9 @@ def scrape_website(url):
 
         page_text  = soup.get_text(' ', strip=True)
         page_lower = page_text.lower()
+        html_lower = resp.text.lower()
 
-        # Phone number
+        # Phone number — regex + tel: links
         phone_re = re.compile(r'\(?\d{3}\)?[\-.\s]\d{3}[\-.\s]\d{4}')
         r['phone_on_site'] = (
             bool(phone_re.search(page_text)) or
@@ -245,7 +425,7 @@ def scrape_website(url):
         hour_kw = [
             'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
             'saturday', 'sunday', 'hours of operation', 'business hours',
-            'open daily', 'open monday'
+            'open daily', 'open monday', 'open 7 days', 'hours:'
         ]
         r['hours_on_site'] = any(k in page_lower for k in hour_kw)
 
@@ -277,7 +457,8 @@ def scrape_website(url):
         test_kw = [
             'testimonial', 'what our clients', 'customers say',
             'client review', 'customer review', 'five-star', '5-star',
-            'what people say', 'our reviews'
+            'what people say', 'our reviews', 'rated 5', 'rated us',
+            'google review', 'left us a review'
         ]
         r['has_testimonials'] = any(k in page_lower for k in test_kw)
 
@@ -307,6 +488,54 @@ def scrape_website(url):
         # Word count
         r['word_count'] = len(page_text.split())
 
+        # Business name in page title
+        if biz_name and r['meta_title']:
+            name_words = [w for w in biz_name.split() if len(w) > 3]
+            r['name_in_title'] = any(
+                w.lower() in r['meta_title'].lower() for w in name_words
+            ) if name_words else False
+        else:
+            r['name_in_title'] = False
+
+        # City/location keyword in website content
+        if biz_city:
+            r['city_in_content'] = biz_city.lower() in page_lower
+        else:
+            r['city_in_content'] = False
+
+        # Online booking widget / reservation system
+        booking_domains = [
+            'calendly.com', 'acuityscheduling.com', 'squareup.com', 'square.site',
+            'mindbodyonline.com', 'schedulicity.com', 'setmore.com', 'booksy.com',
+            'opentable.com', 'resy.com', 'tock.com', 'chownow.com',
+            'toasttab.com', 'order.online', 'yelp.com/reservations',
+        ]
+        booking_kw_btn = [
+            'book now', 'book a table', 'book an appointment', 'reserve a table',
+            'make a reservation', 'reserve now', 'schedule online', 'order online',
+            'online booking', 'book online', 'request appointment',
+        ]
+        has_booking_link = any(
+            domain in a.get('href', '').lower()
+            for a in soup.find_all('a', href=True)
+            for domain in booking_domains
+        )
+        has_booking_kw = any(kw in btn_text for kw in booking_kw_btn)
+        r['has_booking_widget'] = has_booking_link or has_booking_kw
+
+        # Online menu (restaurants / food businesses)
+        menu_kw = ['our menu', 'view menu', 'full menu', 'menu pdf', 'see menu',
+                   'food menu', 'drink menu', 'browse menu']
+        r['has_online_menu'] = any(k in page_lower for k in menu_kw)
+
+        # Live chat widget
+        chat_signals = [
+            'intercom', 'drift.com', 'tidio', 'livechat', 'crisp.chat',
+            'zendesk', 'freshchat', 'tawk.to', 'hubspot', 'olark',
+            'chaport', '__lc_', 'chatbot', 'chat-widget', 'lc2',
+        ]
+        r['has_live_chat'] = any(sig in html_lower for sig in chat_signals)
+
     except Exception:
         return empty
 
@@ -317,9 +546,8 @@ def scrape_website(url):
 #  DATAFORSEO KEYWORD RANKINGS  (Phase 2)
 # ─────────────────────────────────────────────────────────────────
 
-def check_keyword_rankings(biz_name, biz_type, city, state):
-    type_label = biz_type.replace('_', ' ')
-    keywords   = [
+def check_keyword_rankings(biz_name, type_label, city, state):
+    keywords = [
         f"best {type_label} in {city}",
         f"{type_label} {city}",
         f"{type_label} near {city}",
@@ -369,27 +597,70 @@ def check_keyword_rankings(biz_name, biz_type, city, state):
 #  REVENUE ESTIMATOR
 # ─────────────────────────────────────────────────────────────────
 
-def estimate_revenue_loss(issues, place):
-    critical = sum(1 for i in issues if i['severity'] == 'critical')
-    warning  = sum(1 for i in issues if i['severity'] == 'warning')
-    if not (critical + warning):
+# Issue-specific revenue impact (monthly $ at risk per issue type)
+ISSUE_REVENUE = {
+    'no website':          2800,
+    'slow':                1400,
+    'performance':          800,
+    'schema':               450,
+    'open graph':           280,
+    'testimonial':          350,
+    'meta description':     320,
+    'review':              1200,
+    'photo':                550,
+    'hours':                400,
+    'phone':                480,
+    'default_critical':     900,
+    'default_warning':      380,
+}
+
+def get_issue_impact(issue):
+    title = issue['title'].lower()
+    for key, val in ISSUE_REVENUE.items():
+        if key in title:
+            return val
+    return ISSUE_REVENUE['default_critical'] if issue['severity'] == 'critical' else ISSUE_REVENUE['default_warning']
+
+
+def estimate_revenue_loss(issues, place, overall_score=50):
+    if not issues:
         return 0
 
-    base  = critical * 900 + warning * 350
-    types = place.get('types', [])
+    types   = place.get('types', [])
+    reviews = place.get('user_ratings_total', 0)
 
+    # Industry base monthly revenue (conservative estimate)
     if any(t in types for t in ['restaurant', 'cafe', 'bakery', 'meal_delivery', 'meal_takeaway']):
-        mult = 1.8
+        industry_base = 18000
     elif any(t in types for t in ['doctor', 'dentist', 'physiotherapist', 'spa', 'beauty_salon', 'hair_care']):
-        mult = 2.2
+        industry_base = 25000
     elif any(t in types for t in ['lawyer', 'accounting', 'real_estate_agency', 'insurance_agency']):
-        mult = 3.0
+        industry_base = 45000
     elif any(t in types for t in ['plumber', 'electrician', 'roofing', 'contractor', 'moving_company']):
-        mult = 2.5
+        industry_base = 30000
     else:
-        mult = 1.5
+        industry_base = 15000
 
-    return int(base * mult)
+    # Business size multiplier based on review count (proxy for volume)
+    if   reviews >= 500: size_mult = 2.4
+    elif reviews >= 200: size_mult = 1.8
+    elif reviews >= 100: size_mult = 1.4
+    elif reviews >= 50:  size_mult = 1.1
+    elif reviews >= 20:  size_mult = 0.85
+    else:                size_mult = 0.6
+
+    # Score gap factor — how far below optimal
+    gap_pct = max(0, 100 - overall_score) / 100.0
+
+    # Sum issue-specific impacts
+    raw_impact = sum(get_issue_impact(i) for i in issues)
+
+    # Weight: issue severity × size of business × how far below benchmark
+    estimated = int(raw_impact * size_mult * (0.6 + gap_pct * 0.8))
+
+    # Cap at 20% of industry base (realistic upper bound)
+    cap = int(industry_base * 0.20)
+    return min(estimated, cap)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -461,7 +732,8 @@ def score_reputation(place, checklist):
 
 
 def score_website(place, pagespeed, site_data, checklist):
-    items = []
+    items       = []
+    scraped_pts = 0   # quality points from content scan (max 100)
 
     if not place.get('website'):
         for label in [
@@ -469,59 +741,103 @@ def score_website(place, pagespeed, site_data, checklist):
             'Meta description configured', 'Phone number on site',
             'Address visible on site', 'Business hours on site',
             'Social media links present', 'Contact form or booking CTA',
-            'Favicon configured', 'Schema markup present',
-            'Open Graph tags for social sharing', 'Customer testimonials displayed'
+            'Online booking or scheduling widget', 'Favicon configured',
+            'Schema markup present', 'Open Graph tags for social sharing',
+            'Customer testimonials displayed', 'SSL certificate (HTTPS)',
         ]:
             items.append({'label': label, 'pass': False})
         checklist['website'] = items
         return 0
 
     items.append({'label': 'Website exists and is linked', 'pass': True})
+    scraped_pts += 5
 
     if site_data.get('scraped'):
-        items.append({'label': 'H1 headline present',
-                      'pass': site_data.get('h1_exists', False)})
+        # SSL
+        ssl_ok = site_data.get('has_ssl', False)
+        items.append({'label': 'SSL certificate (HTTPS)', 'pass': ssl_ok})
+        if ssl_ok: scraped_pts += 6
 
-        chars    = site_data.get('meta_desc_length', 0)
-        meta_ok  = chars >= 100
+        # H1
+        h1_ok = site_data.get('h1_exists', False)
+        items.append({'label': 'H1 headline present', 'pass': h1_ok})
+        if h1_ok: scraped_pts += 6
+
+        # Meta description
+        chars   = site_data.get('meta_desc_length', 0)
+        meta_ok = chars >= 100
         items.append({'label': f'Meta description configured ({chars} characters)',
                       'pass': meta_ok})
+        if meta_ok: scraped_pts += 7
 
-        items.append({'label': 'Phone number visible on site',
-                      'pass': site_data.get('phone_on_site', False)})
-        items.append({'label': 'Address present on site',
-                      'pass': site_data.get('address_on_site', False)})
-        items.append({'label': 'Business hours on site',
-                      'pass': site_data.get('hours_on_site', False)})
+        # Phone on site
+        ph_ok = site_data.get('phone_on_site', False)
+        items.append({'label': 'Phone number visible on site', 'pass': ph_ok})
+        if ph_ok: scraped_pts += 5
 
+        # Address on site
+        addr_ok = site_data.get('address_on_site', False)
+        items.append({'label': 'Address present on site', 'pass': addr_ok})
+        if addr_ok: scraped_pts += 4
+
+        # Hours on site
+        hrs_ok = site_data.get('hours_on_site', False)
+        items.append({'label': 'Business hours on site', 'pass': hrs_ok})
+        if hrs_ok: scraped_pts += 4
+
+        # Social links
         social    = site_data.get('social_links', [])
         social_ok = len(social) > 0
         soc_label = ', '.join(social) if social_ok else 'none detected'
         items.append({'label': f'Social media links ({soc_label})', 'pass': social_ok})
+        if social_ok: scraped_pts += 5
 
+        # CTA / form
         has_cta = site_data.get('has_cta', False) or site_data.get('has_contact_form', False)
         items.append({'label': 'Contact form or booking CTA present', 'pass': has_cta})
-        items.append({'label': 'Favicon configured',
-                      'pass': site_data.get('favicon', False)})
-        items.append({'label': 'Schema markup (structured data)',
-                      'pass': site_data.get('has_schema', False)})
+        if has_cta: scraped_pts += 8
 
+        # Booking widget
+        booking_ok = site_data.get('has_booking_widget', False)
+        items.append({'label': 'Online booking or scheduling widget', 'pass': booking_ok})
+        if booking_ok: scraped_pts += 8
+
+        # Favicon
+        fav_ok = site_data.get('favicon', False)
+        items.append({'label': 'Favicon configured', 'pass': fav_ok})
+        if fav_ok: scraped_pts += 3
+
+        # Schema
+        schema_ok = site_data.get('has_schema', False)
+        items.append({'label': 'Schema markup (structured data)', 'pass': schema_ok})
+        if schema_ok: scraped_pts += 9
+
+        # OG tags
         og_ok = site_data.get('og_title', False) and site_data.get('og_image', False)
         items.append({'label': 'Open Graph tags for social sharing', 'pass': og_ok})
-        items.append({'label': 'Customer testimonials displayed',
-                      'pass': site_data.get('has_testimonials', False)})
+        if og_ok: scraped_pts += 7
 
+        # Testimonials
+        test_ok = site_data.get('has_testimonials', False)
+        items.append({'label': 'Customer testimonials displayed', 'pass': test_ok})
+        if test_ok: scraped_pts += 7
+
+        # Word count
         words = site_data.get('word_count', 0)
         items.append({'label': f'Sufficient page content ({words} words)',
                       'pass': words >= 300})
+        if words >= 300: scraped_pts += 5
+
+        scraped_pts = min(scraped_pts, 100)
     else:
         items.append({'label': 'Site scan unavailable (bot-protected or timeout)',
                       'pass': None})
+        scraped_pts = 20   # partial credit — site loads but scan failed
 
     if not pagespeed or 'lighthouseResult' not in pagespeed:
         items.append({'label': 'Mobile performance (scan unavailable)', 'pass': None})
         checklist['website'] = items
-        return 28
+        return min(scraped_pts, 100)
 
     cats = pagespeed['lighthouseResult']['categories']
     perf = int((cats.get('performance', {}).get('score') or 0) * 100)
@@ -531,6 +847,10 @@ def score_website(place, pagespeed, site_data, checklist):
     items.append({'label': f'SEO technical score: {seo}/100',       'pass': seo  >= 80})
 
     checklist['website'] = items
+
+    # Combined score: PageSpeed 50% + content quality 50%
+    if site_data.get('scraped'):
+        return min(int(perf * 0.35 + seo * 0.15 + scraped_pts * 0.50), 100)
     return min(int(perf * 0.65 + seo * 0.35), 100)
 
 
@@ -539,35 +859,45 @@ def score_local_seo(place, site_data, checklist):
     items   = []
     has_web = bool(place.get('website'))
     has_ph  = bool(place.get('formatted_phone_number'))
-    has_hrs = bool(place.get('opening_hours'))
-    photos  = len(place.get('photos', []))
-    reviews = place.get('user_ratings_total', 0)
+    scraped = site_data.get('scraped', False)
 
-    items.append({'label': 'Website linked to Google profile', 'pass': has_web})
-    if has_web:  s += 20
+    # Schema markup — strongest on-site local ranking signal
+    has_schema = site_data.get('has_schema', False) if scraped else False
+    items.append({'label': 'Schema markup (LocalBusiness structured data)', 'pass': has_schema})
+    if has_schema: s += 22
 
-    items.append({'label': 'Phone number on Google profile', 'pass': has_ph})
-    if has_ph:   s += 12
+    # NAP: phone number on website (matches Google Business Profile)
+    phone_ok = site_data.get('phone_on_site', False) if scraped else False
+    items.append({'label': 'Phone number on website (NAP consistency)', 'pass': phone_ok})
+    if phone_ok: s += 14
 
-    items.append({'label': 'Business hours configured', 'pass': has_hrs})
-    if has_hrs:  s += 15
+    # NAP: physical address on website
+    addr_ok = site_data.get('address_on_site', False) if scraped else False
+    items.append({'label': 'Physical address on website (NAP consistency)', 'pass': addr_ok})
+    if addr_ok: s += 12
 
-    photos_ok = photos >= 5
-    items.append({'label': f'5 or more profile photos ({photos})', 'pass': photos_ok})
-    if photos >= 5:  s += 18
-    elif photos >= 1: s += 8
+    # City/location keyword in website content
+    city_ok = site_data.get('city_in_content', False) if scraped else False
+    items.append({'label': 'City/location keyword in website content', 'pass': city_ok})
+    if city_ok: s += 14
 
-    reviews_ok = reviews >= 50
-    items.append({'label': f'50 or more reviews for local authority ({reviews})',
-                  'pass': reviews_ok})
-    if reviews >= 50:  s += 20
-    elif reviews >= 20: s += 10
-    elif reviews >= 5:  s += 5
+    # Business name in page title tag
+    name_ok = site_data.get('name_in_title', False) if scraped else False
+    items.append({'label': 'Business name in website title tag', 'pass': name_ok})
+    if name_ok: s += 10
 
-    if site_data.get('scraped'):
-        has_schema = site_data.get('has_schema', False)
-        items.append({'label': 'Schema markup on website', 'pass': has_schema})
-        if has_schema: s += 15
+    # Social profiles linked (external citation signals)
+    social_ok = len(site_data.get('social_links', [])) >= 1 if scraped else False
+    items.append({'label': 'Social profiles linked from website (citation signals)', 'pass': social_ok})
+    if social_ok: s += 12
+
+    # Google Business Profile: web + phone + hours fully configured
+    nap_gbp = has_web and has_ph and bool(place.get('opening_hours'))
+    items.append({
+        'label': 'Google Business Profile: website + phone + hours all configured',
+        'pass': nap_gbp
+    })
+    if nap_gbp: s += 16
 
     checklist['local_seo'] = items
     return min(s, 100)
@@ -579,24 +909,40 @@ def score_lead_capture(place, site_data, checklist):
     has_web = bool(place.get('website'))
     has_ph  = bool(place.get('formatted_phone_number'))
     has_hrs = bool(place.get('opening_hours'))
+    scraped = site_data.get('scraped', False)
 
+    # Website — primary digital lead channel
     items.append({'label': 'Website for online lead capture', 'pass': has_web})
-    if has_web:  s += 35
+    if has_web: s += 20
 
-    items.append({'label': 'Phone number for direct contact', 'pass': has_ph})
-    if has_ph:   s += 25
+    # Phone number on Google profile
+    items.append({'label': 'Phone number listed on Google profile', 'pass': has_ph})
+    if has_ph: s += 12
 
+    # Hours published — eliminates friction and missed calls
     items.append({'label': 'Business hours visible to reduce friction', 'pass': has_hrs})
-    if has_hrs:  s += 15
+    if has_hrs: s += 8
 
-    if site_data.get('scraped'):
+    if scraped:
+        # Online booking or scheduling — highest-converting lead channel
+        booking_ok = site_data.get('has_booking_widget', False)
+        items.append({'label': 'Online booking or appointment scheduling widget', 'pass': booking_ok})
+        if booking_ok: s += 24
+
+        # Contact form or primary CTA
         has_form = site_data.get('has_contact_form', False) or site_data.get('has_cta', False)
-        items.append({'label': 'Contact form or booking CTA on website', 'pass': has_form})
-        if has_form: s += 15
+        items.append({'label': 'Contact form or primary CTA on website', 'pass': has_form})
+        if has_form: s += 18
 
+        # Live chat widget
+        chat_ok = site_data.get('has_live_chat', False)
+        items.append({'label': 'Live chat or messaging widget installed', 'pass': chat_ok})
+        if chat_ok: s += 12
+
+        # Multiple social channels (additional discovery and lead surfaces)
         social_ok = len(site_data.get('social_links', [])) >= 2
-        items.append({'label': '2 or more social media channels active', 'pass': social_ok})
-        if social_ok: s += 10
+        items.append({'label': '2 or more social media channels linked', 'pass': social_ok})
+        if social_ok: s += 6
 
     checklist['lead_capture'] = items
     return min(s, 100)
@@ -740,6 +1086,54 @@ def get_jrz_action(issue, site_data, pagespeed, place):
             'service':  'Profile Optimization'
         }
 
+    if 'booking' in title or 'scheduling' in title:
+        return {
+            'fix':      ('JRZ integrates an online booking or scheduling widget directly into '
+                         'your website using your preferred platform (Calendly, Square, Acuity, '
+                         'OpenTable, or a custom-branded solution). The system connects to your '
+                         'existing calendar and sends automated confirmation messages to customers. '
+                         'No technical input required from you.'),
+            'timeline': '24 to 48 hours',
+            'result':   ('Businesses with online booking convert 2.4x more visitors than those '
+                         'requiring a phone call. Leads captured during off-hours are never lost.'),
+            'service':  'Booking Integration'
+        }
+
+    if 'city' in title or 'service area' in title or 'location' in title:
+        return {
+            'fix':      ('JRZ rewrites key sections of your website to include your city, '
+                         'neighborhood, and service area naturally throughout the content. '
+                         'We add location-specific meta tags, a service area page if needed, '
+                         'and update your schema markup to anchor the site geographically.'),
+            'timeline': '24 to 48 hours',
+            'result':   ('Stronger local relevance signal to Google. Improvement in local map '
+                         'pack and organic rankings within 30 to 60 days.'),
+            'service':  'Local SEO Content'
+        }
+
+    if 'ssl' in title or 'https' in title or 'not secure' in title:
+        return {
+            'fix':      ('JRZ provisions and installs your SSL certificate, enforces HTTPS across '
+                         'all pages, sets up 301 redirects from HTTP to HTTPS, and updates all '
+                         'internal links and canonical tags so no ranking signals are lost.'),
+            'timeline': '24 hours',
+            'result':   ('"Not Secure" warning eliminated. Google ranking signal restored. '
+                         'Visitor trust immediately improved.'),
+            'service':  'SSL / Security'
+        }
+
+    if 'live chat' in title or 'chat widget' in title or 'messaging' in title:
+        return {
+            'fix':      ('JRZ installs and configures a live chat widget on your website — '
+                         'either a staffed solution or an AI-powered chatbot that captures '
+                         'lead details, answers common questions, and routes inquiries to '
+                         'your team in real time via SMS or email.'),
+            'timeline': '24 hours',
+            'result':   ('Live chat increases website lead conversion by an average of 40 percent. '
+                         'Visitors who receive an instant response are 7x more likely to become customers.'),
+            'service':  'Chat / Conversion'
+        }
+
     return {
         'fix':      ('JRZ audits this issue, identifies the root cause, and implements a targeted '
                      'fix. All work is completed by our team with no technical input required from you.'),
@@ -771,7 +1165,7 @@ def build_roadmap(issues, site_data, pagespeed, place):
 #  REPORT BUILDER
 # ─────────────────────────────────────────────────────────────────
 
-def build_report(place, pagespeed, site_data, competitors, keyword_rankings, place_id):
+def build_report(place, pagespeed, site_data, competitors, keyword_rankings, place_id, type_label='business'):
     name    = place.get('name', '')
     rating  = place.get('rating', 0)
     reviews = place.get('user_ratings_total', 0)
@@ -934,7 +1328,50 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings, pla
             'fix':    'JRZ adds your phone number with call tracking enabled so you can measure leads from Google directly.'
         })
 
-    revenue_loss = estimate_revenue_loss(issues, place)
+    # Website-level accuracy signals (only when site was successfully scanned)
+    if site_data.get('scraped') and website:
+        if not site_data.get('has_ssl'):
+            issues.append({
+                'severity': 'critical', 'category': 'Website',
+                'title':  'Website is not secure — no SSL certificate (HTTP only)',
+                'detail': ('Browsers display a "Not Secure" warning to every visitor on non-HTTPS sites. '
+                           'Approximately 85 percent of users leave immediately after seeing that warning. '
+                           'Google also uses HTTPS as a direct ranking factor in local and organic results.'),
+                'fix':    'JRZ installs your SSL certificate and enforces HTTPS sitewide within 24 hours.'
+            })
+
+        if not site_data.get('has_booking_widget'):
+            issues.append({
+                'severity': 'warning', 'category': 'Lead Capture',
+                'title':  'No online booking or scheduling system on your website',
+                'detail': ('Businesses with online booking convert 2.4x more website visitors than '
+                           'those that require a phone call. Every visitor who cannot book instantly '
+                           'is a potential lead lost to a competitor who makes it frictionless.'),
+                'fix':    'JRZ integrates an online booking widget into your website within 48 hours — no technical input needed.'
+            })
+
+        if not site_data.get('city_in_content'):
+            issues.append({
+                'severity': 'warning', 'category': 'Local SEO',
+                'title':  'City or service area not mentioned in website content',
+                'detail': ('Google reads your website content to determine geographic relevance. '
+                           'A site that never mentions the city it serves sends a weak local signal, '
+                           'directly limiting your visibility in local and map pack results.'),
+                'fix':    'JRZ rewrites key page sections with city-specific language and adds a geo-anchored service area page.'
+            })
+
+        if not site_data.get('has_live_chat') and not site_data.get('has_booking_widget'):
+            issues.append({
+                'severity': 'warning', 'category': 'Lead Capture',
+                'title':  'No live chat or instant contact option on your website',
+                'detail': ('Visitors who receive an immediate response are 7x more likely to '
+                           'convert. Without live chat or a chatbot, visitors who have questions '
+                           'at 9pm or on weekends leave with no way to reach you — and contact '
+                           'a competitor instead.'),
+                'fix':    'JRZ installs a chat widget with AI-powered first response and SMS escalation to your team in real time.'
+            })
+
+    revenue_loss = estimate_revenue_loss(issues, place, overall_score=overall)
     roadmap      = build_roadmap(issues, site_data, pagespeed, place)
 
     # Competitors

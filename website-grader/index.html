@@ -302,12 +302,65 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .l-step.done   .l-step-icon svg { stroke: var(--green); }
 .l-step-text { font-size: 15px; font-weight: 500; color: rgba(255,255,255,.65); }
 .l-step.done .l-step-text::after { content: ' \2713'; color: var(--green); font-weight: 700; }
-.loading-bar-wrap { height: 2px; background: var(--b); border-radius: 2px; overflow: hidden; }
+/* Percentage counter */
+.loading-pct {
+  font-size: 80px;
+  font-weight: 900;
+  letter-spacing: -5px;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 52px;
+  font-variant-numeric: tabular-nums;
+}
+.loading-pct .pct-sym {
+  font-size: 44px;
+  font-weight: 300;
+  color: rgba(255,255,255,.3);
+  letter-spacing: -2px;
+  margin-left: 4px;
+}
+
+/* Progress bar */
+.loading-bar-wrap { height: 2px; background: var(--b); border-radius: 2px; overflow: hidden; position: relative; }
 .loading-bar-fill {
   height: 100%; width: 0%;
-  background: linear-gradient(90deg, rgba(255,255,255,.4), #fff);
+  background: linear-gradient(90deg, rgba(255,255,255,.5), #fff);
   border-radius: 2px;
-  transition: width .6s var(--ease);
+  transition: width .7s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+.loading-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+  animation: bar-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes bar-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Active step glow */
+.l-step.active .l-step-icon {
+  animation: icon-glow 1.6s ease-in-out infinite;
+}
+@keyframes icon-glow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,.08); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,255,255,.04); }
+}
+
+/* Animated dots on active step label */
+.l-step.active .l-step-text .dot-anim::after {
+  content: '';
+  animation: ellipsis 1.6s steps(4, end) infinite;
+}
+@keyframes ellipsis {
+  0%  { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1082,44 +1135,44 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 <section id="loading-section">
   <div class="loading-inner">
     <div class="loading-biz-name" id="loading-biz-name"></div>
-    <h2 class="loading-h">Running your<br>AI business audit.</h2>
+    <div class="loading-pct" id="loading-pct">0<span class="pct-sym">%</span></div>
 
     <div class="loading-steps">
       <div class="l-step" id="step-0">
         <div class="l-step-icon">
           <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         </div>
-        <span class="l-step-text">Connecting to Google Business database</span>
+        <span class="l-step-text">Connecting to Google Business database<span class="dot-anim"></span></span>
       </div>
       <div class="l-step" id="step-1">
         <div class="l-step-icon">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         </div>
-        <span class="l-step-text">Scanning your Google Business profile</span>
+        <span class="l-step-text">Scanning your Google Business profile<span class="dot-anim"></span></span>
       </div>
       <div class="l-step" id="step-2">
         <div class="l-step-icon">
           <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
-        <span class="l-step-text">Analyzing reviews and reputation signals</span>
+        <span class="l-step-text">Analyzing reviews and reputation signals<span class="dot-anim"></span></span>
       </div>
       <div class="l-step" id="step-3">
         <div class="l-step-icon">
           <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </div>
-        <span class="l-step-text">Testing website performance on mobile</span>
+        <span class="l-step-text">Testing website performance on mobile<span class="dot-anim"></span></span>
       </div>
       <div class="l-step" id="step-4">
         <div class="l-step-icon">
           <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         </div>
-        <span class="l-step-text">Benchmarking against local competitors</span>
+        <span class="l-step-text">Benchmarking against local competitors<span class="dot-anim"></span></span>
       </div>
       <div class="l-step" id="step-5">
         <div class="l-step-icon">
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
-        <span class="l-step-text">Generating your personalized audit report</span>
+        <span class="l-step-text">Generating your personalized audit report<span class="dot-anim"></span></span>
       </div>
     </div>
 
@@ -1410,7 +1463,27 @@ async function fetchSuggestions(query) {
 const STEP_DELAYS = [0, 500, 1100, 1800, 2600, 3000];
 const PROGRESS    = [8, 22, 42, 62, 80, 95];
 
+let pctCurrent = 0;
+
+function animateCounter(to) {
+  const el    = document.getElementById('loading-pct');
+  const from  = pctCurrent;
+  const dur   = 600;
+  const start = performance.now();
+  function tick(now) {
+    const p     = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val   = Math.round(from + (to - from) * eased);
+    el.innerHTML = `${val}<span class="pct-sym">%</span>`;
+    if (p < 1) requestAnimationFrame(tick);
+    else pctCurrent = to;
+  }
+  requestAnimationFrame(tick);
+}
+
 function animateLoading() {
+  pctCurrent = 0;
+  document.getElementById('loading-pct').innerHTML = '0<span class="pct-sym">%</span>';
   const bar = document.getElementById('loading-bar-fill');
   STEP_DELAYS.forEach((delay, i) => {
     setTimeout(() => {
@@ -1420,6 +1493,7 @@ function animateLoading() {
         if (j === i) s.classList.add('active');
       });
       bar.style.width = PROGRESS[i] + '%';
+      animateCounter(PROGRESS[i]);
     }, delay);
   });
 }
@@ -1450,9 +1524,10 @@ async function startGrading() {
     const wait    = Math.max(0, 3500 - elapsed);
     await new Promise(r => setTimeout(r, wait));
 
-    // Finish bar
+    // Finish bar + counter
     document.getElementById('loading-bar-fill').style.width = '100%';
-    await new Promise(r => setTimeout(r, 400));
+    animateCounter(100);
+    await new Promise(r => setTimeout(r, 500));
 
     reportData = data;
     renderReport(data);
