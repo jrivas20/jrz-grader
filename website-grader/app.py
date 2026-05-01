@@ -17,6 +17,7 @@ GHL_WEBHOOK   = os.environ.get('GHL_WEBHOOK',
 DFS_LOGIN     = os.environ.get('DATAFORSEO_LOGIN', '')
 DFS_PASSWORD  = os.environ.get('DATAFORSEO_PASSWORD', '')
 FB_TOKEN      = os.environ.get('FB_ACCESS_TOKEN', '')
+FB_APP_ID     = os.environ.get('FB_APP_ID', '')        # Public — used in OAuth popup URL
 
 CACHE = {}
 
@@ -32,6 +33,166 @@ def health():
         'key_set':  bool(GOOGLE_KEY),
         'dfs_set':  bool(DFS_LOGIN)
     })
+
+
+@app.route('/api/config')
+def config():
+    """Public config — non-sensitive values the frontend needs (App IDs, feature flags)."""
+    return jsonify({
+        'fb_app_id':     FB_APP_ID,
+        'oauth_enabled': bool(FB_APP_ID),
+        'base_url':      request.host_url.rstrip('/')
+    })
+
+
+@app.route('/oauth-callback')
+def oauth_callback():
+    """
+    OAuth redirect landing page for the Meta popup flow.
+    Facebook sends the user here after auth. The hash fragment (#access_token=...)
+    is read by JS and posted to the parent window, then the popup closes itself.
+    """
+    return '''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Connecting...</title></head>
+<body style="background:#0a0a0a;color:#fff;font-family:sans-serif;
+             display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
+<script>
+  try {
+    var hash = window.location.hash.slice(1);
+    var params = {};
+    hash.split('&').forEach(function(p){
+      var kv = p.split('=');
+      params[kv[0]] = decodeURIComponent(kv[1] || '');
+    });
+    if (params.access_token && window.opener) {
+      window.opener.postMessage({ type: 'meta_token', token: params.access_token }, '*');
+    } else if (params.error && window.opener) {
+      window.opener.postMessage({ type: 'meta_error', error: params.error_description || params.error }, '*');
+    }
+  } catch(e) {}
+  setTimeout(function(){ window.close(); }, 800);
+</script>
+<div style="text-align:center">
+  <div style="font-size:24px;margin-bottom:8px">Connecting...</div>
+  <div style="font-size:13px;opacity:.5">This window will close automatically.</div>
+</div>
+</body></html>'''
+
+
+@app.route('/api/enhance-tattoo', methods=['POST'])
+def enhance_tattoo():
+    """
+    Accepts a short-lived user access token from the artist's Meta OAuth.
+    Returns real Instagram data — followers, media count, IG username, post recency.
+    Token is NEVER stored. Read-only. Used in-session only.
+    Required scope: instagram_basic, pages_show_list, pages_read_engagement
+    """
+    data = request.get_json(silent=True) or {}
+    user_token = (data.get('token') or '').strip()
+    if not user_token:
+        return jsonify({'error': 'No token provided'}), 400
+
+    enhanced = {
+        'source': 'live',
+        'instagram': None,
+        'facebook': None,
+    }
+
+    try:
+        # Step 1: Get the user's Facebook Pages (needed to find linked IG Business Account)
+        pages_resp = requests.get(
+            'https://graph.facebook.com/v19.0/me/accounts',
+            params={
+                'access_token': user_token,
+                'fields': 'id,name,fan_count,followers_count,instagram_business_account'
+            },
+            timeout=8
+        )
+        pages_data = pages_resp.json()
+        pages = pages_data.get('data', [])
+
+        ig_id = None
+        for page in pages:
+            ig_acct = page.get('instagram_business_account', {})
+            if ig_acct and ig_acct.get('id'):
+                ig_id = ig_acct['id']
+                # Facebook Page social data
+                enhanced['facebook'] = {
+                    'page_name':  page.get('name', ''),
+                    'fans':       page.get('fan_count'),
+                    'followers':  page.get('followers_count'),
+                    'source':     'live'
+                }
+                break
+
+        # Step 2: Get Instagram Business Account details
+        if ig_id:
+            ig_resp = requests.get(
+                f'https://graph.facebook.com/v19.0/{ig_id}',
+                params={
+                    'access_token': user_token,
+                    'fields': (
+                        'id,username,name,biography,website,profile_picture_url,'
+                        'followers_count,follows_count,media_count'
+                    )
+                },
+                timeout=8
+            )
+            ig_info = ig_resp.json()
+
+            # Step 3: Get recent media (last post date)
+            media_resp = requests.get(
+                f'https://graph.facebook.com/v19.0/{ig_id}/media',
+                params={
+                    'access_token': user_token,
+                    'fields': 'id,timestamp,media_type,like_count,comments_count',
+                    'limit': 12
+                },
+                timeout=8
+            )
+            media = media_resp.json().get('data', [])
+
+            last_post_days = None
+            avg_likes = None
+            avg_comments = None
+            if media:
+                try:
+                    import datetime as dt
+                    ts_str = media[0].get('timestamp', '')
+                    if ts_str:
+                        ts = dt.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                        now = dt.datetime.now(dt.timezone.utc)
+                        last_post_days = (now - ts).days
+                except Exception:
+                    pass
+                try:
+                    likes = [m.get('like_count', 0) for m in media if 'like_count' in m]
+                    comms = [m.get('comments_count', 0) for m in media if 'comments_count' in m]
+                    avg_likes    = int(sum(likes) / len(likes)) if likes else None
+                    avg_comments = int(sum(comms) / len(comms)) if comms else None
+                except Exception:
+                    pass
+
+            enhanced['instagram'] = {
+                'username':        ig_info.get('username', ''),
+                'followers':       ig_info.get('followers_count'),
+                'following':       ig_info.get('follows_count'),
+                'media_count':     ig_info.get('media_count'),
+                'bio':             ig_info.get('biography', ''),
+                'website':         ig_info.get('website', ''),
+                'last_post_days':  last_post_days,
+                'avg_likes':       avg_likes,
+                'avg_comments':    avg_comments,
+                'source':          'live'
+            }
+
+        if not enhanced['instagram'] and not enhanced['facebook']:
+            return jsonify({'error': 'No connected Instagram Business Account found. Make sure your IG is linked to a Facebook Page.'}), 404
+
+        return jsonify(enhanced)
+
+    except Exception as e:
+        return jsonify({'error': f'Enhancement failed: {str(e)}'}), 502
 
 
 @app.route('/api/autocomplete')
@@ -2435,6 +2596,1071 @@ def fire_ghl(report):
         'revenue_loss':     report.get('revenue_loss', 0),
         'tags':             [f"grade:{s['grade']}", 'grader-lead', 'needs-followup']
     }, timeout=5)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  JRZ INK SYSTEMS — TATTOO ARTIST AUDIT ENGINE
+# ═══════════════════════════════════════════════════════════════════
+
+TATTOO_NAME_KEYWORDS = {'tattoo', 'ink', 'piercing', 'tat '}
+
+TATTOO_BOOKING_MAP = {
+    'vagaro.com':           'Vagaro',
+    'booksy.com':           'Booksy',
+    'fresha.com':           'Fresha',
+    'styleseat.com':        'StyleSeat',
+    'squareup.com':         'Square',
+    'square.site':          'Square',
+    'inkbook.io':           'Ink Book',
+    'tattoodo.com':         'Tattoodo',
+    'setmore.com':          'Setmore',
+    'calendly.com':         'Calendly',
+    'acuityscheduling.com': 'Acuity',
+    'schedulicity.com':     'Schedulicity',
+    'gloss.as':             'Gloss',
+}
+
+TATTOO_STYLE_KEYWORDS = [
+    'realism', 'realistic', 'traditional', 'neo-traditional', 'blackwork',
+    'black and grey', 'black & grey', 'watercolor', 'japanese', 'geometric',
+    'minimalist', 'fine line', 'tribal', 'chicano', 'portrait', 'custom',
+    'flash', 'color', 'cover up', 'sleeve', 'dotwork', 'illustrative',
+]
+
+TATTOO_CITY_BENCHMARKS = {
+    'new york':     {'avg_price': 350, 'high': 520, 'monthly_sessions': 60},
+    'los angeles':  {'avg_price': 320, 'high': 490, 'monthly_sessions': 55},
+    'miami':        {'avg_price': 280, 'high': 420, 'monthly_sessions': 48},
+    'chicago':      {'avg_price': 260, 'high': 390, 'monthly_sessions': 44},
+    'houston':      {'avg_price': 230, 'high': 345, 'monthly_sessions': 40},
+    'dallas':       {'avg_price': 240, 'high': 360, 'monthly_sessions': 40},
+    'atlanta':      {'avg_price': 250, 'high': 370, 'monthly_sessions': 42},
+    'orlando':      {'avg_price': 220, 'high': 330, 'monthly_sessions': 38},
+    'phoenix':      {'avg_price': 220, 'high': 330, 'monthly_sessions': 36},
+    'denver':       {'avg_price': 260, 'high': 390, 'monthly_sessions': 38},
+    'default':      {'avg_price': 200, 'high': 320, 'monthly_sessions': 32},
+}
+
+GHL_INK_WEBHOOK = os.environ.get(
+    'GHL_INK_WEBHOOK',
+    'https://services.leadconnectorhq.com/hooks/d7iUPfamAaPlSBNj6IhT/webhook-trigger/jrz-ink-grader'
+)
+
+
+# ── ROUTES ───────────────────────────────────────────────────────────
+
+@app.route('/api/autocomplete-tattoo')
+def autocomplete_tattoo():
+    query = request.args.get('input', '').strip()
+    if len(query) < 2:
+        return jsonify({'predictions': []})
+    try:
+        resp = requests.get(
+            'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+            params={
+                'input':   query + ' tattoo',
+                'types':   'establishment',
+                'key':     GOOGLE_KEY,
+            },
+            timeout=5
+        )
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'predictions': [], 'error': str(e)})
+
+
+@app.route('/api/grade-tattoo')
+def grade_tattoo():
+    place_id = request.args.get('place_id', '').strip()
+    if not place_id:
+        return jsonify({'error': 'place_id is required'}), 400
+
+    cache_key = hashlib.md5(('tattoo:' + place_id).encode()).hexdigest()
+    if cache_key in CACHE and time.time() - CACHE[cache_key]['ts'] < 600:
+        return jsonify(CACHE[cache_key]['data'])
+
+    # 1. Place Details
+    try:
+        pr = requests.get(
+            'https://maps.googleapis.com/maps/api/place/details/json',
+            params={
+                'place_id': place_id,
+                'fields': ('name,rating,user_ratings_total,formatted_address,'
+                           'website,formatted_phone_number,opening_hours,'
+                           'photos,types,geometry,business_status,price_level,'
+                           'reviews,editorial_summary'),
+                'key': GOOGLE_KEY
+            },
+            timeout=8
+        )
+        place = pr.json().get('result', {})
+    except Exception as e:
+        return jsonify({'error': f'Google Places error: {e}'}), 502
+
+    if not place:
+        return jsonify({'error': 'Business not found'}), 404
+
+    # ── TATTOO-ONLY GATE ─────────────────────────────────────────────
+    raw_types = place.get('types', [])
+    biz_name_lower = place.get('name', '').lower()
+    is_tattoo = (
+        'tattoo_parlor' in raw_types or
+        any(kw in biz_name_lower for kw in TATTOO_NAME_KEYWORDS)
+    )
+    if not is_tattoo:
+        return jsonify({
+            'error': 'not_tattoo',
+            'message': (
+                f"{place.get('name', 'This business')} does not appear to be a "
+                "tattoo studio or artist. This audit is built exclusively for "
+                "tattoo artists and private studios."
+            )
+        }), 422
+
+    city, state = parse_city_state(place.get('formatted_address', ''))
+
+    # 2. Competitors (nearby tattoo parlors)
+    competitors = []
+    loc = place.get('geometry', {}).get('location', {})
+    if loc:
+        try:
+            nr = requests.get(
+                'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+                params={
+                    'location': f"{loc['lat']},{loc['lng']}",
+                    'radius':   8000,
+                    'type':     'tattoo_parlor',
+                    'key':      GOOGLE_KEY,
+                    'rankby':   'prominence'
+                },
+                timeout=8
+            )
+            nearby = nr.json().get('results', [])
+            competitors = [
+                r for r in nearby
+                if r.get('place_id') != place_id
+                and r.get('business_status') == 'OPERATIONAL'
+            ][:5]
+        except Exception:
+            competitors = []
+
+    # 3. PageSpeed
+    website = place.get('website', '')
+    pagespeed = {}
+    if website:
+        try:
+            ps = requests.get(
+                'https://www.googleapis.com/pagespeedonline/v5/runPagespeed',
+                params={'url': website, 'strategy': 'mobile', 'key': GOOGLE_KEY},
+                timeout=20
+            )
+            pagespeed = ps.json()
+        except Exception:
+            pagespeed = {}
+
+    # 4. Reviews
+    raw_reviews  = place.get('reviews', []) or []
+    review_intel = analyze_reviews(raw_reviews)
+    gbp_desc     = (place.get('editorial_summary') or {}).get('overview', '')
+
+    # 5. Website scrape
+    site_data = {}
+    if website:
+        site_data = scrape_website(website, biz_name=place.get('name', ''), biz_city=city)
+
+    # 6. Tattoo-specific extras
+    tattoo_extras = scrape_tattoo_extras(website, site_data)
+
+    # 7. Keyword rankings — tattoo specific
+    keyword_rankings = []
+    if DFS_LOGIN and DFS_PASSWORD and city:
+        keyword_rankings = check_tattoo_rankings(place.get('name', ''), city, state)
+
+    # 8. Backlinks
+    backlink_data = {}
+    if DFS_LOGIN and DFS_PASSWORD and website:
+        try:
+            backlink_data = check_backlinks(website)
+        except Exception:
+            backlink_data = {}
+
+    # 9. Map Pack
+    map_pack_data = []
+    if DFS_LOGIN and DFS_PASSWORD and city:
+        try:
+            map_pack_data = check_map_pack(place.get('name', ''), 'tattoo studio', city, state)
+        except Exception:
+            map_pack_data = []
+
+    # 10. Social
+    social_data = {}
+    if FB_TOKEN and site_data.get('scraped'):
+        fb_url = site_data.get('social_urls', {}).get('Facebook', '')
+        try:
+            social_data = check_social_presence(fb_url)
+        except Exception:
+            social_data = {}
+
+    # 11. Meta Ad Library — competitor ads (public, no artist auth needed)
+    ad_library = []
+    if FB_TOKEN and city:
+        try:
+            ad_library = check_ad_library(city, state)
+        except Exception:
+            ad_library = []
+
+    # 12. Build report
+    report = build_tattoo_report(
+        place, pagespeed, site_data, tattoo_extras, competitors,
+        keyword_rankings, place_id, backlink_data,
+        review_intel, gbp_desc, map_pack_data, social_data, city, state,
+        ad_library=ad_library
+    )
+
+    CACHE[cache_key] = {'ts': time.time(), 'data': report}
+
+    try:
+        fire_ghl_ink(report)
+    except Exception:
+        pass
+
+    return jsonify(report)
+
+
+# ── TATTOO EXTRAS SCRAPER ─────────────────────────────────────────────
+
+def scrape_tattoo_extras(url, site_data):
+    extras = {
+        'has_tattoo_booking': False,
+        'booking_platform':   None,
+        'has_portfolio':      False,
+        'has_flash_page':     False,
+        'detected_styles':    [],
+        'has_consultation':   False,
+        'has_deposit_info':   False,
+        'has_aftercare':      False,
+        'has_artist_bio':     False,
+        'has_pricing_info':   False,
+    }
+    if not url or not site_data.get('scraped'):
+        return extras
+    try:
+        headers = {'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36'
+        )}
+        resp = requests.get(url, headers=headers, timeout=8, allow_redirects=True)
+        if resp.status_code >= 400:
+            return extras
+        soup      = BeautifulSoup(resp.text, 'lxml')
+        text_low  = resp.text.lower()
+
+        # Booking platforms
+        for a in soup.find_all('a', href=True):
+            href = a.get('href', '').lower()
+            for domain, name in TATTOO_BOOKING_MAP.items():
+                if domain in href:
+                    extras['has_tattoo_booking'] = True
+                    extras['booking_platform']   = name
+                    break
+            if extras['has_tattoo_booking']:
+                break
+
+        extras['has_portfolio']   = any(k in text_low for k in
+            ['portfolio', 'our work', 'gallery', 'recent work', 'featured work'])
+        extras['has_flash_page']  = any(k in text_low for k in
+            ['flash', 'available flash', 'flash designs', 'ready to tattoo'])
+        extras['detected_styles'] = [s for s in TATTOO_STYLE_KEYWORDS if s in text_low][:6]
+        extras['has_consultation']= any(k in text_low for k in
+            ['consultation', 'consult', 'book a consult'])
+        extras['has_deposit_info']= any(k in text_low for k in
+            ['deposit', 'non-refundable', 'booking fee'])
+        extras['has_aftercare']   = any(k in text_low for k in
+            ['aftercare', 'healing', 'care instructions', 'tattoo care'])
+        extras['has_artist_bio']  = any(k in text_low for k in
+            ['about me', 'about the artist', 'my story', 'meet the artist', 'artist bio'])
+        extras['has_pricing_info']= any(k in text_low for k in
+            ['starting at', 'pricing', 'rates', 'minimum', 'price list', 'hourly rate'])
+    except Exception:
+        pass
+    return extras
+
+
+# ── TATTOO KEYWORD RANKINGS ─────────────────────────────────────────
+
+def check_tattoo_rankings(biz_name, city, state):
+    keywords = [
+        f'tattoo shop {city}',
+        f'tattoo artist {city}',
+        f'best tattoo {city}',
+        f'tattoo studio {city}',
+        f'{biz_name} {city}',
+    ]
+    results = []
+    for keyword in keywords:
+        try:
+            resp = requests.post(
+                'https://api.dataforseo.com/v3/serp/google/organic/live/advanced',
+                auth=(DFS_LOGIN, DFS_PASSWORD),
+                json=[{
+                    'keyword':       keyword,
+                    'location_name': f'{city},{state},United States' if state else f'{city},United States',
+                    'language_name': 'English',
+                    'depth':         30,
+                }],
+                timeout=12
+            )
+            data        = resp.json()
+            task_result = (data.get('tasks') or [{}])[0].get('result') or []
+            items       = (task_result[0].get('items') or []) if task_result else []
+            rank        = None
+            biz_lower   = biz_name.lower()[:12]
+            for item in items:
+                if item.get('type') == 'organic':
+                    title  = (item.get('title') or '').lower()
+                    domain = (item.get('domain') or '').lower()
+                    if biz_lower in title or biz_lower in domain:
+                        rank = item.get('rank_absolute')
+                        break
+            results.append({'keyword': keyword, 'rank': rank, 'ranked': rank is not None})
+        except Exception:
+            results.append({'keyword': keyword, 'rank': None, 'ranked': False})
+    return results
+
+
+# ── META AD LIBRARY — COMPETITOR ADS ────────────────────────────────
+# Public API — no artist auth required. Uses the existing FB_TOKEN.
+# Returns up to 8 active or recent tattoo-related ads in the artist's city.
+# Docs: https://www.facebook.com/ads/library/api/
+
+def check_ad_library(city, state):
+    """Query Meta Ad Library for competitor tattoo ads near the artist's city."""
+    if not FB_TOKEN or not city:
+        return []
+    try:
+        resp = requests.get(
+            'https://graph.facebook.com/v19.0/ads_archive',
+            params={
+                'access_token':        FB_TOKEN,
+                'ad_type':             'ALL',
+                'search_terms':        f'tattoo {city}',
+                'ad_reached_countries':'US',
+                'fields': (
+                    'id,page_name,ad_snapshot_url,'
+                    'ad_creative_bodies,ad_delivery_start_time,'
+                    'impressions,spend,currency'
+                ),
+                'limit': 8,
+            },
+            timeout=10
+        )
+        data = resp.json()
+        if 'error' in data:
+            return []
+        ads = data.get('data', [])
+        results = []
+        for ad in ads:
+            spend = ad.get('spend', {})
+            imps  = ad.get('impressions', {})
+            bodies = ad.get('ad_creative_bodies') or []
+            body_preview = bodies[0][:120] if bodies else ''
+            results.append({
+                'page_name':    ad.get('page_name', 'Unknown'),
+                'snapshot_url': ad.get('ad_snapshot_url', ''),
+                'started':      (ad.get('ad_delivery_start_time') or '')[:10],
+                'spend_low':    spend.get('lower_bound', ''),
+                'spend_high':   spend.get('upper_bound', ''),
+                'imps_low':     imps.get('lower_bound', ''),
+                'imps_high':    imps.get('upper_bound', ''),
+                'currency':     ad.get('currency', 'USD'),
+                'body':         body_preview,
+            })
+        return results
+    except Exception:
+        return []
+
+
+# ── TATTOO SCORING ENGINE ────────────────────────────────────────────
+
+def score_ink_visibility(place, site_data, keyword_rankings, checklist):
+    s     = 0
+    items = []
+
+    has_web = bool(place.get('website'))
+    items.append({'label': 'Website exists and linked to Google profile', 'pass': has_web})
+    if has_web: s += 4
+
+    has_ph = bool(place.get('formatted_phone_number'))
+    items.append({'label': 'Phone number on Google profile', 'pass': has_ph})
+    if has_ph: s += 3
+
+    has_hrs = bool(place.get('opening_hours'))
+    items.append({'label': 'Business hours published on Google', 'pass': has_hrs})
+    if has_hrs: s += 3
+
+    photos = len(place.get('photos', []))
+    photos_ok = photos >= 10
+    items.append({'label': f'10+ photos on Google profile ({photos} uploaded)', 'pass': photos_ok})
+    if photos >= 10: s += 3
+    elif photos >= 5: s += 2
+    elif photos >= 1: s += 1
+
+    ig_found = 'Instagram' in site_data.get('social_links', []) if site_data.get('scraped') else False
+    items.append({'label': 'Instagram linked from website', 'pass': ig_found})
+    if ig_found: s += 4
+
+    ranked_any = any(r.get('ranked') for r in keyword_rankings) if keyword_rankings else False
+    items.append({'label': 'Ranking for at least one "tattoo [city]" keyword', 'pass': ranked_any})
+    if ranked_any: s += 3
+
+    checklist['visibility'] = items
+    return min(s, 20)
+
+
+def score_ink_trust(place, site_data, checklist):
+    s       = 0
+    items   = []
+    rating  = place.get('rating', 0)
+    reviews = place.get('user_ratings_total', 0)
+    scraped = site_data.get('scraped', False)
+
+    # Rating
+    items.append({'label': f'Google rating 4.5 or above ({rating} stars)', 'pass': rating >= 4.5})
+    if rating >= 4.8:   s += 8
+    elif rating >= 4.5: s += 6
+    elif rating >= 4.0: s += 4
+    elif rating > 0:    s += 2
+
+    # Reviews
+    items.append({'label': f'50 or more Google reviews ({reviews} total)', 'pass': reviews >= 50})
+    if reviews >= 100:  s += 8
+    elif reviews >= 50: s += 6
+    elif reviews >= 25: s += 4
+    elif reviews >= 10: s += 2
+
+    # Portfolio
+    has_portfolio = site_data.get('has_testimonials', False) or (scraped and any(
+        k in site_data.get('meta_title', '').lower() for k in ['portfolio', 'gallery', 'work']
+    ))
+    items.append({'label': 'Portfolio or gallery visible on website', 'pass': has_portfolio})
+    if has_portfolio: s += 2
+
+    # Testimonials
+    has_test = site_data.get('has_testimonials', False) if scraped else False
+    items.append({'label': 'Client testimonials displayed', 'pass': has_test})
+    if has_test: s += 2
+
+    checklist['trust'] = items
+    return min(s, 20)
+
+
+def score_ink_booking(place, site_data, tattoo_extras, checklist):
+    s       = 0
+    items   = []
+    scraped = site_data.get('scraped', False)
+
+    # Tattoo booking platform (highest value)
+    has_booking = tattoo_extras.get('has_tattoo_booking') or site_data.get('has_booking_widget', False)
+    bp_name     = tattoo_extras.get('booking_platform', '')
+    bp_label    = f'Online booking via {bp_name}' if bp_name else 'Online booking / scheduling widget'
+    items.append({'label': bp_label, 'pass': has_booking})
+    if has_booking: s += 9
+
+    # Phone on site
+    ph_ok = site_data.get('phone_on_site', False) if scraped else False
+    items.append({'label': 'Phone number on website', 'pass': ph_ok})
+    if ph_ok: s += 4
+
+    # CTA / contact form
+    has_cta = (site_data.get('has_cta') or site_data.get('has_contact_form')) if scraped else False
+    items.append({'label': 'Contact form or booking CTA on website', 'pass': has_cta})
+    if has_cta: s += 4
+
+    # Deposit info
+    dep_ok = tattoo_extras.get('has_deposit_info', False)
+    items.append({'label': 'Deposit / booking fee info published', 'pass': dep_ok})
+    if dep_ok: s += 2
+
+    # Consultation info
+    con_ok = tattoo_extras.get('has_consultation', False)
+    items.append({'label': 'Consultation process explained', 'pass': con_ok})
+    if con_ok: s += 1
+
+    checklist['booking_funnel'] = items
+    return min(s, 20)
+
+
+def score_ink_followup(site_data, review_intel, checklist):
+    s    = 0
+    items = []
+    ri    = review_intel or {}
+
+    # Response rate
+    rr    = ri.get('response_rate', 0)
+    rr_ok = rr >= 50
+    items.append({'label': f'Owner responds to Google reviews ({rr}%)', 'pass': rr_ok})
+    if rr >= 75:  s += 6
+    elif rr >= 50: s += 4
+    elif rr >= 25: s += 2
+
+    # Review velocity
+    vel   = ri.get('velocity', '')
+    vel_s = ri.get('velocity_score', 0)
+    vel_days = ri.get('newest_review_days')
+    vel_label = (f'{vel} — last review {vel_days}d ago' if vel_days is not None else vel) if vel else 'No data'
+    items.append({'label': f'Review velocity: {vel_label}', 'pass': vel_s >= 65})
+    if vel_s >= 100:  s += 5
+    elif vel_s >= 65: s += 3
+    elif vel_s >= 35: s += 1
+
+    # Live chat
+    chat_ok = site_data.get('has_live_chat', False) if site_data.get('scraped') else False
+    items.append({'label': 'Live chat or instant messaging on website', 'pass': chat_ok})
+    if chat_ok: s += 2
+
+    # Email capture signal (CRM / newsletter)
+    scraped = site_data.get('scraped', False)
+    email_ok = site_data.get('has_contact_form', False) if scraped else False
+    items.append({'label': 'Email capture or CRM form present', 'pass': email_ok})
+    if email_ok: s += 2
+
+    checklist['followup'] = items
+    return min(s, 15)
+
+
+def score_ink_content(social_data, site_data, tattoo_extras, checklist):
+    s     = 0
+    items = []
+    sd    = social_data or {}
+
+    # Instagram followers
+    ig_fol = sd.get('instagram_followers')
+    ig_fol_ok = ig_fol is not None and ig_fol >= 1000
+    ig_fol_lbl = f'Instagram: {ig_fol:,} followers' if ig_fol is not None else 'Instagram followers: no data'
+    items.append({'label': ig_fol_lbl, 'pass': ig_fol_ok})
+    if ig_fol is not None:
+        if ig_fol >= 5000:   s += 5
+        elif ig_fol >= 2000: s += 4
+        elif ig_fol >= 1000: s += 3
+        elif ig_fol >= 500:  s += 1
+
+    # Instagram recency
+    ig_last = sd.get('instagram_last_post_days')
+    ig_rec_ok = ig_last is not None and ig_last <= 7
+    ig_rec_lbl = (f'Last Instagram post: {ig_last} days ago' if ig_last is not None
+                  else 'Instagram last post: no data')
+    items.append({'label': ig_rec_lbl, 'pass': ig_rec_ok})
+    if ig_last is not None:
+        if ig_last <= 3:    s += 5
+        elif ig_last <= 7:  s += 4
+        elif ig_last <= 14: s += 2
+
+    # Portfolio on website
+    port_ok = tattoo_extras.get('has_portfolio', False)
+    items.append({'label': 'Portfolio / gallery on website', 'pass': port_ok})
+    if port_ok: s += 3
+
+    # Flash or style pages
+    flash_ok   = tattoo_extras.get('has_flash_page', False)
+    styles     = tattoo_extras.get('detected_styles', [])
+    style_ok   = bool(styles)
+    content_ok = flash_ok or style_ok
+    lbl        = f'Style content detected: {", ".join(styles[:3])}' if styles else 'No style / flash content found'
+    items.append({'label': lbl, 'pass': content_ok})
+    if content_ok: s += 2
+
+    checklist['content'] = items
+    return min(s, 15)
+
+
+def score_ink_competitor(map_pack_data, place, competitors, checklist):
+    s     = 0
+    items = []
+
+    # Map pack
+    in_pack = any(m.get('in_pack') for m in map_pack_data) if map_pack_data else False
+    items.append({'label': 'Appearing in Google Map Pack for "tattoo [city]"', 'pass': in_pack})
+    if in_pack: s += 5
+
+    # Reviews vs competitors
+    my_reviews = place.get('user_ratings_total', 0)
+    my_rating  = place.get('rating', 0)
+    active_comps = [c for c in competitors if c.get('user_ratings_total', 0) > 0]
+    if active_comps:
+        avg_rev = sum(c.get('user_ratings_total', 0) for c in active_comps) / len(active_comps)
+        avg_rat = sum(c.get('rating', 0) for c in active_comps) / len(active_comps)
+        rev_win = my_reviews >= avg_rev
+        rat_win = my_rating >= avg_rat
+        items.append({'label': f'More reviews than avg competitor ({int(avg_rev)} avg)', 'pass': rev_win})
+        if rev_win: s += 3
+        items.append({'label': f'Higher rating than avg competitor ({avg_rat:.1f} avg)', 'pass': rat_win})
+        if rat_win: s += 2
+    else:
+        items.append({'label': 'Competitor data unavailable', 'pass': None})
+
+    checklist['competitor'] = items
+    return min(s, 10)
+
+
+# ── TATTOO REVENUE ESTIMATOR ─────────────────────────────────────────
+
+def estimate_tattoo_revenue(place, city, overall_score, social_data):
+    reviews = place.get('user_ratings_total', 0)
+    city_key = city.lower() if city else 'default'
+    bench = TATTOO_CITY_BENCHMARKS.get(city_key, TATTOO_CITY_BENCHMARKS['default'])
+
+    # Estimate monthly sessions from review count (proxy for volume)
+    if   reviews >= 200: sessions = bench['monthly_sessions']
+    elif reviews >= 100: sessions = int(bench['monthly_sessions'] * 0.75)
+    elif reviews >= 50:  sessions = int(bench['monthly_sessions'] * 0.55)
+    elif reviews >= 25:  sessions = int(bench['monthly_sessions'] * 0.40)
+    else:                sessions = int(bench['monthly_sessions'] * 0.25)
+
+    avg_price  = bench['avg_price']
+    high_price = bench['high']
+
+    current_base        = sessions * avg_price
+    potential_sessions  = int(sessions * 1.45)
+    potential_base      = potential_sessions * high_price
+    opportunity_base    = potential_base - current_base
+
+    return {
+        'current_conservative':      int(current_base * 0.75),
+        'current_base':              int(current_base),
+        'potential_base':            int(potential_base * 0.85),
+        'potential_upside':          int(potential_base),
+        'opportunity_conservative':  int(opportunity_base * 0.50),
+        'opportunity_base':          int(opportunity_base * 0.70),
+        'opportunity_upside':        int(opportunity_base),
+        'avg_tattoo_value':          avg_price,
+        'est_sessions_month':        sessions,
+        'city_benchmark':            city or 'your market',
+        'confidence':                'ESTIMATED',
+    }
+
+
+# ── TATTOO ISSUES + ROADMAP ──────────────────────────────────────────
+
+def build_tattoo_issues(place, site_data, tattoo_extras, social_data,
+                         review_intel, map_pack_data, scores):
+    issues = []
+    sd     = social_data or {}
+    ri     = review_intel or {}
+    te     = tattoo_extras or {}
+
+    # Booking system
+    if not te.get('has_tattoo_booking') and not site_data.get('has_booking_widget'):
+        issues.append({
+            'severity': 'critical', 'category': 'Booking System',
+            'title':  'No online booking system — clients can\'t book without calling',
+            'detail': ('Every artist with a booking link converts 2.4x more profile visitors '
+                       'into paying clients. Right now, anyone who finds you and wants to book '
+                       'has to DM, call, or email — and most of them won\'t bother. '
+                       'That\'s walk-in revenue you\'re handing to a competitor.'),
+            'fix': 'JRZ Ink Systems sets up and integrates a booking system (Vagaro, Booksy, or Calendly) in 48 hours.'
+        })
+
+    # Map pack
+    if map_pack_data and not any(m.get('in_pack') for m in map_pack_data):
+        issues.append({
+            'severity': 'critical', 'category': 'Local Visibility',
+            'title':  'Not showing in Google Map Pack for "tattoo [city]"',
+            'detail': ('The Google Map Pack captures 44% of all local search clicks. '
+                       'If a client searches "tattoo shop near me" and you\'re not in the top 3, '
+                       'you effectively do not exist to that searcher. '
+                       'Competitors with weaker portfolios are getting those bookings.'),
+            'fix': 'JRZ Ink Systems runs a full Local SEO audit and implements the signals required to enter and hold map pack position.'
+        })
+
+    # Instagram inactive
+    ig_last = sd.get('instagram_last_post_days')
+    if ig_last is not None and ig_last > 14:
+        issues.append({
+            'severity': 'critical', 'category': 'Content',
+            'title':  f'Instagram inactive — last post {ig_last} days ago',
+            'detail': ('For tattoo artists, Instagram IS the portfolio. '
+                       'An account that hasn\'t posted in two weeks signals to potential clients '
+                       'that you\'re not taking bookings, the studio closed, or you don\'t care. '
+                       'The algorithm also kills your reach when you go silent.'),
+            'fix': 'JRZ Ink Systems builds and manages your content calendar — portfolio posts, Reels, Stories — consistently published, no effort from you.'
+        })
+    elif not sd.get('instagram_followers'):
+        issues.append({
+            'severity': 'warning', 'category': 'Content',
+            'title':  'Instagram data unavailable — profile may not be connected or public',
+            'detail': ('Your Instagram presence could not be verified. '
+                       'For tattoo artists, Instagram is the #1 discovery channel. '
+                       'If your profile is not optimized and consistently active, '
+                       'you are invisible to the majority of clients who search for artists.'),
+            'fix': 'JRZ Ink Systems audits and optimizes your Instagram profile, bio, and content strategy.'
+        })
+
+    # Low Instagram followers
+    ig_fol = sd.get('instagram_followers')
+    if ig_fol is not None and ig_fol < 1000:
+        issues.append({
+            'severity': 'warning', 'category': 'Content',
+            'title':  f'Instagram has only {ig_fol:,} followers — below authority threshold',
+            'detail': ('In the tattoo industry, Instagram follower count is a direct trust signal. '
+                       'Potential clients use it to validate quality before reaching out. '
+                       'Below 1,000 followers, most prospects assume you\'re new or not in demand.'),
+            'fix': 'JRZ Ink Systems runs a targeted growth campaign and content strategy to build local and style-specific followers.'
+        })
+
+    # No website
+    if not place.get('website'):
+        issues.append({
+            'severity': 'critical', 'category': 'Website',
+            'title':  'No website — your portfolio exists in one place only',
+            'detail': ('Relying entirely on Instagram is a single point of failure. '
+                       'Algorithm changes, account restrictions, or a platform outage can cut '
+                       'your visibility overnight. A website gives you a permanent booking hub, '
+                       'portfolio, and Google presence that you own.'),
+            'fix': 'JRZ Ink Systems builds a conversion-optimized artist website with portfolio, booking widget, and local SEO wiring in 48–72 hours.'
+        })
+
+    # No portfolio on website
+    if place.get('website') and not te.get('has_portfolio') and site_data.get('scraped'):
+        issues.append({
+            'severity': 'warning', 'category': 'Website',
+            'title':  'No portfolio or gallery detected on your website',
+            'detail': ('Your website exists but does not show your work. '
+                       'A client who lands on your site and does not see tattoo photos '
+                       'immediately has no reason to trust you or inquire. '
+                       'Portfolio visibility is the #1 conversion factor for tattoo websites.'),
+            'fix': 'JRZ Ink Systems builds or upgrades your website gallery with categorized portfolio sections by style.'
+        })
+
+    # Low reviews
+    reviews = place.get('user_ratings_total', 0)
+    if reviews < 25:
+        issues.append({
+            'severity': 'critical', 'category': 'Reputation',
+            'title':  f'Only {reviews} Google reviews — below the trust threshold',
+            'detail': ('Fewer than 25 reviews makes clients nervous. '
+                       'Your Google profile is being compared against artists with 50, 100, 200+ reviews. '
+                       'Clients always choose the artist with more proof. This is the single '
+                       'easiest revenue gap to close.'),
+            'fix': 'JRZ Ink Systems deploys an automated post-appointment review request via SMS. Clients average 20–40 new reviews within 60 days.'
+        })
+    elif reviews < 75:
+        issues.append({
+            'severity': 'warning', 'category': 'Reputation',
+            'title':  f'{reviews} reviews — below the local authority benchmark',
+            'detail': ('In competitive markets, 75–100+ reviews is the standard for top map pack placement. '
+                       'You are operating below that threshold, which limits both your Google ranking '
+                       'and client confidence before they reach out.'),
+            'fix': 'JRZ Ink Systems activates automated post-appointment review requests. Average 20–40 new reviews in 60 days.'
+        })
+
+    # Low response rate
+    rr = ri.get('response_rate', 0)
+    if ri.get('total_sampled', 0) > 0 and rr < 50:
+        issues.append({
+            'severity': 'warning', 'category': 'Reputation',
+            'title':  f'Only {rr}% of Google reviews have an owner reply',
+            'detail': ('Potential clients read how you respond to feedback before deciding '
+                       'to reach out. A low response rate signals you don\'t engage with clients '
+                       'after the appointment — which raises concerns about the overall experience.'),
+            'fix': 'JRZ Ink Systems sets up a review monitoring and response workflow — every review gets a reply within 48 hours.'
+        })
+
+    # No deposit info
+    if place.get('website') and not te.get('has_deposit_info') and site_data.get('scraped'):
+        issues.append({
+            'severity': 'warning', 'category': 'Booking System',
+            'title':  'No deposit or booking policy published on your website',
+            'detail': ('Artists who clearly state their deposit policy upfront attract serious clients '
+                       'and reduce no-shows by 60–80%. Without this information, '
+                       'inquiries come from people who are not committed — wasting your calendar slots.'),
+            'fix': 'JRZ Ink Systems writes and adds a clear deposit policy and booking process page to your website.'
+        })
+
+    # Schema
+    if site_data.get('scraped') and not site_data.get('has_schema'):
+        issues.append({
+            'severity': 'warning', 'category': 'Local SEO',
+            'title':  'No schema markup on website — Google can\'t fully read your business',
+            'detail': ('Schema markup tells Google exactly what your business is, where it is, '
+                       'and what you do. Without it, your website sends weaker signals to local '
+                       'search — directly impacting your map pack and organic rankings.'),
+            'fix': 'JRZ Ink Systems implements LocalBusiness schema markup in 24 hours.'
+        })
+
+    return issues
+
+
+def get_jrz_ink_action(issue):
+    title = issue['title'].lower()
+
+    if 'booking' in title or 'book online' in title or 'scheduling' in title:
+        return {
+            'fix': ('JRZ Ink Systems integrates Vagaro, Booksy, or Calendly directly into your '
+                    'website and Instagram bio — with automated confirmation messages, deposit collection, '
+                    'and calendar sync. You wake up to bookings already confirmed.'),
+            'timeline': '24 to 48 hours',
+            'result':   'Artists with booking systems average 2.4x more monthly clients with zero additional outreach.',
+            'service':  'Booking System Setup'
+        }
+    if 'map pack' in title or 'local visibility' in title:
+        return {
+            'fix': ('JRZ Ink Systems implements the exact signals required for tattoo shop map pack ranking: '
+                    'GBP optimization, schema markup, NAP citation consistency, review velocity, '
+                    'and on-site local keyword wiring. All monitored weekly.'),
+            'timeline': '2–4 weeks for initial movement; 60–90 days for stable placement',
+            'result':   'Map pack position captures 44% of all "tattoo near me" search clicks in your city.',
+            'service':  'Local SEO'
+        }
+    if 'instagram' in title:
+        return {
+            'fix': ('JRZ Ink Systems manages your Instagram end-to-end — portfolio posts, Reels, '
+                    'Stories, and local geo-targeted content. 4–5 posts per week, '
+                    'fully branded to your style. You keep creating the art. We build the audience.'),
+            'timeline': '5 to 7 business days to launch full content calendar',
+            'result':   'Consistent posting at 4x/week generates 3x more profile visits and 2x more booking inquiries.',
+            'service':  'Social Media Management'
+        }
+    if 'website' in title:
+        return {
+            'fix': ('JRZ Ink Systems builds your complete artist website — portfolio gallery by style, '
+                    'booking integration, Google Analytics, Search Console, and local SEO wiring. '
+                    'Mobile-first, no templates, built specifically for tattoo artists.'),
+            'timeline': '48 to 72 hours',
+            'result':   'A permanent, Google-indexed booking hub you own — immune to algorithm changes.',
+            'service':  'Website Build'
+        }
+    if 'review' in title or 'reputation' in title:
+        return {
+            'fix': ('JRZ Ink Systems deploys automated post-appointment SMS review requests — '
+                    'sent 24 hours after every session with a direct Google review link. '
+                    'Response monitoring and owner replies handled weekly.'),
+            'timeline': '3 to 5 business days to activate',
+            'result':   'Artists average 20 to 40 new reviews within 60 days of activation.',
+            'service':  'Review Automation'
+        }
+    if 'schema' in title or 'seo' in title:
+        return {
+            'fix': ('JRZ Ink Systems implements LocalBusiness schema, optimizes meta titles and '
+                    'descriptions for tattoo + city keywords, and submits to Google Search Console.'),
+            'timeline': '24 hours',
+            'result':   'Stronger local keyword signal to Google. Typical local ranking improvement within 30–60 days.',
+            'service':  'Technical SEO'
+        }
+    if 'deposit' in title or 'policy' in title:
+        return {
+            'fix': ('JRZ Ink Systems writes and adds your deposit policy, consultation process, '
+                    'and booking FAQ to your website. Clients arrive prepared and committed.'),
+            'timeline': '24 hours',
+            'result':   'No-show rate drops 60–80% when deposit policy is clearly communicated upfront.',
+            'service':  'Booking System Setup'
+        }
+    return {
+        'fix': ('JRZ Ink Systems audits this issue, identifies the root cause, and implements '
+                'a targeted fix. All work is done by our team — no technical input required from you.'),
+        'timeline': '2 to 5 business days',
+        'result':   'Issue resolved and documented in your monthly performance report.',
+        'service':  'General Optimization'
+    }
+
+
+def build_tattoo_roadmap(issues):
+    steps = []
+    for i, issue in enumerate(issues, 1):
+        action = get_jrz_ink_action(issue)
+        steps.append({
+            'step':     i,
+            'severity': issue['severity'],
+            'category': issue['category'],
+            'title':    issue['title'],
+            'problem':  issue['detail'],
+            'jrz_fix':  action['fix'],
+            'timeline': action['timeline'],
+            'result':   action['result'],
+            'service':  action['service'],
+        })
+    return steps
+
+
+# ── TATTOO REPORT BUILDER ─────────────────────────────────────────────
+
+def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
+                         keyword_rankings, place_id, backlink_data,
+                         review_intel, gbp_desc, map_pack_data, social_data, city, state,
+                         ad_library=None):
+    name    = place.get('name', '')
+    rating  = place.get('rating', 0)
+    reviews = place.get('user_ratings_total', 0)
+    website = place.get('website', '')
+    phone   = place.get('formatted_phone_number', '')
+    photos  = len(place.get('photos', []))
+    address = place.get('formatted_address', '')
+
+    checklist = {}
+    vis  = score_ink_visibility(place, site_data, keyword_rankings, checklist)
+    tr   = score_ink_trust(place, site_data, checklist)
+    bk   = score_ink_booking(place, site_data, tattoo_extras, checklist)
+    fu   = score_ink_followup(site_data, review_intel, checklist)
+    cnt  = score_ink_content(social_data, site_data, tattoo_extras, checklist)
+    comp = score_ink_competitor(map_pack_data, place, competitors, checklist)
+
+    overall = vis + tr + bk + fu + cnt + comp
+    grade   = letter_grade(overall)
+
+    # PageSpeed detail
+    lcp = fcp = tbt = cls_val = speed_index = ''
+    perf_score = seo_score_ps = 0
+    if pagespeed and 'lighthouseResult' in pagespeed:
+        audits      = pagespeed['lighthouseResult'].get('audits', {})
+        cats        = pagespeed['lighthouseResult'].get('categories', {})
+        lcp         = audits.get('largest-contentful-paint', {}).get('displayValue', '')
+        fcp         = audits.get('first-contentful-paint',   {}).get('displayValue', '')
+        tbt         = audits.get('total-blocking-time',       {}).get('displayValue', '')
+        cls_val     = audits.get('cumulative-layout-shift',   {}).get('displayValue', '')
+        perf_score  = int((cats.get('performance', {}).get('score') or 0) * 100)
+        raw_seo     = cats.get('seo', {}).get('score')
+        seo_score_ps = int(raw_seo * 100) if raw_seo is not None else None
+
+    scores = {
+        'overall':          overall,
+        'grade':            grade,
+        'grade_message':    GRADE_MESSAGES.get(grade, ''),
+        'visibility':       vis,
+        'trust':            tr,
+        'booking_funnel':   bk,
+        'followup':         fu,
+        'content':          cnt,
+        'competitor':       comp,
+    }
+
+    issues = build_tattoo_issues(
+        place, site_data, tattoo_extras, social_data,
+        review_intel, map_pack_data, scores
+    )
+    roadmap = build_tattoo_roadmap(issues)
+    revenue = estimate_tattoo_revenue(place, city, overall, social_data)
+
+    # Competitor insight
+    comp_list = [
+        {'name': c.get('name',''), 'rating': c.get('rating',0),
+         'reviews': c.get('user_ratings_total',0), 'address': c.get('vicinity','')}
+        for c in competitors[:4]
+    ]
+    comp_insight = None
+    active = [c for c in comp_list if c['rating']]
+    if active:
+        avg_rev = sum(c['reviews'] for c in active) / len(active)
+        avg_rat = sum(c['rating']  for c in active) / len(active)
+        if avg_rev > reviews * 1.3:
+            comp_insight = (
+                f'Your top competitors average {int(avg_rev)} Google reviews '
+                f'compared to your {reviews}. That gap directly reduces how often '
+                f'you appear when clients search "tattoo near me."'
+            )
+        elif avg_rat > rating + 0.1:
+            comp_insight = (
+                f'Competitors in your area average {avg_rat:.1f} stars vs your '
+                f'{rating} stars. A 0.2-star gap shifts 20% of undecided clients '
+                f'to competing studios.'
+            )
+
+    # Free tip
+    if not tattoo_extras.get('has_tattoo_booking'):
+        free_tip = {
+            'action': ('Add your booking link to the first line of your Instagram bio right now. '
+                       'If you use Calendly, Booksy, or Vagaro, paste the direct booking URL — '
+                       'not your homepage. Test it on mobile to confirm it works. '
+                       'This single change can increase direct booking inquiries within 24 hours.'),
+            'impact': 'Artists with a direct booking link in their bio receive 3x more booking inquiries than those without.'
+        }
+    elif reviews < 25:
+        free_tip = {
+            'action': ('After your next 3 appointments, send each client a personal text: '
+                       '"Hey [name], really enjoyed your session today. If you\'d leave us a '
+                       'Google review it would mean a lot — here\'s the direct link: [link]." '
+                       'Send it individually, not as a group message.'),
+            'impact': 'Personal review requests convert at 35–50%. Three messages typically generate 1–2 new reviews within 48 hours.'
+        }
+    else:
+        free_tip = {
+            'action': ('Reply to your 5 most recent Google reviews today. Start each reply with '
+                       'the client\'s name and mention your city and tattoo style naturally. '
+                       'Example: "Thank you [name] — we love doing realism work here in Orlando. '
+                       'Come back for your next piece anytime!"'),
+            'impact': 'Active review responses improve local search ranking and show potential clients you are attentive and professional.'
+        }
+
+    return {
+        'place_id':    place_id,
+        'business': {
+            'name': name, 'address': address, 'city': city,
+            'rating': rating, 'reviews': reviews, 'website': website,
+            'phone': phone, 'photos': photos, 'has_hours': bool(place.get('opening_hours'))
+        },
+        'scores':      scores,
+        'checklists':  checklist,
+        'issues':      issues,
+        'roadmap':     roadmap,
+        'revenue':     revenue,
+        'social_presence': {
+            'facebook_followers':      (social_data or {}).get('facebook_followers'),
+            'instagram_followers':     (social_data or {}).get('instagram_followers'),
+            'instagram_media_count':   (social_data or {}).get('instagram_media_count'),
+            'instagram_username':      (social_data or {}).get('instagram_username'),
+            'instagram_last_post_days':(social_data or {}).get('instagram_last_post_days'),
+            'facebook_last_post_days': (social_data or {}).get('facebook_last_post_days'),
+            'social_links':            site_data.get('social_links', []),
+        },
+        'review_intel': {
+            'velocity':          (review_intel or {}).get('velocity', 'No data'),
+            'velocity_score':    (review_intel or {}).get('velocity_score', 0),
+            'recent_30':         (review_intel or {}).get('recent_30', 0),
+            'response_rate':     (review_intel or {}).get('response_rate', 0),
+            'newest_review_days':(review_intel or {}).get('newest_review_days'),
+            'total_sampled':     (review_intel or {}).get('total_sampled', 0),
+        },
+        'map_pack':         map_pack_data or [],
+        'tattoo_extras':    tattoo_extras,
+        'competitors':      comp_list,
+        'competitor_insight': comp_insight,
+        'keyword_rankings': keyword_rankings,
+        'pagespeed_detail': {
+            'lcp': lcp, 'fcp': fcp, 'tbt': tbt,
+            'cls': cls_val, 'performance': perf_score, 'seo': seo_score_ps
+        },
+        'luis_farrera_proof': {
+            'ctr': '5.06%', 'cpl': '$14.83', 'leads': 84, 'days': 30
+        },
+        'free_tip':    free_tip,
+        'gbp_description': gbp_desc,
+        'ad_library':  ad_library or [],
+    }
+
+
+# ── GHL WEBHOOK — INK SYSTEMS ─────────────────────────────────────────
+
+def fire_ghl_ink(report):
+    b = report['business']
+    s = report['scores']
+    try:
+        requests.post(GHL_INK_WEBHOOK, json={
+            'firstName':        b['name'].split()[0] if b['name'] else '',
+            'name':             b['name'],
+            'phone':            b.get('phone', ''),
+            'website':          b.get('website', ''),
+            'address1':         b.get('address', ''),
+            'source':           'jrz-ink-grader',
+            'overall_score':    s['overall'],
+            'grade':            s['grade'],
+            'visibility_score': s['visibility'],
+            'trust_score':      s['trust'],
+            'booking_score':    s['booking_funnel'],
+            'content_score':    s['content'],
+            'issues_count':     len(report['issues']),
+            'revenue_opportunity': report['revenue'].get('opportunity_base', 0),
+            'tags': [f"grade:{s['grade']}", 'ink-grader-lead', 'tattoo-artist', 'needs-followup']
+        }, timeout=5)
+    except Exception:
+        pass
 
 
 if __name__ == '__main__':

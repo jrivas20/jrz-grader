@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JRZ Ink Systems — Free AI Audit for Tattoo Artists & Private Studios</title>
+<meta name="description" content="Find out exactly why potential clients are choosing other artists over you. Free AI-powered audit built exclusively for tattoo artists and private studios.">
+
+<!-- GHL FULL BLEED OVERRIDE -->
+<style>
+html,body,.page-section,.page-section--content,.funnelish-section,.funnelish-section--content,.section-wrap,.section-wrap--content,.hl_page-section,.hl_page-section--content,.container,.container-fluid,.row,.col,[class*="col-"],[class*="section"],[class*="container"],[class*="wrapper"],[class*="inner"],[class*="page-section"],[class*="hl_"]{max-width:100%!important;width:100%!important;padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important;box-sizing:border-box!important}
+body{overflow-x:hidden!important}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* ── TOKENS ──────────────────────────────────────────────────────── */
+:root {
+  --bg:      #0a0a0a;
+  --bg2:     #111111;
+  --bg3:     #181818;
+  --fg:      #ffffff;
+  --muted:   rgba(255,255,255,.42);
+  --b:       rgba(255,255,255,.08);
+  --b2:      rgba(255,255,255,.15);
+  --font:    'Geist', sans-serif;
+  --ease:    cubic-bezier(0.16, 1, 0.3, 1);
+  --crimson: #CC2936;
+  --crimson2:#e8303f;
+  --gold:    #D4AF37;
+  --red:     #ff4444;
+  --amber:   #ff9900;
+  --green:   #00cc66;
+  --px:      clamp(20px,5vw,80px);
+}
+
+/* ── RESET ───────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto;font-size:16px}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{max-width:100%;height:auto;display:block}
+a{text-decoration:none;color:inherit}
+button{font-family:var(--font)}
+
+/* ── GRAIN ───────────────────────────────────────────────────────── */
+body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SEARCH SECTION
+═══════════════════════════════════════════════════════════════════ */
+#search-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg);
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(204,41,54,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 15% 80%, rgba(212,175,55,.07) 0%, transparent 60%),
+    var(--bg);
+  z-index: 0;
+}
+.search-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 780px;
+  padding: 0 var(--px);
+  text-align: center;
+}
+.search-logo {
+  margin: 0 auto 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.logo-ink-mark {
+  width: 44px;
+  height: 44px;
+  background: var(--crimson);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -1px;
+  flex-shrink: 0;
+}
+.logo-ink-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+.logo-ink-text .top { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #fff; }
+.logo-ink-text .sub { font-size: 9px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,.4); margin-top: 4px; }
+.search-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.38);
+}
+.eyebrow-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--crimson);
+  animation: pulse-crimson 2s ease-in-out infinite;
+}
+@keyframes pulse-crimson {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.4;transform:scale(.65)}
+}
+.search-h1 {
+  font-size: clamp(38px, 5.5vw, 78px);
+  font-weight: 800;
+  line-height: .95;
+  letter-spacing: -3px;
+  margin-bottom: 28px;
+  color: var(--fg);
+}
+.search-h1 em {
+  font-style: normal;
+  color: var(--crimson);
+}
+.search-sub {
+  font-size: clamp(15px, 2vw, 18px);
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 560px;
+  margin: 0 auto 48px;
+}
+.search-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto 16px;
+}
+#search-input {
+  width: 100%;
+  height: 64px;
+  background: rgba(255,255,255,.06);
+  border: 1.5px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 400;
+  padding: 0 180px 0 22px;
+  outline: none;
+  transition: border .2s, background .2s;
+}
+#search-input::placeholder{color:rgba(255,255,255,.28)}
+#search-input:focus{border-color:var(--crimson);background:rgba(255,255,255,.09)}
+.search-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 48px;
+  padding: 0 22px;
+  background: var(--crimson);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, transform .15s;
+}
+.search-btn:hover{background:var(--crimson2);transform:translateY(-50%) scale(1.02)}
+.search-btn:active{transform:translateY(-50%) scale(.98)}
+#autocomplete-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+}
+.ac-item {
+  padding: 14px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  color: rgba(255,255,255,.82);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ac-item:last-child{border-bottom: none}
+.ac-item:hover{background:rgba(204,41,54,.12);color:#fff}
+.ac-icon{font-size:16px;opacity:.5;flex-shrink:0}
+.ac-item strong{color:#fff}
+.proof-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 4vw, 56px);
+  flex-wrap: wrap;
+  margin-top: 52px;
+  padding-top: 36px;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+.proof-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.proof-icon{font-size:20px;filter:grayscale(.3)}
+.proof-label{font-size:11px;font-weight:500;letter-spacing:.5px;color:rgba(255,255,255,.38);text-align:center}
+.search-error-banner {
+  display: none;
+  background: rgba(255, 153, 0, .1);
+  border: 1.5px solid rgba(255, 153, 0, .3);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: rgba(255,200,80,.95);
+  text-align: left;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════════════════ */
+#loading-section {
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 60px var(--px);
+}
+.loading-inner {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+.loading-logo { margin: 0 auto 40px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.loading-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid rgba(204,41,54,.2);
+  border-top-color: var(--crimson);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 32px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-h2{font-size:22px;font-weight:700;margin-bottom:10px;letter-spacing:-.5px}
+.loading-sub{font-size:13px;color:var(--muted);margin-bottom:36px}
+.loading-steps{display:flex;flex-direction:column;gap:10px;text-align:left}
+.loading-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--bg2);
+  border: 1px solid var(--b);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,.35);
+  transition: all .35s var(--ease);
+}
+.loading-step.active{color:#fff;border-color:rgba(204,41,54,.35);background:rgba(204,41,54,.07)}
+.loading-step.done{color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.06)}
+.step-icon{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all .35s}
+.loading-step.active .step-icon{background:var(--crimson);box-shadow:0 0 0 4px rgba(204,41,54,.2)}
+.loading-step.done .step-icon{background:rgba(0,204,102,.15);color:#00cc66}
+.biz-preview {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--b);
+  border-radius: 10px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+.biz-preview-icon{font-size:28px}
+.biz-preview-name{font-size:14px;font-weight:700;margin-bottom:2px}
+.biz-preview-addr{font-size:12px;color:var(--muted)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REPORT
+═══════════════════════════════════════════════════════════════════ */
+#report-section { display: none; background: var(--bg); }
+
+/* ── REVENUE BANNER ─────────────────────────────────────────────── */
+.revenue-banner {
+  background: linear-gradient(135deg, rgba(204,41,54,.15) 0%, rgba(212,175,55,.08) 100%);
+  border-bottom: 1px solid rgba(204,41,54,.2);
+  padding: clamp(32px,5vw,56px) var(--px);
+  text-align: center;
+}
+.revenue-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 12px;
+}
+.revenue-headline {
+  font-size: clamp(18px,3vw,28px);
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: -.5px;
+}
+.revenue-headline span{color:var(--gold)}
+.revenue-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+.revenue-cols {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.rev-col {
+  flex: 1;
+  min-width: 160px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  padding: 20px 16px;
+}
+.rev-col.highlight{background:rgba(204,41,54,.1);border-color:rgba(204,41,54,.3)}
+.rev-col-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.rev-col-amount{font-size:clamp(24px,3vw,36px);font-weight:800;letter-spacing:-1.5px;color:#fff;margin-bottom:4px}
+.rev-col.highlight .rev-col-amount{color:var(--gold)}
+.rev-col-note{font-size:11px;color:var(--muted);line-height:1.4}
+
+/* ── BUSINESS HEADER ─────────────────────────────────────────────── */
+.report-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: center;
+  padding: clamp(32px,4vw,56px) var(--px);
+  border-bottom: 1px solid var(--b);
+}
+@media(max-width:640px){.report-header{grid-template-columns:1fr;text-align:center}}
+.biz-name-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.biz-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(204,41,54,.12);
+  border: 1px solid rgba(204,41,54,.25);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--crimson);
+  letter-spacing: .5px;
+}
+.biz-title{font-size:clamp(22px,3.5vw,40px);font-weight:800;letter-spacing:-1.5px;margin-bottom:10px}
+.biz-meta{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted)}
+.biz-meta-item{display:flex;align-items:center;gap:6px}
+.stars{color:var(--gold)}
+.grade-circle {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 3px solid var(--crimson);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(204,41,54,.08);
+  flex-shrink: 0;
+  box-shadow: 0 0 40px rgba(204,41,54,.2);
+}
+.grade-letter{font-size: 44px;font-weight:900;letter-spacing:-3px;line-height:1}
+.grade-label{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+@media(max-width:640px){.grade-circle{margin:0 auto}}
+
+/* ── SCORES ──────────────────────────────────────────────────────── */
+.scores-section{padding:clamp(28px,4vw,48px) var(--px);border-bottom:1px solid var(--b)}
+.section-label{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
+.score-bars{display:flex;flex-direction:column;gap:12px}
+.score-bar-row{background:var(--bg2);border:1px solid var(--b);border-radius:12px;overflow:hidden}
+.score-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+.score-bar-header:hover{background:rgba(255,255,255,.03)}
+.sbh-left{display:flex;align-items:center;gap:12px;flex:1}
+.sbh-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.sbh-name{font-size:14px;font-weight:600}
+.sbh-max{font-size:11px;color:var(--muted);font-weight:500}
+.sbh-right{display:flex;align-items:center;gap:14px}
+.sbh-score{font-size:18px;font-weight:800;letter-spacing:-1px;min-width:40px;text-align:right}
+.sbh-chevron{font-size:11px;color:var(--muted);transition:transform .25s}
+.score-bar-row.open .sbh-chevron{transform:rotate(180deg)}
+.bar-track{height:4px;background:rgba(255,255,255,.07);border-radius:0;overflow:hidden}
+.bar-fill{height:100%;background:var(--crimson);border-radius:0;transition:width 1.2s var(--ease)}
+.bar-fill.gold{background:var(--gold)}
+.bar-fill.good{background:var(--green)}
+.score-checklist{display:none;padding:12px 18px 18px;border-top:1px solid var(--b)}
+.score-bar-row.open .score-checklist{display:block}
+.cl-items{display:flex;flex-direction:column;gap:8px}
+.cl-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.4}
+.cl-dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;margin-top:1px}
+.cl-dot.pass{background:rgba(0,204,102,.15);color:#00cc66}
+.cl-dot.fail{background:rgba(255,68,68,.12);color:#ff6666}
+.cl-dot.null{background:rgba(255,255,255,.06);color:rgba(255,255,255,.3)}
+
+/* ── ISSUES ──────────────────────────────────────────────────────── */
+.issues-section{padding:clamp(28px,4vw,48px) var(--px);border-bottom:1px solid var(--b)}
+.issues-list{display:flex;flex-direction:column;gap:12px}
+.issue-card{
+  display:flex;gap:16px;
+  padding:18px 20px;
+  border-radius:12px;
+  border:1px solid;
+  background:rgba(255,255,255,.02);
+}
+.issue-card.critical{border-color:rgba(255,68,68,.2);background:rgba(255,68,68,.04)}
+.issue-card.warning{border-color:rgba(255,153,0,.18);background:rgba(255,153,0,.03)}
+.issue-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.issue-card.critical .issue-dot{background:var(--red)}
+.issue-card.warning .issue-dot{background:var(--amber)}
+.issue-body{flex:1}
+.issue-cat{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.issue-card.critical .issue-cat{color:rgba(255,100,100,.7)}
+.issue-card.warning .issue-cat{color:rgba(255,170,50,.7)}
+.issue-title{font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.35}
+.issue-detail{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:8px}
+.issue-fix{font-size:12px;color:rgba(204,41,54,.85);font-weight:500}
+
+/* ── TWO-COLUMN LAYOUT ───────────────────────────────────────────── */
+.report-cols {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 0;
+  align-items: start;
+}
+@media(max-width:960px){.report-cols{grid-template-columns:1fr}}
+.report-main{border-right:1px solid var(--b)}
+@media(max-width:960px){.report-main{border-right:none;border-bottom:1px solid var(--b)}}
+.report-sidebar{position:sticky;top:0;padding:clamp(28px,3vw,40px) 24px}
+@media(max-width:960px){.report-sidebar{position:static}}
+
+/* ── MAIN SECTIONS ───────────────────────────────────────────────── */
+.main-section{padding:clamp(24px,3.5vw,40px) var(--px);border-bottom:1px solid var(--b)}
+.main-section:last-child{border-bottom:none}
+.main-section-title{font-size:16px;font-weight:700;letter-spacing:-.3px;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+
+/* ── SOCIAL PRESENCE ─────────────────────────────────────────────── */
+.social-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.social-grid{grid-template-columns:1fr}}
+.social-card{background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:18px 16px}
+.social-card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.social-platform-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.ig-icon{background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)}
+.fb-icon{background:#1877f2}
+.social-platform-name{font-size:13px;font-weight:700}
+.social-stat{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.social-stat-val{font-size:22px;font-weight:800;letter-spacing:-1px}
+.social-stat-label{font-size:11px;color:var(--muted)}
+.social-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;margin-top:4px}
+.social-pill.active{background:rgba(0,204,102,.1);color:#00cc66;border:1px solid rgba(0,204,102,.2)}
+.social-pill.warning{background:rgba(255,153,0,.1);color:#ff9900;border:1px solid rgba(255,153,0,.2)}
+.social-pill.danger{background:rgba(255,68,68,.1);color:#ff4444;border:1px solid rgba(255,68,68,.2)}
+.social-pill.neutral{background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.1)}
+.social-links-found{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.social-link-chip{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(255,255,255,.06);border:1px solid var(--b);color:rgba(255,255,255,.55)}
+
+/* ── MAP PACK ────────────────────────────────────────────────────── */
+.map-pack-rows{display:flex;flex-direction:column;gap:12px}
+.map-pack-card{background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:16px 18px}
+.mp-keyword{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;font-family:monospace;letter-spacing:.5px}
+.mp-status{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.mp-badge{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.mp-badge.in{background:rgba(0,204,102,.12);color:#00cc66;border:1px solid rgba(0,204,102,.2)}
+.mp-badge.out{background:rgba(255,68,68,.1);color:#ff4444;border:1px solid rgba(255,68,68,.2)}
+.mp-pack-list{display:flex;flex-direction:column;gap:6px}
+.mp-pack-item{display:flex;align-items:center;gap:10px;font-size:12px;padding:6px 10px;border-radius:8px}
+.mp-pack-item.is-you{background:rgba(204,41,54,.08);border:1px solid rgba(204,41,54,.2)}
+.mp-rank{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.mp-biz-name{flex:1;font-weight:500}
+.mp-biz-stars{color:var(--gold);font-size:11px}
+
+/* ── REVIEW INTEL ────────────────────────────────────────────────── */
+.review-intel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.ri-card{background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:16px;text-align:center}
+.ri-val{font-size:24px;font-weight:800;letter-spacing:-1px;margin-bottom:4px}
+.ri-label{font-size:11px;color:var(--muted)}
+.ri-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;margin-top:10px}
+.ri-badge.active{background:rgba(0,204,102,.12);color:#00cc66;border:1px solid rgba(0,204,102,.2)}
+.ri-badge.moderate{background:rgba(255,153,0,.12);color:#ff9900;border:1px solid rgba(255,153,0,.2)}
+.ri-badge.slow{background:rgba(255,68,68,.12);color:#ff6666;border:1px solid rgba(255,68,68,.2)}
+.ri-badge.stagnant{background:rgba(255,68,68,.15);color:#ff4444;border:1px solid rgba(255,68,68,.3)}
+.ri-badge.neutral{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--b)}
+
+/* ── TATTOO EXTRAS ───────────────────────────────────────────────── */
+.tattoo-extras-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.te-item{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg2);border-radius:10px;border:1px solid var(--b);font-size:13px}
+.te-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.te-dot.pass{background:rgba(0,204,102,.15);color:#00cc66}
+.te-dot.fail{background:rgba(255,68,68,.1);color:#ff4444}
+.te-label{color:rgba(255,255,255,.75);flex:1}
+.te-badge{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--gold);background:rgba(212,175,55,.1);padding:2px 8px;border-radius:999px;border:1px solid rgba(212,175,55,.2)}
+.styles-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.style-chip{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(204,41,54,.1);color:rgba(255,255,255,.7);border:1px solid rgba(204,41,54,.2);text-transform:capitalize}
+
+/* ── KEYWORD RANKINGS ────────────────────────────────────────────── */
+.kw-rows{display:flex;flex-direction:column;gap:8px}
+.kw-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--b);border-radius:10px}
+.kw-rank{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.kw-rank.ranked{background:rgba(0,204,102,.12);color:#00cc66;border:1px solid rgba(0,204,102,.2)}
+.kw-rank.not-ranked{background:rgba(255,68,68,.08);color:rgba(255,68,68,.5);border:1px solid rgba(255,68,68,.12);font-size:10px}
+.kw-term{flex:1;font-size:13px;font-weight:500;font-family:monospace;color:rgba(255,255,255,.75)}
+.kw-label{font-size:11px;font-weight:600;color:var(--muted)}
+.kw-row.ranked-row .kw-term{color:#fff}
+
+/* ── ROADMAP ─────────────────────────────────────────────────────── */
+.roadmap-steps{display:flex;flex-direction:column;gap:12px}
+.roadmap-step{background:var(--bg2);border:1px solid var(--b);border-radius:12px;overflow:hidden}
+.roadmap-step.critical{border-color:rgba(255,68,68,.2)}
+.roadmap-step.warning{border-color:rgba(255,153,0,.15)}
+.roadmap-header{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;cursor:pointer;user-select:none}
+.roadmap-header:hover{background:rgba(255,255,255,.02)}
+.rm-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px}
+.roadmap-step.critical .rm-num{background:rgba(255,68,68,.12);color:#ff6666}
+.roadmap-step.warning .rm-num{background:rgba(255,153,0,.12);color:#ff9900}
+.rm-title{font-size:14px;font-weight:700;flex:1;line-height:1.35}
+.rm-badge{padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.5px;flex-shrink:0;white-space:nowrap}
+.roadmap-step.critical .rm-badge{background:rgba(255,68,68,.1);color:#ff6666;border:1px solid rgba(255,68,68,.2)}
+.roadmap-step.warning .rm-badge{background:rgba(255,153,0,.1);color:#ff9900;border:1px solid rgba(255,153,0,.2)}
+.roadmap-body{display:none;padding:0 18px 18px 60px}
+.roadmap-step.open .roadmap-body{display:block}
+.rm-chevron{font-size:11px;color:var(--muted);margin-top:6px;transition:transform .25s;flex-shrink:0}
+.roadmap-step.open .rm-chevron{transform:rotate(180deg)}
+.rm-sub-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;margin-top:12px}
+.rm-text{font-size:13px;color:rgba(255,255,255,.72);line-height:1.6}
+.rm-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.rm-pill{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600}
+.rm-pill.timeline{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid var(--b)}
+.rm-pill.service{background:rgba(204,41,54,.1);color:rgba(204,41,54,.9);border:1px solid rgba(204,41,54,.2)}
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────── */
+.sidebar-grade{text-align:center;padding:24px;background:rgba(204,41,54,.06);border:1px solid rgba(204,41,54,.2);border-radius:14px;margin-bottom:16px}
+.sg-overall{font-size:64px;font-weight:900;letter-spacing:-4px;line-height:1;color:var(--crimson)}
+.sg-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.sg-message{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;margin-top:12px}
+.sidebar-card{background:var(--bg2);border:1px solid var(--b);border-radius:14px;padding:20px;margin-bottom:16px}
+.sc-title{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.speed-rows{display:flex;flex-direction:column;gap:10px}
+.speed-row{display:flex;justify-content:space-between;align-items:center}
+.speed-label{font-size:12px;color:var(--muted)}
+.speed-val{font-size:13px;font-weight:700}
+.speed-val.good{color:#00cc66}
+.speed-val.warn{color:#ff9900}
+.speed-val.bad{color:#ff4444}
+.speed-score-row{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--b)}
+.speed-score-val{font-size:20px;font-weight:800}
+
+/* ── LUIS FARRERA PROOF ──────────────────────────────────────────── */
+.luis-section {
+  padding: clamp(32px,4vw,56px) var(--px);
+  background: linear-gradient(135deg, rgba(212,175,55,.06) 0%, rgba(204,41,54,.06) 100%);
+  border-top: 1px solid rgba(212,175,55,.15);
+  border-bottom: 1px solid rgba(212,175,55,.15);
+}
+.luis-inner{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;max-width:900px;margin:0 auto}
+@media(max-width:640px){.luis-inner{grid-template-columns:1fr;gap:24px}}
+.luis-left{}
+.luis-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.luis-headline{font-size:clamp(20px,2.5vw,30px);font-weight:800;letter-spacing:-.5px;line-height:1.2;margin-bottom:12px}
+.luis-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.luis-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.luis-stat{background:rgba(255,255,255,.04);border:1px solid rgba(212,175,55,.15);border-radius:10px;padding:14px}
+.ls-val{font-size:22px;font-weight:900;letter-spacing:-1px;color:var(--gold);margin-bottom:3px}
+.ls-label{font-size:11px;color:var(--muted)}
+
+/* ── FREE TIP ────────────────────────────────────────────────────── */
+.free-tip-card{background:rgba(204,41,54,.07);border:1px solid rgba(204,41,54,.2);border-radius:14px;padding:20px;margin-bottom:16px}
+.ft-eyebrow{font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--crimson);margin-bottom:10px}
+.ft-action{font-size:13px;color:rgba(255,255,255,.82);line-height:1.6;margin-bottom:10px}
+.ft-impact{font-size:12px;color:var(--gold);font-weight:600;line-height:1.4}
+
+/* ── CTA ─────────────────────────────────────────────────────────── */
+.cta-card{background:linear-gradient(135deg,rgba(204,41,54,.18),rgba(212,175,55,.08));border:1px solid rgba(204,41,54,.3);border-radius:14px;padding:24px;text-align:center}
+.cta-heading{font-size:18px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.cta-sub{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px}
+.cta-price{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--gold);margin-bottom:16px}
+.cta-btn{display:block;padding:14px 20px;background:var(--crimson);color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-align:center;cursor:pointer;transition:background .2s,transform .15s;text-decoration:none}
+.cta-btn:hover{background:var(--crimson2);transform:scale(1.02)}
+.cta-note{font-size:11px;color:rgba(255,255,255,.28);margin-top:12px;line-height:1.4}
+
+/* ── COMPETITORS ─────────────────────────────────────────────────── */
+.comp-rows{display:flex;flex-direction:column;gap:8px}
+.comp-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg3);border:1px solid var(--b);border-radius:10px}
+.comp-num{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:rgba(255,255,255,.4)}
+.comp-name{flex:1;font-size:13px;font-weight:600}
+.comp-stars{color:var(--gold);font-size:11px}
+.comp-revs{font-size:11px;color:var(--muted)}
+.comp-insight{margin-top:12px;font-size:13px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);border:1px solid var(--b);border-radius:10px;padding:12px 14px;line-height:1.5}
+
+/* ── AD LIBRARY ──────────────────────────────────────────────────── */
+.ad-card{background:var(--bg2);border:1px solid var(--b);border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+.ad-card-icon{width:36px;height:36px;border-radius:8px;background:rgba(204,41,54,.1);border:1px solid rgba(204,41,54,.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ad-card-body{flex:1;min-width:0}
+.ad-page-name{font-size:14px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ad-body-preview{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ad-meta-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ad-pill{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.ad-pill.spend{background:rgba(212,175,55,.08);color:rgba(212,175,55,.8);border:1px solid rgba(212,175,55,.18)}
+.ad-pill.imps{background:rgba(255,255,255,.05);color:rgba(255,255,255,.45);border:1px solid var(--b)}
+.ad-pill.date{background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);border:1px solid var(--b)}
+.ad-view-link{font-size:11px;font-weight:600;color:var(--crimson);text-decoration:none;margin-left:auto;flex-shrink:0;padding:3px 8px;border-radius:6px;border:1px solid rgba(204,41,54,.2);transition:background .15s}
+.ad-view-link:hover{background:rgba(204,41,54,.1)}
+.ad-warning-banner{background:rgba(204,41,54,.07);border:1px solid rgba(204,41,54,.2);border-radius:12px;padding:18px 20px;font-size:13px;color:rgba(255,255,255,.72);line-height:1.6}
+.ad-warning-banner strong{color:var(--crimson)}
+
+/* ── RUN AGAIN ───────────────────────────────────────────────────── */
+.run-again-bar{padding:28px var(--px);border-top:1px solid var(--b);text-align:center}
+.run-again-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border:1.5px solid rgba(255,255,255,.12);border-radius:10px;background:transparent;color:rgba(255,255,255,.6);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.run-again-btn:hover{border-color:rgba(204,41,54,.4);color:#fff;background:rgba(204,41,54,.07)}
+
+/* ── NO WEBSITE NOTE ─────────────────────────────────────────────── */
+.no-web-note{font-size:13px;color:var(--muted);font-style:italic;padding:16px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--b)}
+
+@media(max-width:600px){
+  .revenue-cols{flex-direction:column}
+  .social-grid{grid-template-columns:1fr}
+  .tattoo-extras-grid{grid-template-columns:1fr}
+  .review-intel-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ── UPGRADE BAR ─────────────────────────────────────────────────── */
+.upgrade-bar {
+  display: none;
+  background: linear-gradient(135deg, rgba(212,175,55,.08) 0%, rgba(204,41,54,.08) 100%);
+  border: 1px solid rgba(212,175,55,.2);
+  border-radius: 14px;
+  padding: 18px 24px;
+  margin: 24px var(--px);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.upgrade-bar-left{flex:1;min-width:200px}
+.upgrade-bar-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.upgrade-bar-title{font-size:16px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.upgrade-bar-sub{font-size:13px;color:var(--muted)}
+.upgrade-bar-actions{display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.upgrade-btn-meta{padding:12px 22px;background:var(--crimson);border:none;border-radius:10px;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:8px}
+.upgrade-btn-meta:hover{background:var(--crimson2)}
+.upgrade-btn-skip{padding:12px 18px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:10px;color:rgba(255,255,255,.5);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.upgrade-btn-skip:hover{border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.7)}
+
+/* ── LIVE DATA BADGE ─────────────────────────────────────────────── */
+.live-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:1px;background:rgba(0,204,102,.12);color:#00cc66;border:1px solid rgba(0,204,102,.2);margin-left:8px}
+.live-badge::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#00cc66;animation:pulse-green 1.5s ease-in-out infinite}
+.estimated-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:1px;background:rgba(255,153,0,.08);color:#ff9900;border:1px solid rgba(255,153,0,.15)}
+
+/* ── OAUTH MODAL ─────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  padding: 36px;
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+  box-shadow: 0 40px 120px rgba(0,0,0,.7);
+  animation: modal-in .3s var(--ease);
+}
+@keyframes modal-in{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.06);
+  border: none;
+  color: rgba(255,255,255,.4);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.modal-close:hover{background:rgba(255,255,255,.1);color:#fff}
+.modal-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.modal-title{font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.75px;margin-bottom:10px;line-height:1.15}
+.modal-title em{font-style:normal;color:var(--crimson)}
+.modal-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+.privacy-badge{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:rgba(0,204,102,.06);border:1px solid rgba(0,204,102,.15);border-radius:10px;margin-bottom:24px}
+.privacy-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.privacy-text{font-size:12px;color:rgba(255,255,255,.6);line-height:1.55}
+.privacy-text strong{color:rgba(0,204,102,.9);font-weight:700}
+.modal-benefits{display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+.modal-benefit{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.75)}
+.benefit-check{width:18px;height:18px;border-radius:50%;background:rgba(0,204,102,.12);color:#00cc66;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.modal-connect-btn{width:100%;padding:15px;background:var(--crimson);border:none;border-radius:12px;color:#fff;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s,transform .15s;margin-bottom:10px}
+.modal-connect-btn:hover{background:var(--crimson2);transform:scale(1.01)}
+.modal-connect-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.modal-skip-btn{width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.4);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.modal-skip-btn:hover{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.6)}
+.modal-status{font-size:12px;text-align:center;color:var(--muted);margin-top:12px;min-height:18px}
+.modal-status.error{color:#ff6666}
+.modal-status.success{color:#00cc66}
+
+/* ── PRE-LAUNCH CHECKLIST ────────────────────────────────────────── */
+.checklist-section {
+  display: none;
+  background: var(--bg);
+  border-top: 2px solid rgba(204,41,54,.25);
+}
+.checklist-hero {
+  background: linear-gradient(135deg, #0a0a0a 0%, rgba(204,41,54,.08) 100%);
+  padding: clamp(40px,6vw,80px) var(--px);
+  text-align: center;
+  border-bottom: 1px solid var(--b);
+}
+.cl-hero-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--crimson);margin-bottom:16px}
+.cl-hero-title{font-size:clamp(28px,4vw,52px);font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:14px}
+.cl-hero-sub{font-size:clamp(14px,2vw,18px);color:var(--muted);line-height:1.6;max-width:600px;margin:0 auto 32px}
+.cl-hero-stats{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+.cl-hero-stat{text-align:center}
+.cl-hero-stat-val{font-size:clamp(32px,4vw,52px);font-weight:900;letter-spacing:-2px}
+.cl-hero-stat-val.done{color:var(--green)}
+.cl-hero-stat-val.missing{color:var(--crimson)}
+.cl-hero-stat-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.cl-sections{max-width:900px;margin:0 auto;padding:clamp(28px,4vw,56px) var(--px)}
+.cl-section{margin-bottom:36px}
+.cl-section-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--b)}
+.cl-section-num{width:40px;height:40px;border-radius:10px;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;flex-shrink:0}
+.cl-section-info{}
+.cl-section-title{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.cl-section-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.cl-group{margin-bottom:14px}
+.cl-group-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.cl-item-row{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border-radius:8px;transition:background .15s;cursor:default}
+.cl-item-row:hover{background:rgba(255,255,255,.025)}
+.cl-checkbox{width:20px;height:20px;border-radius:6px;border:2px solid;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;font-weight:800;transition:all .25s}
+.cl-checkbox.checked{background:rgba(0,204,102,.12);border-color:#00cc66;color:#00cc66}
+.cl-checkbox.unchecked{background:transparent;border-color:rgba(255,255,255,.15);color:transparent}
+.cl-checkbox.auto{background:rgba(255,153,0,.1);border-color:rgba(255,153,0,.3);color:#ff9900}
+.cl-item-label{font-size:13px;color:rgba(255,255,255,.72);line-height:1.5;flex:1}
+.cl-item-label.checked-label{color:rgba(255,255,255,.45)}
+.cl-item-note{font-size:11px;color:rgba(255,255,255,.28);margin-top:2px;font-style:italic}
+.cl-tag{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;margin-left:6px}
+.cl-tag.auto-detected{background:rgba(212,175,55,.1);color:rgba(212,175,55,.8);border:1px solid rgba(212,175,55,.15)}
+.checklist-cta {
+  background: linear-gradient(135deg, rgba(204,41,54,.12) 0%, rgba(212,175,55,.06) 100%);
+  border-top: 1px solid rgba(204,41,54,.2);
+  padding: clamp(40px,5vw,72px) var(--px);
+  text-align: center;
+}
+.cl-cta-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.cl-cta-title{font-size:clamp(24px,3.5vw,44px);font-weight:900;letter-spacing:-1.5px;line-height:1.05;margin-bottom:14px}
+.cl-cta-title span{color:var(--crimson)}
+.cl-cta-sub{font-size:clamp(14px,1.8vw,17px);color:var(--muted);line-height:1.65;max-width:580px;margin:0 auto 32px}
+.cl-cta-features{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:36px}
+.cl-cta-feature{padding:8px 16px;background:rgba(255,255,255,.05);border:1px solid var(--b);border-radius:999px;font-size:13px;font-weight:500;color:rgba(255,255,255,.7)}
+.cl-cta-feature span{color:var(--green);margin-right:6px}
+.cl-cta-btn{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:var(--crimson);color:#fff;border-radius:14px;font-size:16px;font-weight:800;text-decoration:none;transition:background .2s,transform .15s;letter-spacing:-.3px}
+.cl-cta-btn:hover{background:var(--crimson2);transform:scale(1.02)}
+.cl-cta-note{font-size:12px;color:rgba(255,255,255,.25);margin-top:18px;line-height:1.5}
+.cl-vip-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:999px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:24px}
+
+@media(max-width:600px){
+  .upgrade-bar{flex-direction:column;align-items:flex-start}
+  .upgrade-bar-actions{width:100%}
+  .upgrade-btn-meta,.upgrade-btn-skip{flex:1;justify-content:center}
+  .modal-box{padding:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  SEARCH SECTION
+════════════════════════════════════════════════════════════════ -->
+<section id="search-section">
+  <div class="hero-bg"></div>
+  <div class="search-content">
+
+    <div class="search-logo">
+      <div class="logo-ink-mark">✦</div>
+      <div class="logo-ink-text">
+        <span class="top">JRZ Ink Systems</span>
+        <span class="sub">Tattoo Artist Growth Engine</span>
+      </div>
+    </div>
+
+    <div class="search-eyebrow">
+      <div class="eyebrow-dot"></div>
+      FREE AI AUDIT · TATTOO ARTISTS + PRIVATE STUDIOS
+    </div>
+
+    <h1 class="search-h1">
+      Are clients choosing<br>
+      <em>another artist</em><br>
+      over you?
+    </h1>
+
+    <p class="search-sub">
+      Find out exactly what's blocking your bookings — Google visibility, Instagram presence, online booking system, and local competition. Free, instant, built only for tattoo artists.
+    </p>
+
+    <div class="search-wrap">
+      <input id="search-input" type="text" placeholder="Search your studio or artist name + city..." autocomplete="off">
+      <button class="search-btn" onclick="startGrade()">Grade My Studio →</button>
+      <div id="autocomplete-list"></div>
+    </div>
+
+    <div id="search-error" class="search-error-banner"></div>
+
+    <div class="proof-strip">
+      <div class="proof-item">
+        <div class="proof-icon">📍</div>
+        <div class="proof-label">Google Map Pack<br>Position</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-icon">📸</div>
+        <div class="proof-label">Instagram<br>Presence Score</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-icon">📅</div>
+        <div class="proof-label">Online Booking<br>System Audit</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-icon">⭐</div>
+        <div class="proof-label">Review Velocity<br>+ Trust Score</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-icon">🎯</div>
+        <div class="proof-label">Nearby Studio<br>Comparison</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  LOADING SECTION
+════════════════════════════════════════════════════════════════ -->
+<section id="loading-section">
+  <div class="loading-inner">
+    <div class="loading-logo">
+      <div class="logo-ink-mark">✦</div>
+      <div class="logo-ink-text">
+        <span class="top">JRZ Ink Systems</span>
+        <span class="sub">Tattoo Artist Growth Engine</span>
+      </div>
+    </div>
+
+    <div id="biz-preview" class="biz-preview">
+      <div class="biz-preview-icon">🎨</div>
+      <div>
+        <div class="biz-preview-name" id="preview-name"></div>
+        <div class="biz-preview-addr" id="preview-addr"></div>
+      </div>
+    </div>
+
+    <div class="loading-spinner"></div>
+    <div class="loading-h2">Auditing your studio...</div>
+    <div class="loading-sub">Pulling live data from Google, Instagram, and local search — this takes 20 to 40 seconds.</div>
+
+    <div class="loading-steps" id="loading-steps">
+      <div class="loading-step" data-step="0"><div class="step-icon">📍</div> Finding your studio on Google...</div>
+      <div class="loading-step" data-step="1"><div class="step-icon">⭐</div> Pulling Google reviews + reputation data...</div>
+      <div class="loading-step" data-step="2"><div class="step-icon">🌐</div> Scanning your website & booking system...</div>
+      <div class="loading-step" data-step="3"><div class="step-icon">🗺️</div> Checking local map pack visibility...</div>
+      <div class="loading-step" data-step="4"><div class="step-icon">📸</div> Analyzing your Instagram presence...</div>
+      <div class="loading-step" data-step="5"><div class="step-icon">🏆</div> Researching nearby tattoo studios...</div>
+      <div class="loading-step" data-step="6"><div class="step-icon">🔍</div> Running keyword ranking check...</div>
+      <div class="loading-step" data-step="7"><div class="step-icon">💰</div> Calculating your revenue opportunity...</div>
+      <div class="loading-step" data-step="8"><div class="step-icon">📋</div> Building your Ink Systems report...</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  REPORT SECTION
+════════════════════════════════════════════════════════════════ -->
+<section id="report-section">
+
+  <!-- Upgrade Bar (shows after report loads) -->
+  <div class="upgrade-bar" id="upgrade-bar" style="display:none">
+    <div class="upgrade-bar-left">
+      <div class="upgrade-bar-eyebrow">✦ OPTIONAL · REAL DATA MODE</div>
+      <div class="upgrade-bar-title">Connect your Instagram to see your <em style="color:var(--green);font-style:normal">actual</em> numbers — not estimates</div>
+      <div class="upgrade-bar-sub">Read-only access. We never post. Token clears when you close this window.</div>
+    </div>
+    <div class="upgrade-bar-actions">
+      <button class="upgrade-btn-meta" onclick="openOAuthModal()">🔗 Connect Instagram + Facebook</button>
+      <button class="upgrade-btn-skip" onclick="dismissUpgradeBar()">Continue with estimates</button>
+    </div>
+  </div>
+
+  <!-- Revenue Banner -->
+  <div class="revenue-banner" id="revenue-banner">
+    <div class="revenue-eyebrow">MONTHLY REVENUE OPPORTUNITY</div>
+    <div class="revenue-headline">Your studio is estimated to be missing <span id="rev-opp-headline">$0</span>/month</div>
+    <div class="revenue-sub" id="rev-sub-text"></div>
+    <div class="revenue-cols">
+      <div class="rev-col">
+        <div class="rev-col-label">Current Estimate</div>
+        <div class="rev-col-amount" id="rev-current">$0</div>
+        <div class="rev-col-note">Based on review volume + city benchmark</div>
+      </div>
+      <div class="rev-col highlight">
+        <div class="rev-col-label">Revenue Opportunity</div>
+        <div class="rev-col-amount" id="rev-opp">$0</div>
+        <div class="rev-col-note">What's leaving when you're not fully booked</div>
+      </div>
+      <div class="rev-col">
+        <div class="rev-col-label">Full Potential</div>
+        <div class="rev-col-amount" id="rev-potential">$0</div>
+        <div class="rev-col-note">Optimized booking + visibility + trust</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Business Header -->
+  <div class="report-header">
+    <div>
+      <div class="biz-name-row">
+        <div class="biz-type-badge">🎨 TATTOO STUDIO</div>
+      </div>
+      <h2 class="biz-title" id="rpt-biz-name"></h2>
+      <div class="biz-meta">
+        <div class="biz-meta-item">
+          <span class="stars">★</span>
+          <span id="rpt-rating"></span>
+        </div>
+        <div class="biz-meta-item">
+          <span>💬</span>
+          <span id="rpt-reviews"></span>
+        </div>
+        <div class="biz-meta-item" id="rpt-phone-wrap" style="display:none">
+          <span>📞</span>
+          <span id="rpt-phone"></span>
+        </div>
+        <div class="biz-meta-item" id="rpt-web-wrap" style="display:none">
+          <span>🔗</span>
+          <a id="rpt-website" href="#" target="_blank" rel="noopener" style="color:rgba(255,255,255,.7)"></a>
+        </div>
+        <div class="biz-meta-item">
+          <span>📍</span>
+          <span id="rpt-address" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>
+    <div class="grade-circle" id="grade-circle">
+      <div class="grade-letter" id="grade-letter"></div>
+      <div class="grade-label">GRADE</div>
+    </div>
+  </div>
+
+  <!-- Score Bars -->
+  <div class="scores-section">
+    <div class="section-label">6-CATEGORY AUDIT SCORE</div>
+    <div class="score-bars" id="score-bars">
+
+      <div class="score-bar-row" id="bar-visibility">
+        <div class="score-bar-header" onclick="toggleBar('visibility')">
+          <div class="sbh-left">
+            <div class="sbh-icon">📍</div>
+            <div>
+              <div class="sbh-name">Digital Visibility</div>
+              <div class="sbh-max">Google Profile + Local Search / 20 pts</div>
+            </div>
+          </div>
+          <div class="sbh-right">
+            <div class="sbh-score" id="score-visibility">—</div>
+            <div class="sbh-chevron">▼</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="fill-visibility" style="width:0%"></div></div>
+        <div class="score-checklist"><div class="cl-items" id="cl-visibility"></div></div>
+      </div>
+
+      <div class="score-bar-row" id="bar-trust">
+        <div class="score-bar-header" onclick="toggleBar('trust')">
+          <div class="sbh-left">
+            <div class="sbh-icon">⭐</div>
+            <div>
+              <div class="sbh-name">Trust & Reputation</div>
+              <div class="sbh-max">Reviews + Portfolio + Social Proof / 20 pts</div>
+            </div>
+          </div>
+          <div class="sbh-right">
+            <div class="sbh-score" id="score-trust">—</div>
+            <div class="sbh-chevron">▼</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="fill-trust" style="width:0%"></div></div>
+        <div class="score-checklist"><div class="cl-items" id="cl-trust"></div></div>
+      </div>
+
+      <div class="score-bar-row" id="bar-booking_funnel">
+        <div class="score-bar-header" onclick="toggleBar('booking_funnel')">
+          <div class="sbh-left">
+            <div class="sbh-icon">📅</div>
+            <div>
+              <div class="sbh-name">Booking Funnel</div>
+              <div class="sbh-max">Online Booking + Conversion System / 20 pts</div>
+            </div>
+          </div>
+          <div class="sbh-right">
+            <div class="sbh-score" id="score-booking_funnel">—</div>
+            <div class="sbh-chevron">▼</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="fill-booking_funnel" style="width:0%"></div></div>
+        <div class="score-checklist"><div class="cl-items" id="cl-booking_funnel"></div></div>
+      </div>
+
+      <div class="score-bar-row" id="bar-followup">
+        <div class="score-bar-header" onclick="toggleBar('followup')">
+          <div class="sbh-left">
+            <div class="sbh-icon">🔄</div>
+            <div>
+              <div class="sbh-name">Follow-Up & Retention</div>
+              <div class="sbh-max">Review Response + Velocity + Re-engagement / 15 pts</div>
+            </div>
+          </div>
+          <div class="sbh-right">
+            <div class="sbh-score" id="score-followup">—</div>
+            <div class="sbh-chevron">▼</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="fill-followup" style="width:0%"></div></div>
+        <div class="score-checklist"><div class="cl-items" id="cl-followup"></div></div>
+      </div>
+
+      <div class="score-bar-row" id="bar-content">
+        <div class="score-bar-header" onclick="toggleBar('content')">
+          <div class="sbh-left">
+            <div class="sbh-icon">📸</div>
+            <div>
+              <div class="sbh-name">Content & Instagram</div>
+              <div class="sbh-max">Instagram + Portfolio + Style Presence / 15 pts</div>
+            </div>
+          </div>
+          <div class="sbh-right">
+            <div class="sbh-score" id="score-content">—</div>
+            <div class="sbh-chevron">▼</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="fill-content" style="width:0%"></div></div>
+        <div class="score-checklist"><div class="cl-items" id="cl-content"></div></div>
+      </div>
+
+      <div class="score-bar-row" id="bar-competitor">
+        <div class="score-bar-header" onclick="toggleBar('competitor')">
+          <div class="sbh-left">
+            <div class="sbh-icon">🏆</div>
+            <div>
+              <div class="sbh-name">Competitor Position</div>
+              <div class="sbh-max">Map Pack + Review Standing vs Market / 10 pts</div>
+            </div>
+          </div>
+          <div class="sbh-right">
+            <div class="sbh-score" id="score-competitor">—</div>
+            <div class="sbh-chevron">▼</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="fill-competitor" style="width:0%"></div></div>
+        <div class="score-checklist"><div class="cl-items" id="cl-competitor"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Issues -->
+  <div class="issues-section">
+    <div class="section-label" id="issues-section-label">IDENTIFIED ISSUES</div>
+    <div class="issues-list" id="issues-list"></div>
+  </div>
+
+  <!-- Two-column -->
+  <div class="report-cols">
+
+    <!-- MAIN -->
+    <div class="report-main">
+
+      <!-- Social Presence -->
+      <div class="main-section">
+        <div class="main-section-title">📸 Social Media Presence</div>
+        <div class="social-grid" id="social-grid"></div>
+        <div id="social-links-found" style="margin-top:16px;display:none">
+          <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">DETECTED SOCIAL CHANNELS</div>
+          <div class="social-links-found" id="social-link-chips"></div>
+        </div>
+      </div>
+
+      <!-- Map Pack -->
+      <div class="main-section" id="map-pack-section" style="display:none">
+        <div class="main-section-title">🗺️ Google Map Pack Visibility</div>
+        <div class="map-pack-rows" id="map-pack-rows"></div>
+      </div>
+
+      <!-- Competitor Ad Activity -->
+      <div class="main-section" id="ad-library-section" style="display:none">
+        <div class="main-section-title">📢 Competitor Ad Activity
+          <span style="font-size:11px;font-weight:600;letter-spacing:1px;padding:3px 10px;border-radius:999px;background:rgba(204,41,54,.1);color:rgba(204,41,54,.8);border:1px solid rgba(204,41,54,.2);margin-left:4px">META AD LIBRARY</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5" id="ad-library-intro"></div>
+        <div id="ad-library-cards" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- Review Intelligence -->
+      <div class="main-section">
+        <div class="main-section-title">⭐ Review Intelligence</div>
+        <div class="review-intel-grid" id="review-intel-grid"></div>
+      </div>
+
+      <!-- Tattoo Extras -->
+      <div class="main-section" id="tattoo-extras-section">
+        <div class="main-section-title">🎨 Studio Signals</div>
+        <div class="tattoo-extras-grid" id="tattoo-extras-grid"></div>
+        <div id="detected-styles-wrap" style="display:none;margin-top:16px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">DETECTED TATTOO STYLES</div>
+          <div class="styles-list" id="detected-styles"></div>
+        </div>
+      </div>
+
+      <!-- Keyword Rankings -->
+      <div class="main-section" id="kw-section" style="display:none">
+        <div class="main-section-title">🔍 Keyword Rankings</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+          Checking organic positions for your top 5 tattoo keywords in your market (top 30 results).
+        </div>
+        <div class="kw-rows" id="kw-rows"></div>
+      </div>
+
+      <!-- Roadmap -->
+      <div class="main-section">
+        <div class="main-section-title">🛠️ Improvement Roadmap</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5">
+          Every issue mapped to a concrete JRZ Ink Systems fix — with timelines and expected outcomes.
+        </div>
+        <div class="roadmap-steps" id="roadmap-steps"></div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="report-sidebar">
+
+      <div class="sidebar-grade">
+        <div class="sg-label">OVERALL SCORE</div>
+        <div class="sg-overall" id="sb-overall">—</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">out of 100</div>
+        <div class="sg-message" id="sb-grade-msg"></div>
+      </div>
+
+      <!-- PageSpeed -->
+      <div class="sidebar-card" id="pagespeed-card" style="display:none">
+        <div class="sc-title">WEBSITE SPEED (MOBILE)</div>
+        <div class="speed-rows" id="speed-rows"></div>
+      </div>
+
+      <!-- Free Tip -->
+      <div class="free-tip-card" id="free-tip-card" style="display:none">
+        <div class="ft-eyebrow">⚡ FREE WIN — DO THIS TODAY</div>
+        <div class="ft-action" id="ft-action"></div>
+        <div class="ft-impact" id="ft-impact"></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-card">
+        <div class="cta-heading">Ready to fill your calendar?</div>
+        <div class="cta-sub">
+          JRZ Ink Systems handles your booking system, Instagram, local SEO, and review automation — so you stay focused on the art.
+        </div>
+        <div class="cta-price">STARTING AT $1,000/MO · PERFORMANCE-BASED</div>
+        <a href="https://jrzmarketing.com" target="_blank" rel="noopener" class="cta-btn">
+          Book a Free Strategy Call →
+        </a>
+        <div class="cta-note">No obligation. We show you exactly what's broken and what it's costing you.</div>
+      </div>
+
+      <!-- Competitors -->
+      <div class="sidebar-card" id="comp-card" style="display:none">
+        <div class="sc-title">NEARBY STUDIOS</div>
+        <div class="comp-rows" id="comp-rows"></div>
+        <div class="comp-insight" id="comp-insight" style="display:none"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Luis Farrera Proof -->
+  <div class="luis-section" id="luis-section">
+    <div class="luis-inner">
+      <div class="luis-left">
+        <div class="luis-eyebrow">✦ PROOF IT WORKS</div>
+        <div class="luis-headline">Luis A. Farrera — Tattoo Artist, Florida</div>
+        <div class="luis-sub">
+          In 30 days, JRZ Ink Systems built and launched a Meta Ads campaign for Luis's private studio — generating 84 real booking inquiries at $14.83 per lead with a 5.06% click-through rate. His calendar went from half-booked to a waiting list.
+        </div>
+      </div>
+      <div class="luis-stats" id="luis-stats">
+        <div class="luis-stat">
+          <div class="ls-val">84</div>
+          <div class="ls-label">Leads in 30 Days</div>
+        </div>
+        <div class="luis-stat">
+          <div class="ls-val">$14.83</div>
+          <div class="ls-label">Cost Per Lead</div>
+        </div>
+        <div class="luis-stat">
+          <div class="ls-val">5.06%</div>
+          <div class="ls-label">Click-Through Rate</div>
+        </div>
+        <div class="luis-stat">
+          <div class="ls-val">30</div>
+          <div class="ls-label">Days to Results</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Run Again -->
+  <div class="run-again-bar">
+    <button class="run-again-btn" onclick="runAgain()">← Grade Another Studio</button>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+  JAVASCRIPT
+════════════════════════════════════════════════════════════════ -->
+<script>
+const API = 'https://jrz-grader.onrender.com';
+let selectedPlaceId = '';
+let selectedName = '';
+let selectedAddr = '';
+let stepTimer = null;
+
+// ── AUTOCOMPLETE ─────────────────────────────────────────────────
+const input = document.getElementById('search-input');
+const acList = document.getElementById('autocomplete-list');
+let acDebounce = null;
+
+input.addEventListener('input', () => {
+  clearTimeout(acDebounce);
+  acList.style.display = 'none';
+  selectedPlaceId = '';
+  acDebounce = setTimeout(fetchAC, 280);
+});
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGrade();
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) acList.style.display = 'none';
+});
+
+async function fetchAC() {
+  const q = input.value.trim();
+  if (q.length < 2) return;
+  try {
+    const r = await fetch(`${API}/api/autocomplete-tattoo?input=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    renderAC(d.predictions || []);
+  } catch(e) {}
+}
+
+function renderAC(preds) {
+  if (!preds.length) { acList.style.display = 'none'; return; }
+  acList.innerHTML = '';
+  preds.slice(0, 6).forEach(p => {
+    const main = p.structured_formatting?.main_text || p.description;
+    const sec  = p.structured_formatting?.secondary_text || '';
+    const div  = document.createElement('div');
+    div.className = 'ac-item';
+    div.innerHTML = `<span class="ac-icon">🎨</span><span><strong>${main}</strong>${sec ? ' · ' + sec : ''}</span>`;
+    div.addEventListener('click', () => {
+      input.value = p.description;
+      selectedPlaceId = p.place_id;
+      selectedName = main;
+      selectedAddr = sec;
+      acList.style.display = 'none';
+    });
+    acList.appendChild(div);
+  });
+  acList.style.display = 'block';
+}
+
+// ── GRADE ─────────────────────────────────────────────────────────
+async function startGrade() {
+  acList.style.display = 'none';
+  clearError();
+
+  if (!selectedPlaceId) {
+    showError('Please select a studio from the dropdown before grading.');
+    return;
+  }
+
+  showLoading();
+  startStepAnimation();
+
+  try {
+    const r = await fetch(`${API}/api/grade-tattoo?place_id=${encodeURIComponent(selectedPlaceId)}`);
+    const data = await r.json();
+
+    if (r.status === 422 && data.error === 'not_tattoo') {
+      stopStepAnimation();
+      showSearch();
+      showNotTattooError(data.message);
+      return;
+    }
+    if (!r.ok || data.error) {
+      stopStepAnimation();
+      showSearch();
+      showError(data.message || data.error || 'Something went wrong. Please try again.');
+      return;
+    }
+
+    stopStepAnimation();
+    renderReport(data);
+  } catch(e) {
+    stopStepAnimation();
+    showSearch();
+    showError('Connection error. Please try again in a moment.');
+  }
+}
+
+// ── STEP ANIMATION ────────────────────────────────────────────────
+function startStepAnimation() {
+  const steps = document.querySelectorAll('.loading-step');
+  steps.forEach(s => s.classList.remove('active','done'));
+
+  if (selectedName) {
+    document.getElementById('preview-name').textContent = selectedName;
+    document.getElementById('preview-addr').textContent = selectedAddr;
+    document.getElementById('biz-preview').style.display = 'flex';
+  }
+
+  const delays = [0, 3500, 7000, 10500, 14000, 17500, 21000, 25000, 29000];
+  let current = 0;
+
+  function advance() {
+    if (current < steps.length) {
+      if (current > 0) {
+        steps[current - 1].classList.remove('active');
+        steps[current - 1].classList.add('done');
+        steps[current - 1].querySelector('.step-icon').textContent = '✓';
+      }
+      steps[current].classList.add('active');
+      current++;
+      const next = delays[current] - (delays[current - 1] || 0);
+      if (current < delays.length) {
+        stepTimer = setTimeout(advance, next);
+      }
+    }
+  }
+  advance();
+}
+
+function stopStepAnimation() {
+  clearTimeout(stepTimer);
+  document.querySelectorAll('.loading-step').forEach(s => {
+    s.classList.remove('active');
+    s.classList.add('done');
+  });
+}
+
+// ── SECTION VISIBILITY ────────────────────────────────────────────
+function showLoading() {
+  document.getElementById('search-section').style.display = 'none';
+  document.getElementById('loading-section').style.display = 'flex';
+  document.getElementById('report-section').style.display = 'none';
+}
+function showSearch() {
+  document.getElementById('search-section').style.display = '';
+  document.getElementById('loading-section').style.display = 'none';
+  document.getElementById('report-section').style.display = 'none';
+}
+function showReport() {
+  document.getElementById('search-section').style.display = 'none';
+  document.getElementById('loading-section').style.display = 'none';
+  document.getElementById('report-section').style.display = 'block';
+  window.scrollTo({ top: 0 });
+}
+
+// ── ERROR HANDLING ────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('search-error');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+function showNotTattooError(msg) {
+  const el = document.getElementById('search-error');
+  el.innerHTML = `🎨 <strong>Tattoo studios only.</strong> ${msg}`;
+  el.style.display = 'block';
+}
+function clearError() {
+  const el = document.getElementById('search-error');
+  el.style.display = 'none';
+  el.textContent = '';
+}
+
+// ── RUN AGAIN ─────────────────────────────────────────────────────
+function runAgain() {
+  selectedPlaceId = '';
+  selectedName = '';
+  selectedAddr = '';
+  input.value = '';
+  clearError();
+  document.getElementById('biz-preview').style.display = 'none';
+  document.querySelectorAll('.loading-step').forEach((s, i) => {
+    s.classList.remove('active','done');
+    const icons = ['📍','⭐','🌐','🗺️','📸','🏆','🔍','💰','📋'];
+    s.querySelector('.step-icon').textContent = icons[i];
+  });
+  showSearch();
+  window.scrollTo({ top: 0 });
+}
+
+// ── SCORE BAR TOGGLE ──────────────────────────────────────────────
+function toggleBar(id) {
+  const row = document.getElementById('bar-' + id);
+  row.classList.toggle('open');
+}
+
+// ── ROADMAP TOGGLE ────────────────────────────────────────────────
+function toggleRoadmap(i) {
+  const el = document.getElementById('rm-' + i);
+  el.classList.toggle('open');
+}
+
+// ── UTILITY ───────────────────────────────────────────────────────
+function fmt$(n) {
+  if (!n && n !== 0) return '$0';
+  return '$' + Math.round(n).toLocaleString();
+}
+function scoreColor(score, max) {
+  const pct = score / max;
+  if (pct >= 0.75) return 'good';
+  if (pct >= 0.5) return 'gold';
+  return '';
+}
+function velBadgeClass(vel) {
+  if (!vel) return 'neutral';
+  const v = vel.toLowerCase();
+  if (v.includes('active')) return 'active';
+  if (v.includes('moderate')) return 'moderate';
+  if (v.includes('slow')) return 'slow';
+  if (v.includes('stagnant')) return 'stagnant';
+  return 'neutral';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RENDER REPORT
+// ─────────────────────────────────────────────────────────────────
+function renderReport(d) {
+  const b  = d.business;
+  const sc = d.scores;
+  const ri = d.review_intel || {};
+  const sp = d.social_presence || {};
+  const te = d.tattoo_extras || {};
+  const rev = d.revenue || {};
+  const ft = d.free_tip || {};
+  const lf = d.luis_farrera_proof || {};
+  const ps = d.pagespeed_detail || {};
+
+  // ── Revenue Banner ─────────────────────────────────────────────
+  document.getElementById('rev-opp-headline').textContent = fmt$(rev.opportunity_base);
+  document.getElementById('rev-current').textContent      = fmt$(rev.current_base);
+  document.getElementById('rev-opp').textContent          = fmt$(rev.opportunity_base);
+  document.getElementById('rev-potential').textContent    = fmt$(rev.potential_base);
+  document.getElementById('rev-sub-text').textContent     =
+    `Based on ~${rev.est_sessions_month || '?'} sessions/month at $${rev.avg_tattoo_value || '?'} avg in ${rev.city_benchmark || 'your market'}. ` +
+    `Conservative estimate — actual upside may reach ${fmt$(rev.opportunity_upside)}.`;
+
+  // ── Business Header ────────────────────────────────────────────
+  document.getElementById('rpt-biz-name').textContent  = b.name;
+  document.getElementById('rpt-rating').textContent    = `${b.rating} stars`;
+  document.getElementById('rpt-reviews').textContent   = `${(b.reviews || 0).toLocaleString()} reviews`;
+  document.getElementById('rpt-address').textContent   = b.address;
+  if (b.phone) {
+    document.getElementById('rpt-phone').textContent = b.phone;
+    document.getElementById('rpt-phone-wrap').style.display = 'flex';
+  }
+  if (b.website) {
+    const wlabel = b.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+    document.getElementById('rpt-website').textContent = wlabel;
+    document.getElementById('rpt-website').href = b.website;
+    document.getElementById('rpt-web-wrap').style.display = 'flex';
+  }
+  document.getElementById('grade-letter').textContent = sc.grade;
+  document.getElementById('grade-circle').style.borderColor =
+    sc.overall >= 75 ? 'var(--green)' : sc.overall >= 55 ? 'var(--gold)' : 'var(--crimson)';
+  document.getElementById('grade-letter').style.color =
+    sc.overall >= 75 ? 'var(--green)' : sc.overall >= 55 ? 'var(--gold)' : 'var(--crimson)';
+
+  // ── Sidebar Overall ────────────────────────────────────────────
+  document.getElementById('sb-overall').textContent  = sc.overall;
+  document.getElementById('sb-grade-msg').textContent = sc.grade_message || '';
+  document.getElementById('sb-overall').style.color =
+    sc.overall >= 75 ? 'var(--green)' : sc.overall >= 55 ? 'var(--gold)' : 'var(--crimson)';
+
+  // ── Score Bars ─────────────────────────────────────────────────
+  const bars = [
+    { key: 'visibility',      max: 20 },
+    { key: 'trust',           max: 20 },
+    { key: 'booking_funnel',  max: 20 },
+    { key: 'followup',        max: 15 },
+    { key: 'content',         max: 15 },
+    { key: 'competitor',      max: 10 },
+  ];
+  bars.forEach(({ key, max }) => {
+    const val  = sc[key] || 0;
+    const pct  = Math.round((val / max) * 100);
+    const el   = document.getElementById('score-' + key);
+    const fill = document.getElementById('fill-' + key);
+    el.textContent = val + '/' + max;
+    const cls = scoreColor(val, max);
+    fill.className = 'bar-fill' + (cls ? ' ' + cls : '');
+    setTimeout(() => { fill.style.width = pct + '%'; }, 100);
+
+    // Checklist
+    const items = (d.checklists || {})[key] || [];
+    const clEl  = document.getElementById('cl-' + key);
+    clEl.innerHTML = items.map(item => {
+      const dotCls = item.pass === true ? 'pass' : item.pass === false ? 'fail' : 'null';
+      const icon   = item.pass === true ? '✓' : item.pass === false ? '✗' : '·';
+      return `<div class="cl-item"><div class="cl-dot ${dotCls}">${icon}</div><span>${item.label}</span></div>`;
+    }).join('');
+  });
+
+  // ── Issues ─────────────────────────────────────────────────────
+  const issues = d.issues || [];
+  const issLabel = document.getElementById('issues-section-label');
+  const crits = issues.filter(i => i.severity === 'critical').length;
+  const warns = issues.filter(i => i.severity === 'warning').length;
+  issLabel.textContent = `${issues.length} ISSUE${issues.length !== 1 ? 'S' : ''} FOUND` +
+    (crits ? ` — ${crits} CRITICAL` : '') + (warns ? `, ${warns} WARNING${warns !== 1 ? 'S' : ''}` : '');
+
+  document.getElementById('issues-list').innerHTML = issues.map(issue => `
+    <div class="issue-card ${issue.severity}">
+      <div class="issue-dot"></div>
+      <div class="issue-body">
+        <div class="issue-cat">${issue.category}</div>
+        <div class="issue-title">${issue.title}</div>
+        <div class="issue-detail">${issue.detail}</div>
+        <div class="issue-fix">→ ${issue.fix}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // ── Social Presence ────────────────────────────────────────────
+  const igFol    = sp.instagram_followers;
+  const igLast   = sp.instagram_last_post_days;
+  const igUser   = sp.instagram_username;
+  const igPosts  = sp.instagram_media_count;
+  const fbFol    = sp.facebook_followers;
+  const fbLast   = sp.facebook_last_post_days;
+
+  let socialHtml = '';
+
+  // Instagram card
+  const igStatus = igFol !== null && igFol !== undefined
+    ? (igLast !== null && igLast <= 7 ? 'active' : igLast !== null && igLast <= 21 ? 'moderate' : 'warning')
+    : 'neutral';
+  const igStatusText = igFol !== null && igFol !== undefined
+    ? (igLast !== null && igLast !== undefined ? `Last post: ${igLast}d ago` : 'Last post: unknown')
+    : 'Not connected';
+  socialHtml += `
+    <div class="social-card">
+      <div class="social-card-header">
+        <div class="social-platform-icon ig-icon">📸</div>
+        <div class="social-platform-name">Instagram</div>
+      </div>
+      ${igFol !== null && igFol !== undefined ? `
+        <div class="social-stat">
+          <div class="social-stat-val">${igFol.toLocaleString()}</div>
+          <div class="social-stat-label">Followers</div>
+        </div>
+        ${igPosts !== null && igPosts !== undefined ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${igPosts.toLocaleString()} posts total</div>` : ''}
+        ${igUser ? `<div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px">@${igUser}</div>` : ''}
+        <div class="social-pill ${igStatus}">${igStatusText}</div>
+      ` : `
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Data not available</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.3);line-height:1.5">Instagram data requires a connected Facebook Business Account. Check your Instagram profile is public and linked.</div>
+        <div class="social-pill neutral">Not connected</div>
+      `}
+    </div>
+  `;
+
+  // Facebook card
+  const fbStatus = fbFol !== null && fbFol !== undefined
+    ? (fbLast !== null && fbLast <= 14 ? 'active' : fbLast !== null && fbLast <= 30 ? 'moderate' : 'warning')
+    : 'neutral';
+  const fbStatusText = fbFol !== null && fbFol !== undefined
+    ? (fbLast !== null && fbLast !== undefined ? `Last post: ${fbLast}d ago` : 'Active')
+    : 'Not connected';
+  socialHtml += `
+    <div class="social-card">
+      <div class="social-card-header">
+        <div class="social-platform-icon fb-icon">f</div>
+        <div class="social-platform-name">Facebook</div>
+      </div>
+      ${fbFol !== null && fbFol !== undefined ? `
+        <div class="social-stat">
+          <div class="social-stat-val">${fbFol.toLocaleString()}</div>
+          <div class="social-stat-label">Followers</div>
+        </div>
+        <div class="social-pill ${fbStatus}">${fbStatusText}</div>
+      ` : `
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Page not found</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.3);line-height:1.5">Facebook Page not detected from website. A connected Page builds ad credibility and community trust.</div>
+        <div class="social-pill neutral">Not detected</div>
+      `}
+    </div>
+  `;
+
+  document.getElementById('social-grid').innerHTML = socialHtml;
+
+  // Social links
+  const links = sp.social_links || [];
+  if (links.length > 0) {
+    document.getElementById('social-links-found').style.display = 'block';
+    document.getElementById('social-link-chips').innerHTML = links.map(l =>
+      `<div class="social-link-chip">${l}</div>`
+    ).join('');
+  }
+
+  // ── Map Pack ───────────────────────────────────────────────────
+  const mapPack = d.map_pack || [];
+  if (mapPack.length > 0) {
+    document.getElementById('map-pack-section').style.display = 'block';
+    document.getElementById('map-pack-rows').innerHTML = mapPack.map(mp => {
+      const results = mp.pack_results || [];
+      const resultsHtml = results.map((r, idx) => `
+        <div class="mp-pack-item ${r.is_you ? 'is-you' : ''}">
+          <div class="mp-rank">${idx + 1}</div>
+          <div class="mp-biz-name">${r.name}${r.is_you ? ' 👈' : ''}</div>
+          <div class="mp-biz-stars">★ ${r.rating}</div>
+          <div style="font-size:11px;color:var(--muted);margin-left:4px">(${(r.reviews||0).toLocaleString()})</div>
+        </div>
+      `).join('');
+      return `
+        <div class="map-pack-card">
+          <div class="mp-keyword">"${mp.keyword}"</div>
+          <div class="mp-status">
+            <div class="mp-badge ${mp.in_pack ? 'in' : 'out'}">${mp.in_pack ? '✓ In Top 3' : '✗ Not in Pack'}</div>
+          </div>
+          ${results.length > 0 ? `<div class="mp-pack-list">${resultsHtml}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Review Intelligence ────────────────────────────────────────
+  const velClass = velBadgeClass(ri.velocity);
+  const rr = ri.response_rate || 0;
+  const rrClass = rr >= 75 ? 'active' : rr >= 50 ? 'moderate' : rr >= 25 ? 'slow' : 'stagnant';
+  document.getElementById('review-intel-grid').innerHTML = `
+    <div class="ri-card">
+      <div class="ri-val" style="color:${velClass==='active'?'var(--green)':velClass==='moderate'?'var(--gold)':'var(--red)'}">
+        ${ri.recent_30 !== undefined ? ri.recent_30 : '—'}
+      </div>
+      <div class="ri-label">Reviews (last 30 days)</div>
+      <div class="ri-badge ${velClass}">${ri.velocity || 'No data'}</div>
+    </div>
+    <div class="ri-card">
+      <div class="ri-val" style="color:${rr>=50?'var(--green)':'var(--red)'}">${rr}%</div>
+      <div class="ri-label">Review Response Rate</div>
+      <div class="ri-badge ${rrClass}">${rr>=75?'Excellent':rr>=50?'Good':rr>=25?'Needs Work':'Critical'}</div>
+    </div>
+    <div class="ri-card">
+      <div class="ri-val">${ri.newest_review_days !== null && ri.newest_review_days !== undefined ? ri.newest_review_days + 'd' : '—'}</div>
+      <div class="ri-label">Days Since Last Review</div>
+    </div>
+    <div class="ri-card">
+      <div class="ri-val">${ri.total_sampled || 0}</div>
+      <div class="ri-label">Reviews Analyzed</div>
+    </div>
+  `;
+
+  // ── Tattoo Extras ──────────────────────────────────────────────
+  const extraItems = [
+    { key: 'has_tattoo_booking', label: te.booking_platform ? `Online Booking: ${te.booking_platform}` : 'Online Booking System' },
+    { key: 'has_portfolio', label: 'Portfolio / Gallery' },
+    { key: 'has_artist_bio', label: 'Artist Bio / About Page' },
+    { key: 'has_deposit_info', label: 'Deposit Policy Published' },
+    { key: 'has_consultation', label: 'Consultation Process Explained' },
+    { key: 'has_aftercare', label: 'Aftercare Instructions' },
+    { key: 'has_flash_page', label: 'Flash Designs Available' },
+    { key: 'has_pricing_info', label: 'Pricing / Rates Listed' },
+  ];
+
+  const bHasWebsite = b.website;
+  const bScraped = !!(d.checklists && Object.keys(d.checklists).length);
+
+  let extrasHtml = '';
+  if (!bHasWebsite) {
+    extrasHtml = `<div class="no-web-note">No website found for this studio. Studio signal audit requires a website to be linked to the Google profile.</div>`;
+  } else {
+    extrasHtml = extraItems.map(item => {
+      const val = te[item.key];
+      const cls = val ? 'pass' : 'fail';
+      const icon = val ? '✓' : '✗';
+      return `<div class="te-item"><div class="te-dot ${cls}">${icon}</div><div class="te-label">${item.label}</div></div>`;
+    }).join('');
+  }
+  document.getElementById('tattoo-extras-grid').innerHTML = extrasHtml;
+
+  // Detected styles
+  const styles = te.detected_styles || [];
+  if (styles.length > 0) {
+    document.getElementById('detected-styles-wrap').style.display = 'block';
+    document.getElementById('detected-styles').innerHTML = styles.map(s =>
+      `<div class="style-chip">${s}</div>`
+    ).join('');
+  }
+
+  // ── Keyword Rankings ───────────────────────────────────────────
+  const kws = d.keyword_rankings || [];
+  if (kws.length > 0) {
+    document.getElementById('kw-section').style.display = 'block';
+    document.getElementById('kw-rows').innerHTML = kws.map(kw => {
+      const rankedCls = kw.ranked ? 'ranked' : 'not-ranked';
+      const rowCls    = kw.ranked ? 'ranked-row' : '';
+      const rankTxt   = kw.ranked ? `#${kw.rank}` : 'Not ranked';
+      return `
+        <div class="kw-row ${rowCls}">
+          <div class="kw-rank ${rankedCls}">${rankTxt}</div>
+          <div class="kw-term">${kw.keyword}</div>
+          <div class="kw-label">${kw.ranked ? 'Top 30' : 'Not in top 30'}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Roadmap ────────────────────────────────────────────────────
+  const roadmap = d.roadmap || [];
+  document.getElementById('roadmap-steps').innerHTML = roadmap.map((step, i) => `
+    <div class="roadmap-step ${step.severity}" id="rm-${i}">
+      <div class="roadmap-header" onclick="toggleRoadmap(${i})">
+        <div class="rm-num">${step.step}</div>
+        <div class="rm-title">${step.title}</div>
+        <div class="rm-badge">${step.severity.toUpperCase()}</div>
+        <div class="rm-chevron">▼</div>
+      </div>
+      <div class="roadmap-body">
+        <div class="rm-sub-label">THE PROBLEM</div>
+        <div class="rm-text">${step.problem}</div>
+        <div class="rm-sub-label">JRZ INK SYSTEMS FIX</div>
+        <div class="rm-text">${step.jrz_fix}</div>
+        <div class="rm-sub-label">EXPECTED RESULT</div>
+        <div class="rm-text">${step.result}</div>
+        <div class="rm-pills">
+          <div class="rm-pill timeline">⏱ ${step.timeline}</div>
+          <div class="rm-pill service">✦ ${step.service}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // ── PageSpeed ──────────────────────────────────────────────────
+  if (b.website && (ps.lcp || ps.performance)) {
+    document.getElementById('pagespeed-card').style.display = 'block';
+    const lcp   = ps.lcp || '—';
+    const fcp   = ps.fcp || '—';
+    const tbt   = ps.tbt || '—';
+    const cls   = ps.cls || '—';
+    const perf  = ps.performance !== undefined ? ps.performance : null;
+    const seoSc = ps.seo !== undefined && ps.seo !== null ? ps.seo : null;
+
+    function lcpClass(v) {
+      if (!v || v === '—') return '';
+      const ms = parseFloat(v);
+      return isNaN(ms) ? '' : ms <= 2.5 ? 'good' : ms <= 4 ? 'warn' : 'bad';
+    }
+    function scoreClass(s) {
+      if (s === null || s === undefined) return '';
+      return s >= 75 ? 'good' : s >= 50 ? 'warn' : 'bad';
+    }
+
+    document.getElementById('speed-rows').innerHTML = `
+      <div class="speed-row"><span class="speed-label">Largest Contentful Paint</span><span class="speed-val ${lcpClass(parseFloat(lcp))}">${lcp}</span></div>
+      <div class="speed-row"><span class="speed-label">First Contentful Paint</span><span class="speed-val">${fcp}</span></div>
+      <div class="speed-row"><span class="speed-label">Total Blocking Time</span><span class="speed-val">${tbt}</span></div>
+      <div class="speed-row"><span class="speed-label">Layout Shift (CLS)</span><span class="speed-val">${cls}</span></div>
+      <div class="speed-score-row">
+        <span class="speed-label">Performance Score</span>
+        <span class="speed-score-val ${scoreClass(perf)}">${perf !== null ? perf + '/100' : 'N/A'}</span>
+      </div>
+      ${seoSc !== null ? `
+      <div class="speed-score-row">
+        <span class="speed-label">SEO Technical Score</span>
+        <span class="speed-score-val ${scoreClass(seoSc)}">${seoSc}/100</span>
+      </div>` : `
+      <div class="speed-score-row">
+        <span class="speed-label">SEO Technical Score</span>
+        <span class="speed-score-val" style="color:var(--muted);font-size:12px">Blocked (bot protection)</span>
+      </div>`}
+    `;
+  }
+
+  // ── Free Tip ───────────────────────────────────────────────────
+  if (ft.action) {
+    document.getElementById('free-tip-card').style.display = 'block';
+    document.getElementById('ft-action').textContent = ft.action;
+    document.getElementById('ft-impact').textContent  = '💡 ' + ft.impact;
+  }
+
+  // ── Competitors ────────────────────────────────────────────────
+  const comps = d.competitors || [];
+  if (comps.length > 0) {
+    document.getElementById('comp-card').style.display = 'block';
+    document.getElementById('comp-rows').innerHTML = comps.map((c, i) => `
+      <div class="comp-row">
+        <div class="comp-num">${i + 1}</div>
+        <div>
+          <div class="comp-name">${c.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${c.address}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="comp-stars">★ ${c.rating}</div>
+          <div class="comp-revs">${c.reviews} reviews</div>
+        </div>
+      </div>
+    `).join('');
+    if (d.competitor_insight) {
+      const ci = document.getElementById('comp-insight');
+      ci.textContent = '💡 ' + d.competitor_insight;
+      ci.style.display = 'block';
+    }
+  }
+
+  // ── Meta Ad Library ───────────────────────────────────────────
+  const ads = d.ad_library || [];
+  if (ads.length > 0) {
+    document.getElementById('ad-library-section').style.display = 'block';
+
+    const uniqueAdv = [...new Set(ads.map(a => a.page_name).filter(Boolean))];
+    document.getElementById('ad-library-intro').innerHTML =
+      `<strong style="color:#fff">${uniqueAdv.length} competitor${uniqueAdv.length !== 1 ? 's are' : ' is'} currently running Meta Ads</strong> targeting tattoo clients in ${b.city || 'your market'}. ` +
+      `Every day you're not advertising, these studios are paying to appear in front of your next client.`;
+
+    document.getElementById('ad-library-cards').innerHTML = ads.map(ad => {
+      const spendStr  = ad.spend_low  ? `$${ad.spend_low}–$${ad.spend_high}/mo est.` : null;
+      const impsStr   = ad.imps_low   ? `${Number(ad.imps_low).toLocaleString()}–${Number(ad.imps_high).toLocaleString()} impressions` : null;
+      const dateStr   = ad.started    ? `Since ${ad.started}` : null;
+      return `
+        <div class="ad-card">
+          <div class="ad-card-icon">📢</div>
+          <div class="ad-card-body">
+            <div class="ad-page-name">${ad.page_name}</div>
+            ${ad.body ? `<div class="ad-body-preview">"${ad.body}${ad.body.length >= 120 ? '...' : ''}"</div>` : ''}
+            <div class="ad-meta-row">
+              ${spendStr  ? `<div class="ad-pill spend">💰 ${spendStr}</div>` : ''}
+              ${impsStr   ? `<div class="ad-pill imps">👁 ${impsStr}</div>` : ''}
+              ${dateStr   ? `<div class="ad-pill date">📅 ${dateStr}</div>` : ''}
+              ${ad.snapshot_url ? `<a class="ad-view-link" href="${ad.snapshot_url}" target="_blank" rel="noopener">View Ad →</a>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('') + `
+      <div class="ad-warning-banner" style="margin-top:4px">
+        <strong>These studios are paying to take your bookings.</strong> JRZ Ink Systems can launch a Meta Ads campaign for your studio within 48 hours — with audience targeting, creatives, and tracking built in. Luis Farrera saw results in 30 days at $14.83/lead.
+      </div>
+    `;
+  }
+
+  // ── Luis Farrera Proof ─────────────────────────────────────────
+  // Static stats already in HTML — update if API returns different data
+  if (lf && lf.leads) {
+    document.getElementById('luis-stats').innerHTML = `
+      <div class="luis-stat">
+        <div class="ls-val">${lf.leads}</div>
+        <div class="ls-label">Leads in ${lf.days} Days</div>
+      </div>
+      <div class="luis-stat">
+        <div class="ls-val">$${lf.cpl}</div>
+        <div class="ls-label">Cost Per Lead</div>
+      </div>
+      <div class="luis-stat">
+        <div class="ls-val">${lf.ctr}</div>
+        <div class="ls-label">Click-Through Rate</div>
+      </div>
+      <div class="luis-stat">
+        <div class="ls-val">${lf.days}</div>
+        <div class="ls-label">Days to Results</div>
+      </div>
+    `;
+  }
+
+  showReport();
+}
+</script>
+</body>
+</html>
