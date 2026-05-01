@@ -3183,7 +3183,27 @@ async function showIGPageSelector(token, pages) {
 
   function buildRows(list, filterVal) {
     if (list.length === 0) {
-      return `<div style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,.35)">No accounts match "${filterVal}"</div>`;
+      const searchedHandle = (filterVal || '').replace(/^@/, '') || pendingIGHandle || '';
+      const city           = pendingIGCity || '';
+      return `
+        <div style="padding:16px 20px">
+          <div style="font-size:13px;color:rgba(255,255,255,.35);margin-bottom:12px">
+            No connected accounts match <strong style="color:rgba(255,255,255,.5)">@${searchedHandle}</strong>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,.3);line-height:1.6;margin-bottom:12px">
+            This account isn't linked as a Business/Creator page on your Facebook.<br>
+            You can still audit it as a public profile — followers and bio only, no engagement data.
+          </div>
+          <button onclick="gradeIGPublic('${searchedHandle}','${city}')"
+            style="padding:10px 20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+                   border-radius:8px;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;
+                   cursor:pointer;transition:background .15s;width:100%"
+            onmouseover="this.style.background='rgba(255,255,255,.16)'"
+            onmouseout="this.style.background='rgba(255,255,255,.1)'">
+            Analyze @${searchedHandle} as Public Profile →
+          </button>
+        </div>
+      `;
     }
     return list.map(p => {
       const isMatch = handleLower && (p.ig_username || '').toLowerCase() === handleLower;
@@ -3250,7 +3270,27 @@ function filterIGPages(val) {
     : window._igAllPages;
   const handleLower = (pendingIGHandle || '').toLowerCase();
   if (list.length === 0) {
-    rows.innerHTML = `<div style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,.35)">No accounts match "${val}"</div>`;
+    const searchedHandle = val.trim().replace(/^@/, '') || pendingIGHandle || val;
+    const city           = pendingIGCity || '';
+    rows.innerHTML = `
+      <div style="padding:16px 20px">
+        <div style="font-size:13px;color:rgba(255,255,255,.35);margin-bottom:12px">
+          No connected accounts match <strong style="color:rgba(255,255,255,.5)">@${searchedHandle}</strong>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,.3);line-height:1.6;margin-bottom:12px">
+          This account is not linked as a Business/Creator page on your Facebook.<br>
+          You can still audit it as a public profile — followers and bio only, no engagement data.
+        </div>
+        <button onclick="gradeIGPublic('${searchedHandle}','${city}')"
+          style="padding:10px 20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+                 border-radius:8px;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;
+                 cursor:pointer;transition:background .15s;width:100%"
+          onmouseover="this.style.background='rgba(255,255,255,.16)'"
+          onmouseout="this.style.background='rgba(255,255,255,.1)'">
+          Analyze @${searchedHandle} as Public Profile →
+        </button>
+      </div>
+    `;
     return;
   }
   // Rebuild inner HTML only — click delegation stays on parent resEl

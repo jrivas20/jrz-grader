@@ -2878,6 +2878,236 @@ def _detect_styles_from_bio(bio_text):
     bio_lower = bio_text.lower()
     return [s for s in TATTOO_STYLE_KEYWORDS if s in bio_lower][:6]
 
+
+def _std(lst):
+    """Population std-dev — no statistics module needed."""
+    n = len(lst)
+    if n < 2:
+        return 0.0
+    mean = sum(lst) / n
+    return (sum((x - mean) ** 2 for x in lst) / n) ** 0.5
+
+
+def analyze_hashtags(captions, city=''):
+    """Extract and score hashtag strategy from post captions."""
+    all_tags = []
+    posts_with_tags = 0
+    for caption in captions:
+        if not caption:
+            continue
+        tags = re.findall(r'#(\w+)', caption.lower())
+        if tags:
+            posts_with_tags += 1
+        all_tags.extend(tags)
+
+    if not all_tags:
+        return {'has_data': False}
+
+    from collections import Counter
+    tag_counts = Counter(all_tags)
+    top_tags   = tag_counts.most_common(10)
+    total_posts = max(len(captions), 1)
+
+    MEGA_TAGS = {
+        'tattoo', 'tattoos', 'ink', 'tattooed', 'tattooart', 'tattoolife',
+        'inked', 'tattooartist', 'bodyart', 'art', 'inklife', 'tatt',
+        'tatts', 'tattooer', 'tattooist', 'tatted', 'tattoolover',
+    }
+    broad_used = [t for t, _ in top_tags if t in MEGA_TAGS]
+    niche_used = [t for t, _ in top_tags if t not in MEGA_TAGS]
+
+    avg_per_post = round(len(all_tags) / total_posts, 1)
+    city_lower   = city.lower().replace(' ', '') if city else ''
+    has_city_tag = any(city_lower in t for t in all_tags) if city_lower else False
+
+    issues = []
+    if len(broad_used) >= 5:
+        issues.append('Too many mega-tags (>500M posts each) — you disappear in the feed')
+    if avg_per_post < 5:
+        issues.append('Using too few hashtags — aim for 10–15 per post')
+    if avg_per_post > 25:
+        issues.append('Over 25 hashtags looks spammy — 10–15 is the sweet spot')
+    if not has_city_tag and city:
+        issues.append(f'No {city}-specific hashtag — local tags are the fastest path to local clients')
+    if not niche_used:
+        issues.append('No niche style tags — add tags for your specific style (e.g. #finelinetattoo, #realisticink)')
+
+    return {
+        'has_data':       True,
+        'top_tags':       [{'tag': '#' + t, 'count': c} for t, c in top_tags],
+        'avg_per_post':   avg_per_post,
+        'broad_count':    len(broad_used),
+        'niche_count':    len(niche_used),
+        'has_city_tag':   has_city_tag,
+        'issues':         issues,
+        'posts_analyzed': posts_with_tags,
+    }
+
+
+def _fetch_single_competitor(place, exclude_handle):
+    """Fetch IG data for one competitor — runs in a thread."""
+    comp = {
+        'name':         place.get('name', 'Unknown'),
+        'rating':       place.get('rating'),
+        'reviews':      place.get('user_ratings_total'),
+        'ig_handle':    None,
+        'ig_followers': None,
+        'address':      place.get('vicinity', ''),
+    }
+    place_id = place.get('place_id', '')
+    website  = ''
+    if place_id and GOOGLE_KEY:
+        try:
+            det     = requests.get(
+                'https://maps.googleapis.com/maps/api/place/details/json',
+                params={'place_id': place_id, 'fields': 'website', 'key': GOOGLE_KEY},
+                timeout=3
+            )
+            website = det.json().get('result', {}).get('website', '') or ''
+        except Exception:
+            pass
+
+    ig_handle = None
+    if website:
+        try:
+            wr = requests.get(
+                website, timeout=4,
+                headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+            )
+            for m in re.finditer(r'instagram\.com/([^/?#"\'\s\\]+)', wr.text):
+                candidate = m.group(1).strip('/')
+                if candidate and candidate not in (
+                    'explore', 'p', 'reel', 'reels', 'stories', 'tv', 'accounts', 'share'
+                ):
+                    ig_handle = candidate
+                    break
+        except Exception:
+            pass
+
+    if ig_handle and ig_handle.lower() != (exclude_handle or '').lower():
+        comp['ig_handle'] = ig_handle
+        try:
+            ir = requests.get(
+                'https://i.instagram.com/api/v1/users/web_profile_info/',
+                params={'username': ig_handle},
+                headers={
+                    'X-IG-App-ID': '936619743392459',
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15',
+                },
+                timeout=4
+            )
+            if ir.status_code == 200:
+                user = ir.json().get('data', {}).get('user', {})
+                comp['ig_followers'] = user.get('edge_followed_by', {}).get('count')
+        except Exception:
+            pass
+
+    return comp
+
+
+def find_competitor_ig_data(city, exclude_handle=''):
+    """Geocode city → Google Nearby → website scrape → public IG scrape (parallel)."""
+    if not city or not GOOGLE_KEY:
+        return []
+    try:
+        geo = requests.get(
+            'https://maps.googleapis.com/maps/api/geocode/json',
+            params={'address': city, 'key': GOOGLE_KEY},
+            timeout=5
+        ).json()
+        loc = geo.get('results', [{}])[0].get('geometry', {}).get('location', {})
+        if not loc:
+            return []
+        lat, lng = loc['lat'], loc['lng']
+    except Exception:
+        return []
+
+    try:
+        nearby = requests.get(
+            'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+            params={
+                'location': f'{lat},{lng}',
+                'radius':   10000,
+                'type':     'tattoo_parlor',
+                'key':      GOOGLE_KEY,
+            },
+            timeout=5
+        ).json().get('results', [])[:4]
+    except Exception:
+        return []
+
+    if not nearby:
+        return []
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    results = []
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futures = {ex.submit(_fetch_single_competitor, p, exclude_handle): p for p in nearby}
+        for fut in as_completed(futures, timeout=9):
+            try:
+                results.append(fut.result())
+                if len(results) >= 3:
+                    break
+            except Exception:
+                pass
+    return results[:3]
+
+
+def generate_content_calendar(posting_patterns, type_engagement, city, styles):
+    """Build a personalised 4-week content calendar from this artist's performance data."""
+    best_days = (posting_patterns.get('best_days') or ['Tuesday', 'Thursday'])[:2]
+    best_time = posting_patterns.get('best_hour_start') or '7pm'
+
+    best_type = 'Reel'
+    if type_engagement:
+        ranked = sorted(type_engagement.items(), key=lambda x: -x[1].get('avg_total', 0))
+        if ranked:
+            best_type = ranked[0][0]
+
+    style_str = ', '.join(styles[:2]) if styles else 'custom tattoo'
+    city_tag  = f' in {city}' if city else ''
+    book_cta  = f'DM to book your {style_str} piece{city_tag}'
+
+    week_themes = [
+        [
+            ('Process Reel',      'Reel',     'Needle in → outline → shading → finished piece. 15–20 sec. No music needed — the sound is the hook.'),
+            ('Portfolio Carousel','Carousel',  '5 best recent pieces. First slide = most impressive. Caption: "Which is your favourite?"'),
+        ],
+        [
+            ('Before/After Reveal','Reel',    'Cover-up or transformation. Split screen or swipe-reveal. These get shared the most.'),
+            ('Style Showcase',    'Carousel',  f'Close-ups of your {style_str} work. Let the detail sell itself.'),
+        ],
+        [
+            ('Behind the Scenes', 'Reel',     'Your setup, tools, prepping a stencil. Humanises you — clients book artists they trust.'),
+            ('Healed Check-in',   'Carousel',  'Fresh vs. healed side by side. Proof of quality no other content delivers.'),
+        ],
+        [
+            ('Client Reaction',   'Reel',     'First look reaction (with permission). Authentic emotion — algorithm loves it.'),
+            ('Flash Drop',        'Carousel',  f'4–6 available designs with price. Creates urgency{city_tag}.'),
+        ],
+    ]
+
+    weeks = []
+    for i, (theme1, theme2) in enumerate(week_themes):
+        posts = []
+        for day, theme in zip(best_days, [theme1, theme2]):
+            posts.append({
+                'day':        day,
+                'time':       best_time,
+                'type':       theme[1],
+                'title':      theme[0],
+                'brief':      theme[2],
+                'caption_cta': book_cta,
+            })
+        weeks.append({'week': i + 1, 'posts': posts})
+
+    return {
+        'weeks':     weeks,
+        'best_days': best_days,
+        'best_time': best_time,
+        'best_type': best_type,
+    }
+
 # ── CITY AUDIT LOG ───────────────────────────────────────────────────
 # In-memory city audit log. Accumulates real market data as artists
 # run Guest City Audits. Resets on server restart — view at /api/city-insights.
@@ -3178,7 +3408,7 @@ def grade_tattoo():
 @app.route('/api/list-ig-pages', methods=['POST'])
 def list_ig_pages():
     """
-    Returns a list of Facebook Pages managed by this token,
+    Returns ALL Facebook Pages managed by this token (follows pagination cursors),
     each enriched with the connected Instagram Business Account info.
     Used by the IG-mode page selector in the frontend.
     """
@@ -3187,16 +3417,23 @@ def list_ig_pages():
     if not token:
         return jsonify({'error': 'No token provided'}), 400
 
+    # Fetch ALL pages — follow paging.next until exhausted
+    raw_pages = []
+    next_url  = 'https://graph.facebook.com/v19.0/me/accounts'
+    params    = {
+        'access_token': token,
+        'fields':       'id,name,fan_count,followers_count,instagram_business_account',
+        'limit':        100   # max allowed per call
+    }
     try:
-        resp = requests.get(
-            'https://graph.facebook.com/v19.0/me/accounts',
-            params={
-                'access_token': token,
-                'fields': 'id,name,fan_count,followers_count,instagram_business_account'
-            },
-            timeout=8
-        )
-        raw_pages = resp.json().get('data', [])
+        while next_url and len(raw_pages) < 500:   # safety cap at 500
+            resp      = requests.get(next_url, params=params, timeout=10)
+            body      = resp.json()
+            batch     = body.get('data', [])
+            raw_pages.extend(batch)
+            # FB embeds params in the next URL, so clear params after first call
+            next_url  = body.get('paging', {}).get('next')
+            params    = {}
     except Exception as e:
         return jsonify({'error': f'Could not fetch pages: {e}'}), 502
 
