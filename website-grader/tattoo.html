@@ -1856,6 +1856,123 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 }
 .igr-run-again:hover { color: rgba(255,255,255,.6); }
 
+/* ── IGR BUILD 1+2 — NEW SECTIONS ───────────────────────────────── */
+
+/* Type engagement bars (Reel vs Photo performance) */
+.igr-type-grid { display:flex;flex-direction:column;gap:10px;margin-top:14px }
+.igr-type-row { display:grid;grid-template-columns:80px 1fr 60px 60px;align-items:center;gap:10px }
+.igr-type-label { font-size:12px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.5px }
+.igr-type-bar-track { height:6px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden }
+.igr-type-bar-fill { height:100%;border-radius:99px;transition:width 1s var(--ease) }
+.igr-type-val { font-size:13px;font-weight:700;color:#fff;text-align:right }
+.igr-type-sub { font-size:11px;color:var(--muted);text-align:right }
+.igr-type-winner { display:inline-block;font-size:9px;font-weight:800;letter-spacing:1.5px;
+  padding:2px 8px;border-radius:99px;background:rgba(0,204,102,.12);
+  color:rgba(0,204,102,.9);border:1px solid rgba(0,204,102,.2);margin-left:6px;vertical-align:middle }
+
+/* Best time to post */
+.igr-timing-row { display:flex;align-items:center;gap:12px;padding:12px 0;
+  border-bottom:1px solid rgba(255,255,255,.05) }
+.igr-timing-row:last-child { border-bottom:none }
+.igr-timing-day { font-size:13px;font-weight:700;color:#fff;width:90px;flex-shrink:0 }
+.igr-timing-bar-wrap { flex:1 }
+.igr-timing-bar { height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden }
+.igr-timing-fill { height:100%;border-radius:99px;background:linear-gradient(90deg,#833ab4,#fd1d1d);
+  transition:width 1s var(--ease) }
+.igr-timing-val { font-size:12px;color:var(--muted);width:70px;text-align:right;flex-shrink:0 }
+.igr-timing-best { font-size:10px;font-weight:800;letter-spacing:1px;padding:2px 7px;
+  border-radius:99px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);margin-left:6px }
+.igr-timing-note { margin-top:12px;padding:12px 14px;background:rgba(131,58,180,.07);
+  border:1px solid rgba(131,58,180,.2);border-radius:8px;font-size:12px;
+  color:rgba(255,255,255,.55);line-height:1.6 }
+
+/* Posting consistency */
+.igr-consist-row { display:flex;align-items:center;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;padding:14px 0 }
+.igr-consist-score { font-size:36px;font-weight:800 }
+.igr-consist-label { font-size:11px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;margin-top:2px }
+.igr-consist-stats { display:flex;gap:20px;flex-wrap:wrap }
+.igr-consist-stat { text-align:center }
+.igr-consist-stat-val { font-size:18px;font-weight:700;color:#fff }
+.igr-consist-stat-lbl { font-size:11px;color:var(--muted);margin-top:2px }
+.igr-consist-bar { height:8px;background:rgba(255,255,255,.07);border-radius:99px;
+  overflow:hidden;margin-top:12px }
+.igr-consist-fill { height:100%;border-radius:99px;transition:width 1.2s var(--ease) }
+
+/* Engagement quality */
+.igr-quality-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px }
+.igr-quality-card { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:14px 16px }
+.igr-quality-val { font-size:26px;font-weight:800;color:#fff;margin-bottom:2px }
+.igr-quality-lbl { font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--muted) }
+.igr-quality-bench { font-size:11px;color:rgba(255,255,255,.25);margin-top:4px }
+.igr-quality-note { margin-top:12px;font-size:12px;color:rgba(255,255,255,.45);
+  line-height:1.6;padding:10px 14px;background:rgba(255,255,255,.02);
+  border-radius:8px;border-left:2px solid rgba(255,255,255,.12) }
+
+/* Hashtag strategy */
+.igr-tag-pills { display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 }
+.igr-tag-pill { padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6) }
+.igr-tag-pill.broad { background:rgba(255,68,68,.08);border-color:rgba(255,68,68,.2);
+  color:rgba(255,120,120,.8) }
+.igr-tag-pill.niche { background:rgba(0,204,102,.07);border-color:rgba(0,204,102,.2);
+  color:rgba(0,204,102,.8) }
+.igr-tag-issue { display:flex;align-items:flex-start;gap:8px;padding:8px 0;
+  font-size:12px;color:rgba(255,200,80,.75);line-height:1.5;
+  border-bottom:1px solid rgba(255,255,255,.04) }
+.igr-tag-issue:last-child { border-bottom:none }
+
+/* Competitor comparison */
+.igr-comp-you { display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:rgba(131,58,180,.08);border:1px solid rgba(131,58,180,.2);
+  border-radius:10px;margin-bottom:10px }
+.igr-comp-you-handle { font-size:14px;font-weight:700;color:#fff }
+.igr-comp-you-fol { font-size:13px;font-weight:600;color:rgba(131,58,180,.9) }
+.igr-comp-row { display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:12px 16px;background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.06);border-radius:10px;margin-bottom:8px }
+.igr-comp-name { font-size:13px;font-weight:700;color:#fff }
+.igr-comp-handle { font-size:11px;color:var(--muted);margin-top:2px }
+.igr-comp-fol { font-size:14px;font-weight:700;color:rgba(255,255,255,.7);text-align:right;flex-shrink:0 }
+.igr-comp-fol.higher { color:rgba(255,68,68,.8) }
+.igr-comp-fol.lower  { color:rgba(0,204,102,.8) }
+.igr-comp-gap-note { margin-top:12px;padding:12px 14px;background:rgba(255,68,68,.06);
+  border:1px solid rgba(255,68,68,.15);border-radius:8px;font-size:12px;
+  color:rgba(255,150,150,.8);line-height:1.6 }
+
+/* TikTok gap */
+.igr-tiktok-card { display:flex;align-items:center;gap:14px;padding:14px 16px;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;margin-top:8px }
+.igr-tiktok-icon { width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  background:#000;border:1px solid rgba(255,255,255,.1);display:flex;
+  align-items:center;justify-content:center;font-size:18px }
+.igr-tiktok-body { flex:1 }
+.igr-tiktok-title { font-size:13px;font-weight:700;color:#fff;margin-bottom:3px }
+.igr-tiktok-sub { font-size:12px;color:var(--muted);line-height:1.5 }
+
+/* 30-day content calendar */
+.igr-cal-week { margin-bottom:20px }
+.igr-cal-week-label { font-size:10px;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:8px }
+.igr-cal-post { display:flex;gap:12px;padding:12px 14px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;margin-bottom:8px }
+.igr-cal-day-col { text-align:center;flex-shrink:0;width:52px }
+.igr-cal-day { font-size:12px;font-weight:700;color:rgba(255,255,255,.6) }
+.igr-cal-time { font-size:10px;color:var(--muted);margin-top:2px }
+.igr-cal-type-badge { font-size:9px;font-weight:800;letter-spacing:1px;
+  padding:2px 7px;border-radius:99px;margin-top:4px;display:inline-block }
+.igr-cal-type-badge.Reel     { background:rgba(131,58,180,.15);color:rgba(180,100,255,.9);border:1px solid rgba(131,58,180,.25) }
+.igr-cal-type-badge.Carousel { background:rgba(255,153,0,.1);color:rgba(255,180,60,.9);border:1px solid rgba(255,153,0,.2) }
+.igr-cal-type-badge.Photo    { background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1) }
+.igr-cal-content { flex:1 }
+.igr-cal-title { font-size:13px;font-weight:700;color:#fff;margin-bottom:4px }
+.igr-cal-brief { font-size:12px;color:rgba(255,255,255,.45);line-height:1.5 }
+.igr-cal-cta { font-size:11px;color:rgba(131,58,180,.7);margin-top:6px;font-style:italic }
+
 /* ── IG MODE OAUTH INFO BANNER ──────────────────────────────────── */
 .ig-oauth-note {
   display: flex;
@@ -2291,6 +2408,69 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="igr-content-bars" id="igr-content-bars"></div>
     </div>
 
+    <!-- Reel vs Photo Engagement (type_engagement) -->
+    <div class="igr-section" id="igr-type-section" style="display:none">
+      <div class="igr-section-label">Reel vs. Photo Performance</div>
+      <div class="igr-type-grid" id="igr-type-grid"></div>
+    </div>
+
+    <!-- Best Time to Post (posting_patterns) -->
+    <div class="igr-section" id="igr-timing-section" style="display:none">
+      <div class="igr-section-label">Best Time to Post</div>
+      <div id="igr-timing-rows"></div>
+      <div class="igr-timing-note" id="igr-timing-note"></div>
+    </div>
+
+    <!-- Posting Consistency (consistency) -->
+    <div class="igr-section" id="igr-consist-section" style="display:none">
+      <div class="igr-section-label">Posting Consistency</div>
+      <div class="igr-consist-row">
+        <div>
+          <div class="igr-consist-score" id="igr-consist-score">—</div>
+          <div class="igr-consist-label" id="igr-consist-label">—</div>
+        </div>
+        <div class="igr-consist-stats">
+          <div class="igr-consist-stat">
+            <div class="igr-consist-stat-val" id="igr-consist-avg">—</div>
+            <div class="igr-consist-stat-lbl">Avg gap (days)</div>
+          </div>
+          <div class="igr-consist-stat">
+            <div class="igr-consist-stat-val" id="igr-consist-max">—</div>
+            <div class="igr-consist-stat-lbl">Longest silence</div>
+          </div>
+        </div>
+      </div>
+      <div class="igr-consist-bar">
+        <div class="igr-consist-fill" id="igr-consist-fill" style="width:0%"></div>
+      </div>
+      <div id="igr-consist-note" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.4);line-height:1.6"></div>
+    </div>
+
+    <!-- Engagement Quality (engagement_quality) -->
+    <div class="igr-section" id="igr-quality-section" style="display:none">
+      <div class="igr-section-label">Engagement Quality</div>
+      <div class="igr-quality-grid">
+        <div class="igr-quality-card">
+          <div class="igr-quality-val" id="igr-ctr-ratio">—</div>
+          <div class="igr-quality-lbl">Comment-to-Like Ratio</div>
+          <div class="igr-quality-bench">Benchmark: ≥ 1.5%</div>
+        </div>
+        <div class="igr-quality-card">
+          <div class="igr-quality-val" id="igr-qual-label">—</div>
+          <div class="igr-quality-lbl">Engagement Quality</div>
+          <div class="igr-quality-bench">Strong / Average / Weak</div>
+        </div>
+      </div>
+      <div class="igr-quality-note" id="igr-quality-note"></div>
+    </div>
+
+    <!-- Hashtag Strategy (hashtag_analysis) -->
+    <div class="igr-section" id="igr-hashtag-section" style="display:none">
+      <div class="igr-section-label">Hashtag Strategy</div>
+      <div id="igr-tag-pills-wrap"></div>
+      <div id="igr-tag-issues"></div>
+    </div>
+
     <!-- Bio Quality -->
     <div class="igr-section">
       <div class="igr-section-label">Bio Quality Score</div>
@@ -2331,6 +2511,33 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         </div>
         <div class="igr-rev-math" id="igr-rev-math"></div>
       </div>
+    </div>
+
+    <!-- Competitor IG Comparison (competitor_ig) -->
+    <div class="igr-section" id="igr-comp-section" style="display:none">
+      <div class="igr-section-label">Who You're Competing Against</div>
+      <div id="igr-comp-you-row"></div>
+      <div id="igr-comp-rows"></div>
+      <div class="igr-comp-gap-note" id="igr-comp-gap-note" style="display:none"></div>
+    </div>
+
+    <!-- TikTok Gap (tiktok_gap) -->
+    <div class="igr-section" id="igr-tiktok-section" style="display:none">
+      <div class="igr-section-label">Platform Gap</div>
+      <div class="igr-tiktok-card">
+        <div class="igr-tiktok-icon">🎵</div>
+        <div class="igr-tiktok-body">
+          <div class="igr-tiktok-title">No TikTok presence detected</div>
+          <div class="igr-tiktok-sub">TikTok tattoo content reaches 10–50× more new people than Instagram for accounts under 10K followers. Your competitors who post on both platforms are building a pipeline you don't have access to.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 30-Day Content Calendar (content_calendar) -->
+    <div class="igr-section" id="igr-calendar-section" style="display:none">
+      <div class="igr-section-label">Your 30-Day Content Calendar</div>
+      <div id="igr-calendar-note" style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6"></div>
+      <div id="igr-calendar-weeks"></div>
     </div>
 
     <!-- Recent Posts -->
@@ -5407,12 +5614,12 @@ function renderIGReport(d) {
     `;
   }
 
-  // ── Content Breakdown ─────────────────────────────────────────
+  // ── Content Breakdown (% bars) ────────────────────────────────
   const contentEl  = document.getElementById('igr-content-bars');
   const breakdown  = igComp.content_breakdown || {};
   if (!isPublic && (breakdown.reels_pct != null || breakdown.photo_pct != null)) {
-    const reels = breakdown.reels_pct    || 0;
-    const photos = breakdown.photo_pct   || 0;
+    const reels     = breakdown.reels_pct    || 0;
+    const photos    = breakdown.photo_pct    || 0;
     const carousels = breakdown.carousel_pct || 0;
     contentEl.innerHTML = `
       <div class="igr-cbar">
@@ -5430,10 +5637,206 @@ function renderIGReport(d) {
         <div class="igr-cbar-track"><div class="igr-cbar-fill" style="width:${carousels}%;background:rgba(255,153,0,.7)"></div></div>
         <div class="igr-cbar-pct">${carousels}%</div>
       </div>
-      ${reels < 30 ? `<div style="font-size:12px;color:rgba(255,153,0,.8);margin-top:8px;line-height:1.5">⚠ Reels get 3–5× more reach than photos. Aim for at least 50% Reels.</div>` : ''}
     `;
   } else if (isPublic) {
     contentEl.innerHTML = `<div style="font-size:13px;color:var(--muted)">Content breakdown requires OAuth access.</div>`;
+  }
+
+  // ── Reel vs Photo Engagement (type_engagement) ────────────────
+  const typeEng  = igComp.type_engagement || {};
+  const typeSec  = document.getElementById('igr-type-section');
+  const typeGrid = document.getElementById('igr-type-grid');
+  if (!isPublic && Object.keys(typeEng).length > 0) {
+    typeSec.style.display = 'block';
+    const typeOrder  = ['Reels', 'Photos', 'Carousels'];
+    const typeColors = { Reels: 'linear-gradient(90deg,#833ab4,#fd1d1d)', Photos: 'rgba(255,255,255,.4)', Carousels: 'rgba(255,153,0,.8)' };
+    const maxAvg = Math.max(...Object.values(typeEng).map(t => t.avg_total || 0)) || 1;
+    const winner = Object.entries(typeEng).sort((a,b) => (b[1].avg_total||0) - (a[1].avg_total||0))[0]?.[0];
+    typeGrid.innerHTML = typeOrder.filter(t => typeEng[t]).map(t => {
+      const te  = typeEng[t];
+      const pct = Math.round((te.avg_total / maxAvg) * 100);
+      return `
+        <div class="igr-type-row">
+          <div class="igr-type-label">
+            ${t}${t === winner ? '<span class="igr-type-winner">TOP</span>' : ''}
+          </div>
+          <div class="igr-type-bar-track">
+            <div class="igr-type-bar-fill" style="width:${pct}%;background:${typeColors[t]}"></div>
+          </div>
+          <div class="igr-type-val">${te.avg_likes} ♥</div>
+          <div class="igr-type-sub">${te.count} posts</div>
+        </div>`;
+    }).join('');
+    if (winner && typeEng[winner]) {
+      const loser = typeOrder.filter(t => typeEng[t] && t !== winner)[0];
+      if (loser && typeEng[loser]) {
+        const ratio = (typeEng[winner].avg_likes / Math.max(typeEng[loser].avg_likes, 1)).toFixed(1);
+        typeGrid.innerHTML += `<div style="margin-top:12px;font-size:12px;color:rgba(0,204,102,.7);line-height:1.5">
+          ${winner} get ${ratio}× more likes than ${loser}. ${typeEng[winner].pct < 50 ? `You post ${typeEng[loser]?.pct||0}% ${loser} — flip that ratio.` : 'Keep leaning into what works.'}
+        </div>`;
+      }
+    }
+  }
+
+  // ── Best Time to Post (posting_patterns) ─────────────────────
+  const patterns   = igComp.posting_patterns || {};
+  const timingSec  = document.getElementById('igr-timing-section');
+  const timingRows = document.getElementById('igr-timing-rows');
+  const timingNote = document.getElementById('igr-timing-note');
+  if (!isPublic && patterns.has_data) {
+    timingSec.style.display = 'block';
+    const dayAvgs = patterns.all_day_avgs || {};
+    const maxDay  = Math.max(...Object.values(dayAvgs)) || 1;
+    const bestDays = patterns.best_days || [];
+    const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    timingRows.innerHTML = dayOrder.filter(d => dayAvgs[d] != null).map(d => {
+      const avg = dayAvgs[d] || 0;
+      const pct = Math.round((avg / maxDay) * 100);
+      const isBest = bestDays.includes(d);
+      return `
+        <div class="igr-timing-row">
+          <div class="igr-timing-day">${d.slice(0,3)}${isBest ? '<span class="igr-timing-best">BEST</span>' : ''}</div>
+          <div class="igr-timing-bar-wrap">
+            <div class="igr-timing-bar">
+              <div class="igr-timing-fill" style="width:${pct}%;${isBest ? 'opacity:1' : 'opacity:.5'}"></div>
+            </div>
+          </div>
+          <div class="igr-timing-val">${Math.round(avg)} avg</div>
+        </div>`;
+    }).join('');
+    timingNote.textContent = `Post on ${bestDays.join(' and ')} between ${patterns.best_hour_start}–${patterns.best_hour_end} — that's when your audience is most active based on your last ${patterns.posts_analyzed} posts.`;
+  }
+
+  // ── Posting Consistency ───────────────────────────────────────
+  const consist    = igComp.consistency || {};
+  const consistSec = document.getElementById('igr-consist-section');
+  if (!isPublic && consist.has_data) {
+    consistSec.style.display = 'block';
+    const score = consist.score || 0;
+    const col   = score >= 70 ? 'var(--green)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+    document.getElementById('igr-consist-score').textContent = score;
+    document.getElementById('igr-consist-score').style.color = col;
+    document.getElementById('igr-consist-label').textContent = consist.label || '';
+    document.getElementById('igr-consist-label').style.color = col;
+    document.getElementById('igr-consist-avg').textContent   = consist.avg_gap_days + 'd';
+    document.getElementById('igr-consist-max').textContent   = consist.max_gap_days + 'd';
+    const fill = document.getElementById('igr-consist-fill');
+    fill.style.width      = score + '%';
+    fill.style.background = col;
+    const noteEl = document.getElementById('igr-consist-note');
+    if (consist.max_gap_days >= 14) {
+      noteEl.textContent = `You went ${consist.max_gap_days} days without posting at some point. Gaps longer than 7 days reset your algorithmic momentum — you start from scratch each time. Aim to never go more than 4 days between posts.`;
+    } else if (score >= 70) {
+      noteEl.textContent = `Solid posting rhythm — you average a post every ${consist.avg_gap_days} days with minimal gaps. Keep it up.`;
+    } else {
+      noteEl.textContent = `Your posting gaps average ${consist.avg_gap_days} days. The algorithm rewards artists who post on a schedule. Inconsistency cuts your reach by 40–60% compared to artists who post at the same cadence.`;
+    }
+  }
+
+  // ── Engagement Quality ────────────────────────────────────────
+  const engQual   = igComp.engagement_quality || {};
+  const qualSec   = document.getElementById('igr-quality-section');
+  if (!isPublic && engQual.comment_to_like_ratio != null) {
+    qualSec.style.display = 'block';
+    const ratio = engQual.comment_to_like_ratio;
+    const qCol  = engQual.label === 'Strong' ? 'var(--green)' : engQual.label === 'Average' ? 'var(--amber)' : 'var(--red)';
+    document.getElementById('igr-ctr-ratio').textContent      = ratio + '%';
+    document.getElementById('igr-ctr-ratio').style.color      = qCol;
+    document.getElementById('igr-qual-label').textContent     = engQual.label || '—';
+    document.getElementById('igr-qual-label').style.color     = qCol;
+    document.getElementById('igr-quality-note').textContent   = engQual.note || '';
+  }
+
+  // ── Hashtag Strategy ──────────────────────────────────────────
+  const hashData   = d.hashtag_analysis || {};
+  const hashSec    = document.getElementById('igr-hashtag-section');
+  if (hashData.has_data) {
+    hashSec.style.display = 'block';
+    const pillsWrap = document.getElementById('igr-tag-pills-wrap');
+    const issuesWrap = document.getElementById('igr-tag-issues');
+    const tags = hashData.top_tags || [];
+    const MEGA = new Set(['#tattoo','#tattoos','#ink','#tattooed','#tattooart','#tattoolife','#inked','#tattooartist','#bodyart','#art','#inklife','#tatt','#tatts','#tattooed','#tattoolover']);
+    pillsWrap.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Top tags used · avg ${hashData.avg_per_post}/post</div>
+      <div class="igr-tag-pills">${tags.map(t => `<span class="igr-tag-pill ${MEGA.has(t.tag) ? 'broad' : 'niche'}">${t.tag} ×${t.count}</span>`).join('')}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px"><span style="color:rgba(255,120,120,.7)">Red = mega tag (>500M posts)</span> · <span style="color:rgba(0,204,102,.7)">Green = niche tag</span></div>
+    `;
+    const issues = hashData.issues || [];
+    issuesWrap.innerHTML = issues.map(i => `
+      <div class="igr-tag-issue">
+        <span style="flex-shrink:0;margin-top:1px">⚠</span>
+        <span>${i}</span>
+      </div>`).join('');
+  }
+
+  // ── Competitor IG Comparison ──────────────────────────────────
+  const compData  = d.competitor_ig || [];
+  const compSec   = document.getElementById('igr-comp-section');
+  if (compData.length > 0) {
+    compSec.style.display = 'block';
+    const myFol = profile.followers || 0;
+    document.getElementById('igr-comp-you-row').innerHTML = `
+      <div class="igr-comp-you">
+        <div>
+          <div class="igr-comp-you-handle">@${handle || 'you'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Your account</div>
+        </div>
+        <div class="igr-comp-you-fol">${myFol ? Number(myFol).toLocaleString() + ' followers' : '—'}</div>
+      </div>`;
+    document.getElementById('igr-comp-rows').innerHTML = compData.map(c => {
+      const compFol = c.ig_followers;
+      const higher  = compFol != null && myFol != null && compFol > myFol;
+      const lower   = compFol != null && myFol != null && compFol <= myFol;
+      return `
+        <div class="igr-comp-row">
+          <div>
+            <div class="igr-comp-name">${c.name}</div>
+            <div class="igr-comp-handle">${c.ig_handle ? '@' + c.ig_handle : c.address || 'No IG found'}</div>
+          </div>
+          <div class="igr-comp-fol ${higher ? 'higher' : lower ? 'lower' : ''}">
+            ${compFol != null ? Number(compFol).toLocaleString() : c.reviews ? c.reviews + ' reviews' : '—'}
+            ${compFol != null ? ' followers' : ''}
+          </div>
+        </div>`;
+    }).join('');
+    const higherComps = compData.filter(c => c.ig_followers != null && myFol != null && c.ig_followers > myFol);
+    if (higherComps.length > 0) {
+      const gapNote = document.getElementById('igr-comp-gap-note');
+      gapNote.style.display = 'block';
+      const biggestGap = Math.max(...higherComps.map(c => c.ig_followers - myFol));
+      gapNote.textContent = `${higherComps.length} competitor${higherComps.length > 1 ? 's' : ''} near you ${higherComps.length > 1 ? 'have' : 'has'} more followers — the largest gap is ${Number(biggestGap).toLocaleString()} followers. Consistent posting + Reels is the fastest way to close it.`;
+    }
+  }
+
+  // ── TikTok Gap ────────────────────────────────────────────────
+  if (d.tiktok_gap === true) {
+    document.getElementById('igr-tiktok-section').style.display = 'block';
+  }
+
+  // ── 30-Day Content Calendar ───────────────────────────────────
+  const cal    = d.content_calendar || {};
+  const calSec = document.getElementById('igr-calendar-section');
+  if (cal.weeks && cal.weeks.length > 0) {
+    calSec.style.display = 'block';
+    document.getElementById('igr-calendar-note').textContent =
+      `Built from your data — post on ${(cal.best_days || []).join(' and ')} at ${cal.best_time}. Your best performing format: ${cal.best_type}.`;
+    document.getElementById('igr-calendar-weeks').innerHTML = cal.weeks.map(week => `
+      <div class="igr-cal-week">
+        <div class="igr-cal-week-label">Week ${week.week}</div>
+        ${(week.posts || []).map(p => `
+          <div class="igr-cal-post">
+            <div class="igr-cal-day-col">
+              <div class="igr-cal-day">${(p.day || '').slice(0,3)}</div>
+              <div class="igr-cal-time">${p.time || ''}</div>
+              <span class="igr-cal-type-badge ${p.type}">${p.type}</span>
+            </div>
+            <div class="igr-cal-content">
+              <div class="igr-cal-title">${p.title}</div>
+              <div class="igr-cal-brief">${p.brief}</div>
+              <div class="igr-cal-cta">${p.caption_cta}</div>
+            </div>
+          </div>`).join('')}
+      </div>`).join('');
   }
 
   // ── Bio Quality ───────────────────────────────────────────────

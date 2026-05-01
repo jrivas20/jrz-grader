@@ -287,6 +287,118 @@ def analyze_ig_competitive(ig_profile, media_list, competitors=None):
             'caption_preview': (m.get('caption') or '')[:80],
         })
 
+    # ── Engagement per content type (Reel vs Photo vs Carousel) ──────────
+    type_buckets = {}
+    for m in media_list:
+        mtype = m.get('media_type', 'IMAGE')
+        label = 'Reels' if mtype == 'VIDEO' else ('Carousels' if mtype == 'CAROUSEL_ALBUM' else 'Photos')
+        if label not in type_buckets:
+            type_buckets[label] = {'likes': 0, 'comments': 0, 'count': 0}
+        type_buckets[label]['likes']    += (m.get('like_count')    or 0)
+        type_buckets[label]['comments'] += (m.get('comments_count') or 0)
+        type_buckets[label]['count']    += 1
+
+    type_engagement = {}
+    total_posts_typed = len(media_list) or 1
+    for label, stats in type_buckets.items():
+        n = stats['count']
+        if n > 0:
+            type_engagement[label] = {
+                'count':        n,
+                'pct':          round(n / total_posts_typed * 100),
+                'avg_likes':    round(stats['likes']    / n, 1),
+                'avg_comments': round(stats['comments'] / n, 1),
+                'avg_total':    round((stats['likes'] + stats['comments']) / n, 1),
+            }
+
+    # ── Best time to post (by day + hour from engagement data) ───────────
+    DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    day_eng  = {}
+    hour_eng = {}
+    for m in media_list:
+        ts_str = m.get('timestamp', '')
+        if not ts_str:
+            continue
+        eng = (m.get('like_count') or 0) + (m.get('comments_count') or 0)
+        try:
+            ts = datetime.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+            day_eng.setdefault(ts.weekday(), []).append(eng)
+            hour_eng.setdefault(ts.hour, []).append(eng)
+        except Exception:
+            continue
+
+    posting_patterns = {'has_data': False}
+    if day_eng and len(media_list) >= 5:
+        day_avgs  = {d: sum(v) / len(v) for d, v in day_eng.items()}
+        best_days = sorted(day_avgs, key=lambda x: -day_avgs[x])[:2]
+        hour_avgs = {h: sum(v) / len(v) for h, v in hour_eng.items()}
+        best_hr   = max(hour_avgs, key=hour_avgs.get) if hour_avgs else None
+
+        def _fmt_hr(h):
+            if h is None: return ''
+            ampm = 'am' if h < 12 else 'pm'
+            return f'{h % 12 or 12}{ampm}'
+
+        posting_patterns = {
+            'has_data':        True,
+            'best_days':       [DAYS[d] for d in best_days],
+            'best_hour_start': _fmt_hr(best_hr),
+            'best_hour_end':   _fmt_hr((best_hr + 2) % 24) if best_hr is not None else '',
+            'all_day_avgs':    {DAYS[d]: round(avg, 1) for d, avg in day_avgs.items()},
+            'posts_analyzed':  len(media_list),
+        }
+
+    # ── Posting consistency (gap analysis between posts) ─────────────────
+    consistency = {'has_data': False}
+    if len(media_list) >= 5:
+        try:
+            tss = []
+            for m in media_list:
+                s = m.get('timestamp', '')
+                if s:
+                    tss.append(datetime.datetime.fromisoformat(s.replace('Z', '+00:00')))
+            tss.sort(reverse=True)
+            if len(tss) >= 3:
+                gaps_days = [(tss[i] - tss[i + 1]).days for i in range(len(tss) - 1)]
+                avg_gap   = round(sum(gaps_days) / len(gaps_days), 1)
+                max_gap   = max(gaps_days)
+                std_gap   = round(_std(gaps_days), 1)
+                cv        = std_gap / max(avg_gap, 1)
+                score     = max(0, min(100, round(100 - cv * 60)))
+                consistency = {
+                    'has_data':         True,
+                    'score':            score,
+                    'avg_gap_days':     avg_gap,
+                    'max_gap_days':     max_gap,
+                    'longest_silence':  max_gap,
+                    'label': (
+                        'Consistent'       if score >= 70
+                        else 'Inconsistent'     if score >= 40
+                        else 'Very Inconsistent'
+                    ),
+                }
+        except Exception:
+            pass
+
+    # ── Engagement quality (comment-to-like ratio) ────────────────────────
+    comment_to_like = round(total_comments / max(total_likes, 1) * 100, 2)
+    engagement_quality = {
+        'comment_to_like_ratio': comment_to_like,
+        'benchmark':             1.5,
+        'label': (
+            'Strong'  if comment_to_like >= 2.0
+            else 'Average' if comment_to_like >= 1.0
+            else 'Weak'
+        ),
+        'note': (
+            'Your audience actively engages — real community signals'
+            if comment_to_like >= 2.0
+            else 'Typical passive engagement — captions need stronger CTAs to drive comments'
+            if comment_to_like >= 1.0
+            else 'Your audience scrolls but rarely comments — end every caption with a question or CTA'
+        ),
+    }
+
     return {
         'followers':        followers,
         'following':        ig_profile.get('follows_count', 0),
@@ -313,9 +425,39 @@ def analyze_ig_competitive(ig_profile, media_list, competitors=None):
             'link':    best_post.get('permalink', '')  if best_post else '',
             'caption_preview': (best_post.get('caption') or '')[:100] if best_post else '',
         } if best_post else None,
-        'gaps':          gaps,
-        'recent_posts':  recent,
-        'competitors':   competitors or [],
+        'gaps':               gaps,
+        'recent_posts':       recent,
+        'competitors':        competitors or [],
+        'type_engagement':    type_engagement,
+        'posting_patterns':   posting_patterns,
+        'consistency':        consistency,
+        'engagement_quality': engagement_quality,
+        # nested dicts for frontend compatibility
+        'posting_frequency': {
+            'posts_per_week': posts_per_week,
+            'benchmark':      5.0,
+            'gap_pct':        round((5.0 - posts_per_week) / 5.0 * 100) if posts_per_week < 5 else 0,
+        },
+        'engagement': {
+            'engagement_rate':       eng_rate,
+            'benchmark_engagement':  3.0,
+            'avg_likes':             avg_likes,
+            'avg_comments':          avg_comments,
+        },
+        'content_breakdown': {
+            'reels_pct':    reel_pct,
+            'photo_pct':    round(photo_count    / total_typed * 100),
+            'carousel_pct': round(carousel_count / total_typed * 100),
+        },
+        'bio_score': {
+            'score': bio_score,
+            'checks': [
+                {'label': 'Booking link or CTA in bio',  'ok': bio_has_booking},
+                {'label': 'City or location mentioned',   'ok': bio_has_city},
+                {'label': 'Tattoo style mentioned',       'ok': bio_has_style},
+                {'label': 'Website or link in bio',       'ok': bio_has_link},
+            ],
+        },
     }
 
 
@@ -3585,10 +3727,13 @@ def grade_ig_only():
         current_revenue_est  = int(current_sessions_mo * avg_price)
         optimal_revenue_est  = int(optimal_sessions_mo * avg_price)
 
-        # ── Step 6: Bio analysis + recommendations ─────────────────────
-        ig_bio          = ig_info.get('biography', '') or ''
-        detected_styles = _detect_styles_from_bio(ig_bio)
+        # ── Step 6: Bio + hashtag analysis ───────────────────────────────
+        ig_bio           = ig_info.get('biography', '') or ''
+        detected_styles  = _detect_styles_from_bio(ig_bio)
         has_booking_link = bool(ig_info.get('website', ''))
+
+        captions         = [m.get('caption', '') or '' for m in media_list]
+        hashtag_analysis = analyze_hashtags(captions, city)
 
         fake_place = {
             'name':                   ig_info.get('name', '') or f'@{ig_username}',
@@ -3602,6 +3747,26 @@ def grade_ig_only():
             'booking_platform':   '',
         }
         bio_recs = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
+
+        # ── Step 7: TikTok gap ────────────────────────────────────────────
+        bio_and_site = (ig_bio + ' ' + (ig_info.get('website', '') or '')).lower()
+        tiktok_gap   = 'tiktok' not in bio_and_site
+
+        # ── Step 8: Competitor IG lookup (non-blocking) ───────────────────
+        competitor_ig = []
+        if city:
+            try:
+                competitor_ig = find_competitor_ig_data(city, ig_username)
+            except Exception:
+                competitor_ig = []
+
+        # ── Step 9: 30-day content calendar ──────────────────────────────
+        content_calendar = generate_content_calendar(
+            ig_competitive.get('posting_patterns', {}),
+            ig_competitive.get('type_engagement', {}),
+            city,
+            detected_styles,
+        )
 
         return jsonify({
             'ig_only':     True,
@@ -3633,7 +3798,11 @@ def grade_ig_only():
                 'optimal_revenue_est':      optimal_revenue_est,
                 'city':                     city or 'your market',
             },
-            'bio_recommendations': bio_recs,
+            'bio_recommendations':  bio_recs,
+            'hashtag_analysis':     hashtag_analysis,
+            'tiktok_gap':           tiktok_gap,
+            'competitor_ig':        competitor_ig,
+            'content_calendar':     content_calendar,
         })
 
     except Exception as e:
