@@ -2803,30 +2803,118 @@ async function showIGPageSelector(token, pages) {
     return;
   }
 
-  // Multiple pages — let artist pick
+  // Sort: exact handle match first, then partial match, then by follower count
+  const handleLower = (pendingIGHandle || '').toLowerCase();
+  pagesWithIG.sort((a, b) => {
+    const scoreA = (a.ig_username || '').toLowerCase() === handleLower ? 0
+                 : (a.ig_username || '').toLowerCase().includes(handleLower) ? 1 : 2;
+    const scoreB = (b.ig_username || '').toLowerCase() === handleLower ? 0
+                 : (b.ig_username || '').toLowerCase().includes(handleLower) ? 1 : 2;
+    if (scoreA !== scoreB) return scoreA - scoreB;
+    return (b.ig_followers || 0) - (a.ig_followers || 0); // secondary: higher followers first
+  });
+
+  // Store pages in a JS map keyed by page_id so onclick can look them up safely
+  // (avoids JSON.stringify inside HTML attributes which breaks on quotes/special chars)
+  window._igPageMap = {};
+  pagesWithIG.forEach(p => { window._igPageMap[p.page_id] = p; });
+  pendingIGToken = token;
+
+  function buildRows(list, filterVal) {
+    if (list.length === 0) {
+      return `<div style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,.35)">No accounts match "${filterVal}"</div>`;
+    }
+    return list.map(p => {
+      const isMatch = handleLower && (p.ig_username || '').toLowerCase() === handleLower;
+      return `
+        <div class="ig-result-item" data-page-id="${p.page_id}" style="${isMatch ? 'background:rgba(255,255,255,.04);border-left:2px solid rgba(255,255,255,.25)' : ''}">
+          <div style="flex:1;min-width:0">
+            <div class="ig-result-name" style="display:flex;align-items:center;gap:8px">
+              ${p.ig_username ? '@' + p.ig_username : p.page_name}
+              ${isMatch ? '<span style="font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.5)">MATCH</span>' : ''}
+            </div>
+            <div class="ig-result-addr">${p.page_name}${p.ig_followers != null ? ' · ' + Number(p.ig_followers).toLocaleString() + ' followers' : ''}</div>
+          </div>
+          <button class="ig-result-select-btn">Audit This</button>
+        </div>
+      `;
+    }).join('');
+  }
+
   resEl.innerHTML = `
-    <div style="padding:14px 18px 8px;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">Select your account to audit</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.35);line-height:1.5">We found multiple accounts. Pick the one you want to audit.</div>
+    <div style="padding:14px 18px 10px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Select your account to audit</div>
+      <input id="ig-page-filter" type="text" placeholder="Filter by handle or page name..."
+        value="${pendingIGHandle || ''}"
+        style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+               border-radius:8px;color:#fff;font-family:var(--font);font-size:13px;
+               padding:9px 12px;outline:none;box-sizing:border-box"
+        oninput="filterIGPages(this.value)">
     </div>
-    ${pagesWithIG.map(p => `
-      <div class="ig-result-item" onclick="gradeByIGPageFromSelector(${JSON.stringify(p).replace(/'/g, "&apos;")})">
-        <div>
-          <div class="ig-result-name">${p.ig_username ? '@' + p.ig_username : p.page_name}</div>
-          <div class="ig-result-addr">${p.page_name}${p.ig_followers ? ' · ' + p.ig_followers.toLocaleString() + ' followers' : ''}</div>
+    <div id="ig-page-rows" style="max-height:320px;overflow-y:auto">
+      ${buildRows(pagesWithIG, handleLower)}
+    </div>
+  `;
+  resEl.style.display = 'block';
+
+  // Store the full list for filter re-render
+  window._igAllPages = pagesWithIG;
+
+  // ONE click listener on resEl (stable parent) — survives innerHTML rebuilds in ig-page-rows
+  // Use a flag so we don't double-attach if selector is shown again
+  if (!resEl._igClickBound) {
+    resEl._igClickBound = true;
+    resEl.addEventListener('click', function(e) {
+      const row = e.target.closest('[data-page-id]');
+      if (!row) return;
+      const pageId   = row.getAttribute('data-page-id');
+      const pageData = window._igPageMap && window._igPageMap[pageId];
+      if (pageData && pendingIGToken) gradeByIGPage(pendingIGToken, pageData);
+    });
+  }
+
+  // Auto-apply filter if handle was typed (surfaces matching account immediately)
+  if (pendingIGHandle) filterIGPages(pendingIGHandle);
+}
+
+function filterIGPages(val) {
+  const rows = document.getElementById('ig-page-rows');
+  if (!rows || !window._igAllPages) return;
+  const q    = (val || '').toLowerCase().trim();
+  const list = q
+    ? window._igAllPages.filter(p =>
+        (p.ig_username || '').toLowerCase().includes(q) ||
+        (p.page_name   || '').toLowerCase().includes(q)
+      )
+    : window._igAllPages;
+  const handleLower = (pendingIGHandle || '').toLowerCase();
+  if (list.length === 0) {
+    rows.innerHTML = `<div style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,.35)">No accounts match "${val}"</div>`;
+    return;
+  }
+  // Rebuild inner HTML only — click delegation stays on parent resEl
+  rows.innerHTML = list.map(p => {
+    const isMatch = handleLower && (p.ig_username || '').toLowerCase() === handleLower;
+    return `
+      <div class="ig-result-item" data-page-id="${p.page_id}"
+           style="${isMatch ? 'background:rgba(255,255,255,.04);border-left:2px solid rgba(255,255,255,.25)' : ''}">
+        <div style="flex:1;min-width:0">
+          <div class="ig-result-name" style="display:flex;align-items:center;gap:8px">
+            ${p.ig_username ? '@' + p.ig_username : p.page_name}
+            ${isMatch ? '<span style="font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.5)">MATCH</span>' : ''}
+          </div>
+          <div class="ig-result-addr">${p.page_name}${p.ig_followers != null ? ' · ' + Number(p.ig_followers).toLocaleString() + ' followers' : ''}</div>
         </div>
         <button class="ig-result-select-btn">Audit This</button>
       </div>
-    `).join('')}
-  `;
-  resEl.style.display = 'block';
-  // Store token for when they click
-  pendingIGToken = token;
+    `;
+  }).join('');
 }
 
-// Called from the inline onclick in the page selector
-function gradeByIGPageFromSelector(pageData) {
-  if (!pendingIGToken) return;
+// Called from the inline onclick in the page selector (kept for backward compat — no longer used)
+function gradeByIGPageFromSelector(pageId) {
+  const pageData = window._igPageMap && window._igPageMap[pageId];
+  if (!pageData || !pendingIGToken) return;
   gradeByIGPage(pendingIGToken, pageData);
 }
 
