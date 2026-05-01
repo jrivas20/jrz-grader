@@ -42,7 +42,12 @@ def autocomplete():
     try:
         resp = requests.get(
             'https://maps.googleapis.com/maps/api/place/autocomplete/json',
-            params={'input': query, 'types': 'establishment', 'key': GOOGLE_KEY},
+            params={
+                'input': query,
+                'types': 'establishment',
+                'keyword': 'restaurant food cafe bar',
+                'key': GOOGLE_KEY
+            },
             timeout=5
         )
         return jsonify(resp.json())
@@ -81,10 +86,25 @@ def grade():
     if not place:
         return jsonify({'error': 'Business not found'}), 404
 
+    # ── RESTAURANT-ONLY GATE ─────────────────────────────────────────
+    # This tool is exclusively for restaurants and food businesses.
+    # If the business has no food-related Google type, reject it early.
+    raw_types_check = place.get('types', [])
+    if not any(t in FOOD_TYPES for t in raw_types_check):
+        return jsonify({
+            'error': 'not_restaurant',
+            'message': (
+                f"{place.get('name', 'This business')} does not appear to be a "
+                "restaurant or food business. This audit tool is built exclusively "
+                "for restaurants, cafes, bars, and food establishments with a "
+                "physical location."
+            )
+        }), 422
+
     # 2. Nearby Competitors
     competitors = []
     loc       = place.get('geometry', {}).get('location', {})
-    raw_types = place.get('types', [])
+    raw_types = raw_types_check
     biz_type  = get_best_type(raw_types)
     type_label = infer_type_label(biz_type, place.get('name', ''))
 
@@ -92,6 +112,10 @@ def grade():
     search_type = biz_type if biz_type != 'establishment' else 'restaurant'
     # For broad types, fall back to restaurant for food businesses
     if search_type in ('food', 'meal_delivery', 'meal_takeaway'):
+        search_type = 'restaurant'
+    # Safety net: if Google assigned a non-food type as primary but the
+    # business also has food types in its raw_types, force restaurant
+    if search_type in NON_FOOD_EXCLUDE and any(t in FOOD_TYPES for t in raw_types):
         search_type = 'restaurant'
 
     if loc:
@@ -566,11 +590,17 @@ def get_best_type(raw_types):
     """Return the most specific Google Place type for the business."""
     skip = {'point_of_interest', 'establishment', 'food', 'premise',
             'locality', 'political', 'sublocality', 'route'}
-    # Prefer cuisine-specific types first
+    # 1. Prefer cuisine-specific types first (most precise)
     for t in raw_types:
         if t in CUISINE_TYPES:
             return t
-    # Then any non-generic type
+    # 2. Prefer general food/dining types before any non-food type
+    #    Prevents liquor_store, grocery_or_supermarket, etc. from winning
+    #    when the business also has 'restaurant' or 'bar' in its types.
+    for t in raw_types:
+        if t in FOOD_TYPES and t not in skip:
+            return t
+    # 3. Then any non-generic type
     for t in raw_types:
         if t not in skip:
             return t
@@ -579,11 +609,15 @@ def get_best_type(raw_types):
 
 def infer_type_label(biz_type, biz_name=''):
     """Convert a Google Place type to the best human-readable label,
-    using business name as fallback for generic types."""
+    using business name as fallback for generic types.
+    Also overrides NON_FOOD_EXCLUDE types (e.g., liquor_store) when the
+    business name clearly signals a food/dining establishment."""
     label = TYPE_LABELS.get(biz_type, biz_type.replace('_', ' '))
 
-    # If still generic, infer from name keywords
-    if label in ('restaurant', 'food', 'establishment', 'meal takeaway', 'meal delivery'):
+    # Infer from name when: label is generic OR type is a non-food type
+    # that likely got assigned alongside restaurant/bar (e.g., liquor_store).
+    generic_labels = {'restaurant', 'food', 'establishment', 'meal takeaway', 'meal delivery'}
+    if label in generic_labels or biz_type in NON_FOOD_EXCLUDE:
         name_lower = biz_name.lower()
         for keywords, inferred in NAME_CUISINE_MAP:
             if any(kw in name_lower for kw in keywords):
@@ -965,13 +999,22 @@ def scrape_website(url, biz_name='', biz_city=''):
 # ─────────────────────────────────────────────────────────────────
 
 def check_keyword_rankings(biz_name, type_label, city, state):
+    # Always use cuisine-specific + generic restaurant keywords.
+    # type_label is the specific cuisine (e.g. "Latin restaurant", "sushi restaurant").
+    # We also always include a generic "restaurant in [city]" as baseline.
+    cuisine_kw = type_label if type_label != 'restaurant' else None
     keywords = [
-        f"best {type_label} in {city}",
-        f"{type_label} {city}",
-        f"{type_label} near {city}",
-        f"{type_label} {city} {state}",
-        f"{biz_name} {city}",
+        f"best restaurant in {city}",
+        f"restaurant {city}",
     ]
+    if cuisine_kw:
+        keywords += [
+            f"best {cuisine_kw} in {city}",
+            f"{cuisine_kw} {city}",
+        ]
+    keywords.append(f"{biz_name} {city}")
+    # Keep to 5 max
+    keywords = keywords[:5]
     results = []
     for keyword in keywords:
         try:
@@ -1316,19 +1359,32 @@ def score_website(place, pagespeed, site_data, checklist):
         checklist['website'] = items
         return min(scraped_pts, 100)
 
-    cats = pagespeed['lighthouseResult']['categories']
-    perf = int((cats.get('performance', {}).get('score') or 0) * 100)
-    seo  = int((cats.get('seo',         {}).get('score') or 0) * 100)
+    cats     = pagespeed['lighthouseResult']['categories']
+    perf     = int((cats.get('performance', {}).get('score') or 0) * 100)
+    raw_seo  = cats.get('seo', {}).get('score')          # None when Lighthouse scan failed
+    seo      = int(raw_seo * 100) if raw_seo is not None else None
 
     items.append({'label': f'Mobile performance score: {perf}/100', 'pass': perf >= 70})
-    items.append({'label': f'SEO technical score: {seo}/100',       'pass': seo  >= 80})
+    if seo is not None:
+        items.append({'label': f'SEO technical score: {seo}/100', 'pass': seo >= 80})
+    else:
+        # Lighthouse returned null — page was likely blocked by Cloudflare / bot protection
+        # or the scan timed out. Not a true 0 — don't penalize.
+        items.append({'label': 'SEO technical score: scan blocked (Cloudflare / bot protection)', 'pass': None})
 
     checklist['website'] = items
 
     # Combined score: PageSpeed 50% + content quality 50%
+    seo_val = seo if seo is not None else 0
     if site_data.get('scraped'):
-        return min(int(perf * 0.35 + seo * 0.15 + scraped_pts * 0.50), 100)
-    return min(int(perf * 0.65 + seo * 0.35), 100)
+        if seo is not None:
+            return min(int(perf * 0.35 + seo_val * 0.15 + scraped_pts * 0.50), 100)
+        else:
+            # SEO scan unavailable — don't penalize, shift weight to perf + content
+            return min(int(perf * 0.45 + scraped_pts * 0.55), 100)
+    if seo is not None:
+        return min(int(perf * 0.65 + seo_val * 0.35), 100)
+    return min(perf, 100)
 
 
 def score_local_seo(place, site_data, checklist):
@@ -1857,7 +1913,8 @@ def build_report(place, pagespeed, site_data, competitors, keyword_rankings,
         cls_val      = audits.get('cumulative-layout-shift',   {}).get('displayValue', '')
         speed_index  = audits.get('speed-index',               {}).get('displayValue', '')
         perf_score   = int((cats.get('performance', {}).get('score') or 0) * 100)
-        seo_score_ps = int((cats.get('seo',         {}).get('score') or 0) * 100)
+        raw_seo_ps   = cats.get('seo', {}).get('score')
+        seo_score_ps = int(raw_seo_ps * 100) if raw_seo_ps is not None else None
 
     # Issues
     issues = []
