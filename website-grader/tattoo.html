@@ -4439,6 +4439,7 @@ async function handleOAuthMessage(event) {
   if (!msg || (msg.type !== 'meta_token' && msg.type !== 'meta_error')) return;
 
   if (msg.type === 'meta_error') {
+    const wasIGSearch = igSearchMode;  // save BEFORE resetting
     igSearchMode = false;
     oiConnecting = false;
     const errMsg = msg.error || 'Authorization failed. Please try again.';
@@ -4446,11 +4447,12 @@ async function handleOAuthMessage(event) {
       document.getElementById('oi-status').textContent = errMsg;
       const btn = document.getElementById('oi-connect-btn');
       if (btn) { btn.disabled = false; btn.textContent = 'Connect Instagram + Facebook'; }
-    } else if (igSearchMode) {
+    } else if (wasIGSearch) {
+      // OAuth cancelled/failed while in IG mode — show error on IG tab
+      document.getElementById('ig-results-list').style.display = 'none';
       const errEl = document.getElementById('ig-search-error');
       errEl.textContent = errMsg;
       errEl.style.display = 'block';
-      document.getElementById('ig-results-list').style.display = 'none';
     } else {
       setModalStatus(errMsg, 'error');
       const btn = document.getElementById('connect-btn');
