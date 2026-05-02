@@ -4195,7 +4195,7 @@ async function startGrade() {
     stopStepAnimation();
     pendingReportData = data;
     oiConnecting      = false;
-    showLeadGate();
+    renderReport(data);
   } catch(e) {
     stopStepAnimation();
     showSearch();
