@@ -3827,23 +3827,24 @@ def list_ig_pages():
     if not token:
         return jsonify({'error': 'No token provided'}), 400
 
-    # Fetch ALL pages — follow paging.next until exhausted
+    # Fetch ALL pages with nested IG data in ONE call — no secondary per-page calls.
+    # FB nested field expansion: instagram_business_account{id,username,followers_count,...}
     raw_pages = []
     next_url  = 'https://graph.facebook.com/v19.0/me/accounts'
     params    = {
         'access_token': token,
-        'fields':       'id,name,fan_count,followers_count,instagram_business_account',
-        'limit':        100   # max allowed per call
+        'fields':       'id,name,fan_count,followers_count,'
+                        'instagram_business_account{id,username,name,biography,followers_count,media_count}',
+        'limit':        100
     }
     try:
-        while next_url and len(raw_pages) < 500:   # safety cap at 500
-            resp      = requests.get(next_url, params=params, timeout=10)
-            body      = resp.json()
-            batch     = body.get('data', [])
+        while next_url and len(raw_pages) < 500:
+            resp     = requests.get(next_url, params=params, timeout=10)
+            body     = resp.json()
+            batch    = body.get('data', [])
             raw_pages.extend(batch)
-            # FB embeds params in the next URL, so clear params after first call
-            next_url  = body.get('paging', {}).get('next')
-            params    = {}
+            next_url = body.get('paging', {}).get('next')
+            params   = {}   # next URL already has params embedded
     except Exception as e:
         return jsonify({'error': f'Could not fetch pages: {e}'}), 502
 
@@ -3852,31 +3853,16 @@ def list_ig_pages():
         ig_acct = page.get('instagram_business_account', {}) or {}
         ig_id   = ig_acct.get('id', '')
 
-        ig_info = {}
-        if ig_id:
-            try:
-                ig_r = requests.get(
-                    f'https://graph.facebook.com/v19.0/{ig_id}',
-                    params={
-                        'access_token': token,
-                        'fields': 'id,username,name,biography,followers_count,media_count,profile_picture_url'
-                    },
-                    timeout=6
-                )
-                ig_info = ig_r.json()
-            except Exception:
-                ig_info = {}
-
         pages.append({
-            'page_id':      page.get('id', ''),
-            'page_name':    page.get('name', ''),
-            'page_fans':    page.get('fan_count'),
+            'page_id':        page.get('id', ''),
+            'page_name':      page.get('name', ''),
+            'page_fans':      page.get('fan_count'),
             'page_followers': page.get('followers_count'),
-            'ig_id':        ig_id or None,
-            'ig_username':  ig_info.get('username', ''),
-            'ig_name':      ig_info.get('name', ''),
-            'ig_followers': ig_info.get('followers_count'),
-            'ig_bio':       ig_info.get('biography', ''),
+            'ig_id':          ig_id or None,
+            'ig_username':    ig_acct.get('username', ''),
+            'ig_name':        ig_acct.get('name', ''),
+            'ig_followers':   ig_acct.get('followers_count'),
+            'ig_bio':         ig_acct.get('biography', ''),
         })
 
     if not pages:
