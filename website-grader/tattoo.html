@@ -2249,17 +2249,16 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="ig-oauth-note-icon">IG</div>
         <div class="ig-oauth-note-body">
           <div class="ig-oauth-note-title">Connects directly to your Instagram account</div>
-          <div class="ig-oauth-note-sub">Enter your handle + city, then click "Connect & Audit". We pull your real followers, engagement, and post data. Read-only, 10 seconds.</div>
+          <div class="ig-oauth-note-sub">Click "Connect & Audit" and log in with Facebook. We pull your real followers, engagement, and post data. Read-only, 10 seconds.</div>
         </div>
       </div>
 
-      <div class="search-wrap">
-        <div class="ig-handle-prefix">@</div>
-        <input id="ig-handle-input" type="text" class="ig-handle-field" placeholder="yourhandle" autocomplete="off"
-          onkeydown="if(event.key==='Enter') startIGModeOAuth()">
-        <input id="ig-city-input" type="text" class="ig-city-field" placeholder="City, State  (e.g. Orlando, FL)" autocomplete="off"
-          onkeydown="if(event.key==='Enter') startIGModeOAuth()">
-        <button class="search-btn" onclick="startIGModeOAuth()">Connect & Audit</button>
+      <!-- Hidden inputs kept so existing JS references don't break -->
+      <input id="ig-handle-input" type="hidden" value="">
+      <input id="ig-city-input"   type="hidden" value="">
+
+      <div style="margin-top:16px">
+        <button class="search-btn" style="width:100%;justify-content:center" onclick="startIGModeOAuth()">Connect & Audit</button>
       </div>
       <div id="ig-search-error" class="search-error-banner"></div>
       <div id="ig-results-list" class="ig-results" style="display:none"></div>
@@ -3424,7 +3423,7 @@ window.addEventListener('message', function(e) {
       type === 'form_submitted' || type === 'SUBMITTED' || formMatch) {
     leadFormDone = true;
     closeLGPopup();
-    setTimeout(showLeadThankYou, 400);
+    setTimeout(renderPendingReport, 400);
   }
 });
 
@@ -3451,12 +3450,6 @@ function startIGModeOAuth() {
 
   errEl.style.display = 'none';
   resEl.style.display = 'none';
-
-  if (!handle) {
-    errEl.textContent = 'Enter your Instagram handle first (without the @).';
-    errEl.style.display = 'block';
-    return;
-  }
 
   if (!oauthEnabled || !fbAppId) {
     // OAuth not configured — show clear error
@@ -4167,7 +4160,7 @@ function showLeadGate() {
   if (!leadFormDone) {
     setTimeout(openLeadPopup, 400);
   } else {
-    showLeadThankYou();
+    renderPendingReport();
   }
 }
 
@@ -4178,10 +4171,21 @@ function showLeadThankYou() {
   if (ty) ty.style.display = 'block';
 }
 
+function renderPendingReport() {
+  if (!pendingReportData) { showSearch(); return; }
+  document.getElementById('lead-gate-section').style.display = 'none';
+  const isIGOnly = pendingReportData.ig_only || pendingReportData.report_type === 'instagram';
+  if (isIGOnly) {
+    renderIGReport(pendingReportData);
+  } else {
+    renderReport(pendingReportData);
+  }
+}
+
 function unlockReport() {
   if (!leadFormDone) { openLeadPopup(); return; }
   closeLGPopup();
-  showLeadThankYou();
+  renderPendingReport();
 }
 
 // ─────────────────────────────────────────────────────────────────
