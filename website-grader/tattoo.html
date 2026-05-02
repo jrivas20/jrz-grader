@@ -2400,34 +2400,45 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 <section id="lead-gate-section">
   <div class="lg-inner">
 
-    <!-- Audit complete checkmark -->
-    <div class="oi-checkmark" style="margin:0 auto 20px">✓</div>
-    <div class="lg-eyebrow">Audit Complete</div>
-    <h2 class="lg-title">Your report is ready.</h2>
+    <!-- Form content (hidden after submission) -->
+    <div id="lg-form-content">
+      <!-- Audit complete checkmark -->
+      <div class="oi-checkmark" style="margin:0 auto 20px">✓</div>
+      <div class="lg-eyebrow">Audit Complete</div>
+      <h2 class="lg-title">Your report is ready.</h2>
 
-    <!-- Score teaser — shown before form so artist is curious -->
-    <div class="lg-score-teaser">
-      <div class="lg-grade-circle" id="lg-grade-circle">
-        <div class="lg-grade-letter" id="lg-grade-letter">—</div>
+      <!-- Score teaser — shown before form so artist is curious -->
+      <div class="lg-score-teaser">
+        <div class="lg-grade-circle" id="lg-grade-circle">
+          <div class="lg-grade-letter" id="lg-grade-letter">—</div>
+        </div>
+        <div class="lg-score-meta">
+          <div class="lg-score-val"><span id="lg-score-num">—</span><span style="font-size:16px;font-weight:400;color:var(--muted)">/100</span></div>
+          <div class="lg-score-label">Your overall audit score</div>
+        </div>
       </div>
-      <div class="lg-score-meta">
-        <div class="lg-score-val"><span id="lg-score-num">—</span><span style="font-size:16px;font-weight:400;color:var(--muted)">/100</span></div>
-        <div class="lg-score-label">Your overall audit score</div>
-      </div>
+
+      <p class="lg-unlock-text">Drop your info below — we'll send your full breakdown to your inbox and reach out with a growth plan within 24 hours.</p>
+
+      <!-- Primary CTA — opens lead popup -->
+      <button class="lg-unlock-btn" id="lg-open-form-btn" onclick="openLeadPopup()">
+        Get My Free Audit Results →
+      </button>
+      <div class="lg-privacy">No spam. Your info is used only to send your audit results and growth tips from JRZ Ink Systems.</div>
     </div>
 
-    <p class="lg-unlock-text">Drop your info below — takes 20 seconds. We send your full breakdown straight to your inbox and you get instant access to the report.</p>
-
-    <!-- Primary CTA — opens lead popup -->
-    <button class="lg-unlock-btn" id="lg-open-form-btn" onclick="openLeadPopup()">
-      Fill Out Form to Unlock Report →
-    </button>
-
-    <!-- Fallback unlock button — enabled only after form is submitted -->
-    <button class="lg-unlock-btn dimmed" id="lg-unlock-btn" onclick="unlockReport()" style="margin-top:10px;font-size:13px;">
-      View My Full Report →
-    </button>
-    <div class="lg-privacy">No spam. Your info is used only to deliver your report and send personalized tips from JRZ Ink Systems.</div>
+    <!-- Thank-you state (shown after form submission) -->
+    <div id="lg-thankyou" style="display:none;text-align:center;padding:20px 0;max-width:440px;margin:0 auto">
+      <div style="width:56px;height:56px;border-radius:50%;border:2px solid rgba(0,204,102,.7);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:22px;color:rgba(0,204,102,.85)">✓</div>
+      <div class="lg-eyebrow">You're All Set</div>
+      <h2 class="lg-title" style="margin-bottom:12px">We've got your info.</h2>
+      <p style="font-size:14px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:28px">
+        Your full audit breakdown is being prepared. We'll reach out within 24 hours with a personalized growth strategy for your calendar.
+      </p>
+      <button onclick="runAgain()" style="padding:13px 28px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:rgba(255,255,255,.5);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px">
+        Audit Another Artist →
+      </button>
+    </div>
 
   </div>
 </section>
@@ -3416,9 +3427,7 @@ window.addEventListener('message', function(e) {
       type === 'form_submitted' || type === 'SUBMITTED' || formMatch) {
     leadFormDone = true;
     closeLGPopup();
-    const unlockBtn = document.getElementById('lg-unlock-btn');
-    if (unlockBtn) unlockBtn.classList.remove('dimmed');
-    if (pendingReportData) setTimeout(unlockReport, 400);
+    setTimeout(showLeadThankYou, 400);
   }
 });
 
@@ -3760,9 +3769,11 @@ async function gradeByIGPage(token, pageData) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token,
-        page_id: pageData.page_id,
-        city:    pendingIGCity,
-        handle:  pendingIGHandle
+        page_id:   pageData.page_id,
+        ig_id:     pageData.ig_id   || null,
+        page_name: pageData.page_name || '',
+        city:      pendingIGCity,
+        handle:    pendingIGHandle
       })
     });
     const data = await r.json();
@@ -4079,6 +4090,11 @@ function runAgain() {
   document.getElementById('checklist-section').style.display  = 'none';
   document.getElementById('lead-gate-section').style.display  = 'none';
   document.getElementById('ig-report-section').style.display  = 'none';
+  // Restore lead gate form state for next run
+  const _fc = document.getElementById('lg-form-content');
+  const _ty = document.getElementById('lg-thankyou');
+  if (_fc) _fc.style.display = 'block';
+  if (_ty) _ty.style.display = 'none';
   document.getElementById('loading-biz-suffix').textContent   = '';
   for (let i = 0; i < 9; i++) {
     const el = document.getElementById('ls-' + i);
@@ -4118,6 +4134,12 @@ function showLeadGate() {
   document.getElementById('ig-report-section').style.display  = 'none';
   document.getElementById('oauth-interstitial').style.display = 'none';
 
+  // Restore form state (in case thank-you was shown on a previous run)
+  const fc = document.getElementById('lg-form-content');
+  const ty = document.getElementById('lg-thankyou');
+  if (fc) fc.style.display = 'block';
+  if (ty) ty.style.display = 'none';
+
   // Populate score/grade teaser
   if (pendingReportData) {
     const isIGOnly = pendingReportData.ig_only || pendingReportData.no_gmb;
@@ -4145,22 +4167,24 @@ function showLeadGate() {
   lg.style.alignItems    = 'center';
   window.scrollTo({ top: 0 });
 
-  if (leadFormDone) {
-    if (pendingReportData) setTimeout(unlockReport, 200);
-  } else {
+  if (!leadFormDone) {
     setTimeout(openLeadPopup, 400);
+  } else {
+    showLeadThankYou();
   }
+}
+
+function showLeadThankYou() {
+  const fc = document.getElementById('lg-form-content');
+  const ty = document.getElementById('lg-thankyou');
+  if (fc) fc.style.display = 'none';
+  if (ty) ty.style.display = 'block';
 }
 
 function unlockReport() {
   if (!leadFormDone) { openLeadPopup(); return; }
-  document.getElementById('lead-gate-section').style.display = 'none';
-  if (!pendingReportData) return;
-  if (pendingReportData.report_type === 'instagram') {
-    renderIGReport(pendingReportData);
-  } else {
-    renderReport(pendingReportData);
-  }
+  closeLGPopup();
+  showLeadThankYou();
 }
 
 // ─────────────────────────────────────────────────────────────────

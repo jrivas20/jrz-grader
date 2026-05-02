@@ -3906,41 +3906,53 @@ def grade_ig_only():
     bio quality score, gap analysis, and revenue opportunity from low post frequency.
     Personal IG accounts (not linked to a FB Page) cannot be reached by this API.
     """
-    data    = request.get_json(silent=True) or {}
-    token   = (data.get('token')   or '').strip()
-    city    = (data.get('city')    or '').strip()
-    handle  = (data.get('handle')  or '').strip().lstrip('@')
-    page_id = (data.get('page_id') or '').strip()
+    data      = request.get_json(silent=True) or {}
+    token     = (data.get('token')     or '').strip()
+    city      = (data.get('city')      or '').strip()
+    handle    = (data.get('handle')    or '').strip().lstrip('@')
+    page_id   = (data.get('page_id')   or '').strip()
+    ig_id_in  = (data.get('ig_id')     or '').strip()   # passed directly from page selector
+    page_name_in = (data.get('page_name') or '').strip()
 
     if not token:
         return jsonify({'error': 'No token provided'}), 400
 
     try:
         # ── Step 1: Resolve IG Business Account ──────────────────────
-        pages_resp = requests.get(
-            'https://graph.facebook.com/v19.0/me/accounts',
-            params={
-                'access_token': token,
-                'fields': 'id,name,fan_count,followers_count,instagram_business_account'
-            },
-            timeout=8
-        )
-        pages = pages_resp.json().get('data', [])
-
+        # Prefer ig_id passed directly from the page selector (already validated).
+        # Fall back to re-fetching /me/accounts only when ig_id is absent.
         ig_id   = None
         fb_page = {}
-        for page in pages:
-            if page_id and page.get('id') != page_id:
-                continue
-            ig_acct = page.get('instagram_business_account', {})
-            if ig_acct and ig_acct.get('id'):
-                ig_id = ig_acct['id']
-                fb_page = {
-                    'page_name': page.get('name', ''),
-                    'fans':      page.get('fan_count'),
-                    'followers': page.get('followers_count'),
-                }
-                break
+
+        if ig_id_in:
+            # Fast path — ig_id already known, skip the /me/accounts call
+            ig_id   = ig_id_in
+            fb_page = {'page_name': page_name_in, 'fans': None, 'followers': None}
+        else:
+            # Slow path — fetch all managed pages and find the matching one
+            pages_resp = requests.get(
+                'https://graph.facebook.com/v19.0/me/accounts',
+                params={
+                    'access_token': token,
+                    'fields': 'id,name,fan_count,followers_count,instagram_business_account',
+                    'limit': 100,
+                },
+                timeout=8
+            )
+            pages = pages_resp.json().get('data', [])
+
+            for page in pages:
+                if page_id and page.get('id') != page_id:
+                    continue
+                ig_acct = page.get('instagram_business_account', {})
+                if ig_acct and ig_acct.get('id'):
+                    ig_id = ig_acct['id']
+                    fb_page = {
+                        'page_name': page.get('name', ''),
+                        'fans':      page.get('fan_count'),
+                        'followers': page.get('followers_count'),
+                    }
+                    break
 
         if not ig_id:
             return jsonify({
