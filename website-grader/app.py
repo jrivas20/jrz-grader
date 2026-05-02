@@ -3946,31 +3946,56 @@ def grade_ig_only():
                 'message': 'No Instagram Business Account found on this page.'
             }), 404
 
-        # ── Step 2: IG Profile ────────────────────────────────────────
-        ig_resp = requests.get(
-            f'https://graph.facebook.com/v19.0/{ig_id}',
-            params={
-                'access_token': token,
-                'fields': (
-                    'id,username,name,biography,website,'
-                    'profile_picture_url,followers_count,follows_count,media_count'
-                )
-            },
-            timeout=8
-        )
-        ig_info = ig_resp.json()
+        # ── Result cache (5-min TTL by ig_id) ────────────────────────
+        cache_key = hashlib.md5(f'ig_only:{ig_id}:{city}'.encode()).hexdigest()
+        if cache_key in CACHE and time.time() - CACHE[cache_key]['ts'] < 300:
+            return jsonify(CACHE[cache_key]['data'])
 
-        # ── Step 3: Last 25 posts with full engagement data ───────────
-        media_resp = requests.get(
-            f'https://graph.facebook.com/v19.0/{ig_id}/media',
-            params={
-                'access_token': token,
-                'fields': 'id,timestamp,media_type,like_count,comments_count,permalink,caption',
-                'limit': 25
-            },
-            timeout=8
-        )
-        media_list = media_resp.json().get('data', [])
+        # ── Steps 2–3 + 7–8: Fire ALL I/O in parallel ────────────────
+        # Profile + media in one nested call; TikTok + competitors concurrently.
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _fetch_profile_and_media():
+            r = requests.get(
+                f'https://graph.facebook.com/v19.0/{ig_id}',
+                params={
+                    'access_token': token,
+                    'fields': (
+                        'id,username,name,biography,website,'
+                        'profile_picture_url,followers_count,follows_count,media_count,'
+                        'media.limit(25){id,timestamp,media_type,like_count,comments_count,permalink,caption}'
+                    )
+                },
+                timeout=10
+            )
+            return r.json()
+
+        def _fetch_tiktok():
+            try:
+                return check_tiktok_presence(handle or 'unknown')
+            except Exception:
+                return {'has_account': False}
+
+        def _fetch_competitors():
+            if not city:
+                return []
+            try:
+                return find_competitor_ig_data(city, handle or '')
+            except Exception:
+                return []
+
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            fut_ig    = ex.submit(_fetch_profile_and_media)
+            fut_tt    = ex.submit(_fetch_tiktok)
+            fut_comps = ex.submit(_fetch_competitors)
+
+        ig_raw        = fut_ig.result()
+        tiktok_data   = fut_tt.result()
+        competitor_ig = fut_comps.result()
+
+        # Split combined response into profile + media_list
+        ig_info    = {k: v for k, v in ig_raw.items() if k != 'media'}
+        media_list = (ig_raw.get('media') or {}).get('data', [])
 
         # ── Step 4: Deep IG analysis ──────────────────────────────────
         ig_competitive = analyze_ig_competitive(ig_info, media_list, [])
@@ -3984,8 +4009,6 @@ def grade_ig_only():
         posts_per_week       = ig_competitive.get('posts_per_week', 0)
         benchmark_ppw        = 5.0
         missing_ppw          = max(0.0, benchmark_ppw - posts_per_week)
-        # Model: every 4 posts → ~1 booking inquiry → ~25% convert
-        # So posts → sessions/month = posts_per_week * 0.25 * 4
         current_sessions_mo  = round(posts_per_week * 0.25 * 4, 1)
         optimal_sessions_mo  = round(benchmark_ppw  * 0.25 * 4, 1)
         missing_sessions_mo  = round(missing_ppw    * 0.25 * 4, 1)
@@ -4012,19 +4035,8 @@ def grade_ig_only():
             'has_tattoo_booking': has_booking_link,
             'booking_platform':   '',
         }
-        bio_recs = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
-
-        # ── Step 7: TikTok presence check ────────────────────────────────
-        tiktok_data  = check_tiktok_presence(ig_username)
+        bio_recs     = generate_bio_recommendations(fake_place, {}, fake_extras, {}, city)
         tiktok_gap   = not tiktok_data.get('has_account', False)
-
-        # ── Step 8: Competitor IG lookup (non-blocking) ───────────────────
-        competitor_ig = []
-        if city:
-            try:
-                competitor_ig = find_competitor_ig_data(city, ig_username)
-            except Exception:
-                competitor_ig = []
 
         # ── Step 9: 30-day content calendar ──────────────────────────────
         content_calendar = generate_content_calendar(
@@ -4041,7 +4053,7 @@ def grade_ig_only():
             city,
         )
 
-        return jsonify({
+        result = {
             'ig_only':     True,
             'report_type': 'instagram',
             'ig_mode':     True,
@@ -4078,7 +4090,13 @@ def grade_ig_only():
             'competitor_ig':        competitor_ig,
             'content_calendar':     content_calendar,
             'reel_hooks':           reel_hooks,
-        })
+            'swot': generate_swot_ig(ig_competitive, {
+                'missing_sessions_month': missing_sessions_mo,
+                'avg_session_price':      avg_price,
+            }, competitor_ig, tiktok_data, city),
+        }
+        CACHE[cache_key] = {'ts': time.time(), 'data': result}
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({'error': f'Instagram audit failed: {str(e)}'}), 502
@@ -4394,6 +4412,15 @@ def grade_ig_public():
         'revenue_gap': None,   # not computable without post frequency
         'bio_recommendations': bio_recs,
         'tiktok_data':         tiktok_data,
+        'swot': generate_swot_ig(
+            {
+                'followers':       profile_data.get('followers', 0),
+                'bio_has_booking': bio_has_booking,
+                'bio_score':       bio_score,
+                'gaps':            gaps,
+            },
+            None, [], tiktok_data, city
+        ),
         'note': (
             f'@{ig_username} is a personal Instagram account — not connected to a Facebook Page '
             'as a Business or Creator account. Post frequency, engagement rate, and content mix '
@@ -5578,6 +5605,228 @@ def generate_bio_recommendations(place, site_data, tattoo_extras, social_data, c
     }
 
 
+# ── SWOT GENERATORS ──────────────────────────────────────────────────
+
+def generate_swot_google(place, scores, issues, comp_list, social_data, city):
+    """SWOT analysis for Google/Artist audit. Returns 4 lists (max 4 items each)."""
+    rating   = place.get('rating', 0) or 0
+    reviews  = place.get('user_ratings_total', 0) or 0
+    website  = place.get('website', '')
+    sd       = social_data or {}
+    ig_fol   = sd.get('instagram_followers')
+    ig_last  = sd.get('instagram_last_post_days')
+
+    strengths = []
+    if rating >= 4.5 and reviews >= 50:
+        strengths.append(f'{rating}-star rating across {reviews:,} reviews — a trust signal that converts searchers.')
+    elif rating >= 4.0:
+        strengths.append(f'{rating}-star Google rating — above the tattoo industry average.')
+    if website:
+        strengths.append('Website in place — a permanent booking channel Instagram alone cannot provide.')
+    if ig_fol and ig_fol >= 1000:
+        strengths.append(f'Instagram following of {ig_fol:,} — an existing audience ready to convert into bookings.')
+    if scores.get('booking_funnel', 0) >= 14:
+        strengths.append('Online booking system active — clients can commit without calling.')
+    if scores.get('visibility', 0) >= 14:
+        strengths.append('Strong digital visibility across Google, Instagram, and your website.')
+
+    weaknesses = []
+    if not website:
+        weaknesses.append('No website — one Instagram restriction or outage cuts your entire booking channel.')
+    if reviews < 25:
+        weaknesses.append(f'Only {reviews} Google reviews — below the 25-review trust threshold that converts first-time visitors.')
+    if scores.get('booking_funnel', 0) < 10:
+        weaknesses.append('No clear online booking path — clients who find you have to DM or call. Most won\'t.')
+    if ig_last is not None and ig_last > 14:
+        weaknesses.append(f'Instagram inactive for {ig_last} days — algorithm already deprioritized your profile.')
+    if scores.get('visibility', 0) < 10:
+        weaknesses.append('Low search visibility — not appearing for "tattoo [city]" where most new clients search.')
+    crit = [i for i in issues if i.get('severity') == 'critical']
+    if len(crit) >= 3:
+        weaknesses.append(f'{len(crit)} critical gaps actively blocking bookings right now.')
+
+    bench = TATTOO_CITY_BENCHMARKS.get((city or 'default').lower().strip(), TATTOO_CITY_BENCHMARKS['default'])
+    opportunities = []
+    avg_comp_reviews = 0
+    if comp_list:
+        rated = [c for c in comp_list if c.get('reviews', 0) > 0]
+        if rated:
+            avg_comp_reviews = sum(c['reviews'] for c in rated) / len(rated)
+    if avg_comp_reviews > 0 and reviews < avg_comp_reviews:
+        opportunities.append(f'Competitors average {int(avg_comp_reviews)} reviews — a review velocity campaign quickly closes this gap.')
+    opportunities.append(f'{city or "Your market"} supports {bench["monthly_sessions"]} sessions/month at avg ${bench["avg_price"]}/session — real room to grow.')
+    if not any(c.get('running_ads') for c in (comp_list or [])):
+        opportunities.append('No competitors running Meta Ads — first-mover paid advertising advantage is open right now.')
+    if scores.get('content', 0) < 8:
+        opportunities.append('Instagram content gaps mean a simple posting upgrade unlocks significant organic discovery reach.')
+
+    threats = []
+    ads_running = [c for c in (comp_list or []) if c.get('running_ads')]
+    if ads_running:
+        threats.append(f'{len(ads_running)} competitor{"" if len(ads_running)==1 else "s"} running paid ads — paying to appear in front of your next client every day.')
+    if comp_list:
+        high_rev = [c for c in comp_list if c.get('reviews', 0) > reviews * 1.5]
+        if high_rev:
+            threats.append(f'{len(high_rev)} nearby artist{"" if len(high_rev)==1 else "s"} with {int(high_rev[0]["reviews"])}+ reviews — significant map pack advantage.')
+    if scores.get('visibility', 0) < 10:
+        threats.append('Low map pack visibility — competitors capture 44% of local search clicks you\'re not seeing.')
+    threats.append('Platform risk — algorithm changes or account flags can cut Instagram visibility overnight without a backup channel.')
+
+    return {
+        'strengths':     strengths[:4],
+        'weaknesses':    weaknesses[:4],
+        'opportunities': opportunities[:4],
+        'threats':       threats[:4],
+    }
+
+
+def generate_swot_ig(ig_competitive, revenue_gap, competitor_ig, tiktok_data, city):
+    """SWOT analysis for Instagram-only audit."""
+    followers = ig_competitive.get('followers', 0) or 0
+    ppw       = ig_competitive.get('posts_per_week') or 0
+    eng_rate  = ig_competitive.get('engagement_rate') or 0
+    reel_pct  = ig_competitive.get('reel_pct') or 0
+    bio_has_bk= ig_competitive.get('bio_has_booking', False)
+    bs        = ig_competitive.get('bio_score') or 0
+    bio_score = bs.get('score', 0) if isinstance(bs, dict) else bs
+    last_days = ig_competitive.get('last_post_days')
+    has_tiktok= (tiktok_data or {}).get('has_account', False)
+
+    strengths = []
+    if followers >= 5000:
+        strengths.append(f'{followers:,} followers — established authority clients trust before reaching out.')
+    elif followers >= 1000:
+        strengths.append(f'{followers:,} followers — a growing local audience with real booking potential.')
+    if ppw and ppw >= 4:
+        strengths.append(f'Posting {ppw:.1f}×/week — strong consistency the algorithm rewards with wider reach.')
+    if eng_rate and eng_rate >= 3:
+        strengths.append(f'{eng_rate:.1f}% engagement rate — above the 2–5% tattoo industry average. Active audience.')
+    if bio_has_bk:
+        strengths.append('Booking link in bio — the single highest-converting action on your profile.')
+    if reel_pct and reel_pct >= 50:
+        strengths.append(f'{reel_pct}% Reels — reaching non-followers and building cold audience that converts.')
+
+    weaknesses = []
+    if not bio_has_bk:
+        weaknesses.append('No booking link in bio — the most valuable profile real estate is wasted.')
+    if ppw is not None and ppw < 3:
+        weaknesses.append(f'Only {ppw:.1f} posts/week — below algorithm minimum. Reach drops with inconsistency.')
+    if eng_rate is not None and eng_rate < 1.5 and followers > 500:
+        weaknesses.append(f'{eng_rate:.1f}% engagement — below industry average. Clients see your work but don\'t act.')
+    if reel_pct is not None and reel_pct < 40:
+        weaknesses.append(f'Only {reel_pct}% Reels — photos only reach existing followers. Reels reach new clients.')
+    if last_days is not None and last_days > 14:
+        weaknesses.append(f'Last post {last_days} days ago — algorithm has cut your local discovery reach.')
+    if isinstance(bio_score, (int, float)) and bio_score < 50:
+        weaknesses.append('Weak bio — missing city, style, or booking signal. Clients decide in 3 seconds whether to DM.')
+
+    bench = TATTOO_CITY_BENCHMARKS.get((city or 'default').lower().strip(), TATTOO_CITY_BENCHMARKS['default'])
+    opportunities = []
+    if ppw is not None and ppw < 5:
+        missing_ppw = round(5.0 - ppw, 1)
+        rg          = revenue_gap or {}
+        miss_sess   = rg.get('missing_sessions_month', round(missing_ppw * 0.25 * 4, 1))
+        avg_price   = rg.get('avg_session_price', bench['avg_price'])
+        opportunities.append(f'{missing_ppw}× more posts/week = ~{miss_sess} additional sessions/month = +${int(miss_sess*avg_price):,}/mo.')
+    if not has_tiktok:
+        opportunities.append('No TikTok — process videos hit 100k+ views organically. Zero ad spend, massive new-client pipeline.')
+    if competitor_ig:
+        comp_fol = [c.get('ig_followers', 0) or 0 for c in competitor_ig if c.get('ig_followers')]
+        if comp_fol:
+            avg_cf = int(sum(comp_fol) / len(comp_fol))
+            if followers >= max(comp_fol):
+                opportunities.append('More followers than your top local competitors — a booking campaign converts this authority into revenue.')
+            else:
+                opportunities.append(f'Competitors avg {avg_cf:,} followers — a 90-day growth sprint can close or surpass this gap.')
+    if reel_pct is not None and reel_pct < 50:
+        opportunities.append('Shifting to 60%+ Reels can 3×–5× non-follower reach within 2–4 weeks.')
+
+    threats = []
+    if competitor_ig:
+        active = [c for c in competitor_ig if (c.get('ig_followers', 0) or 0) > followers * 0.8]
+        if active:
+            threats.append(f'{len(active)} local competitor{"" if len(active)==1 else "s"} with comparable or larger IG following — competing for same clients.')
+    threats.append('Algorithm risk — Instagram can cut organic reach 50–80% overnight. Single-channel strategy = single point of failure.')
+    if not bio_has_bk:
+        threats.append('Every visitor who can\'t immediately book from your bio is a client who books a competitor instead.')
+    if eng_rate is not None and eng_rate < 2:
+        threats.append('Low engagement signals the algorithm that content isn\'t resonating — suppressing further reach and discovery.')
+
+    return {
+        'strengths':     strengths[:4],
+        'weaknesses':    weaknesses[:4],
+        'opportunities': opportunities[:4],
+        'threats':       threats[:4],
+    }
+
+
+def generate_swot_guest(opp, benchmarks, artists, ads, style, city):
+    """SWOT analysis for Guest City Audit."""
+    total     = opp.get('total', 0)
+    demand    = opp.get('demand_score', 0)
+    barrier   = opp.get('barrier_score', 0)
+    avg_revs  = opp.get('avg_reviews', 0)
+    avg_price = benchmarks.get('avg_price', 200)
+    high_price= benchmarks.get('high', 300)
+    n_artists = opp.get('artist_count', 0)
+    n_ads     = len(ads)
+    city_str  = city or 'this city'
+    style_str = style.title() if style else None
+
+    strengths = []
+    if demand >= 28:
+        strengths.append(f'Proven tattoo demand — {n_artists}+ active artists in {city_str} confirms a real paying client base.')
+    if avg_price >= 260:
+        strengths.append(f'Premium market — avg ${avg_price}/session is above the national baseline. Higher earnings per appointment.')
+    if barrier >= 28:
+        strengths.append(f'Low competition barrier — local artists average only {int(avg_revs)} reviews. A well-promoted guest spot ranks immediately.')
+    if n_ads == 0:
+        strengths.append(f'No paid ads in {city_str} — a basic pre-arrival Meta campaign dominates immediately.')
+    if style_str:
+        strengths.append(f'{style_str} is a niche specialty — less local competition and higher per-session premium.')
+
+    weaknesses = []
+    if demand < 18:
+        weaknesses.append(f'Small or unproven tattoo market — few active artists signals limited local demand.')
+    if barrier < 15:
+        weaknesses.append(f'High competition barrier — artists with {int(avg_revs)}+ reviews dominate local discovery. Cold entry is difficult.')
+    if avg_price < 200:
+        weaknesses.append(f'Below-average session pricing (${avg_price}/session). Market may resist premium guest rates.')
+    if n_artists >= 15:
+        weaknesses.append(f'{n_artists}+ active artists — saturated. Differentiation through style or social following is essential.')
+    if not style_str:
+        weaknesses.append('No specific style selected — competing as a generalist against established local artists is harder.')
+
+    opportunities = []
+    if n_ads == 0:
+        opportunities.append(f'First mover in paid ads — a $300–500 Meta campaign before arrival can pre-book 5–10 slots before you land.')
+    if barrier >= 25:
+        opportunities.append(f'Weak local Google presence — most artists avg only {int(avg_revs)} reviews. Strong geo-tagged IG content outranks them fast.')
+    month = datetime.datetime.now().month
+    if month in [3, 4, 5, 6, 7, 8]:
+        opportunities.append('Spring/Summer timing — clients book earlier and budget more for visible placements. Optimal window.')
+    if n_artists >= 10:
+        opportunities.append(f'Established market with repeat tattoo clients. Locals unhappy with existing artists actively seek alternatives.')
+    if avg_price < high_price:
+        opportunities.append(f'Price ceiling ${high_price}/session for premium work — a specialty artist can command top-of-market rates here.')
+
+    threats = []
+    if avg_revs >= 200:
+        threats.append(f'Entrenched artists with {int(avg_revs)}+ reviews dominate map pack — pre-arrival social momentum required.')
+    if n_ads >= 3:
+        threats.append(f'{n_ads} competitors running paid ads in {city_str} — strong organic IG presence required to compete.')
+    threats.append('Guest spot bookings depend entirely on pre-arrival marketing. Without a targeted campaign 2–3 weeks before, slots stay empty.')
+    if total < 50:
+        threats.append('Moderate-to-low opportunity score — a higher-yield nearby city may offer better ROI for travel costs.')
+
+    return {
+        'strengths':     strengths[:4],
+        'weaknesses':    weaknesses[:4],
+        'opportunities': opportunities[:4],
+        'threats':       threats[:4],
+    }
+
+
 # ── TATTOO REPORT BUILDER ─────────────────────────────────────────────
 
 def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
@@ -5747,6 +5996,7 @@ def build_tattoo_report(place, pagespeed, site_data, tattoo_extras, competitors,
         'gbp_description':  gbp_desc,
         'ad_library':       ad_library or [],
         'bio_recommendations': bio_recs,
+        'swot': generate_swot_google(place, scores, issues, comp_list, social_data or {}, city),
     }
 
 
@@ -6177,6 +6427,7 @@ def build_guest_city_report(city, state, style, artists, map_pack, ads,
         'ad_activity':  {'count': len(ads), 'ads': ads[:4]},
         'demand':       serp_data,
         'seasonal_note': season,
+        'swot': generate_swot_guest(opp, benchmarks, artists, ads, style, city),
     }
 
 

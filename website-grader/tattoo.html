@@ -2210,6 +2210,239 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 #lead-popup-close { background: rgba(255,255,255,.06); border: none; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.4); font-size: 16px; cursor: pointer; transition: all .15s; flex-shrink: 0; }
 #lead-popup-close:hover { background: rgba(255,255,255,.12); color: #fff; }
 
+/* ── SWOT ANALYSIS ───────────────────────────────────────────────── */
+.swot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+@media(max-width:560px){ .swot-grid { grid-template-columns: 1fr; } }
+.swot-quad {
+  border-radius: 12px;
+  padding: 16px 18px;
+  border: 1px solid;
+}
+.swot-quad.strengths  { background: rgba(0,204,102,.04); border-color: rgba(0,204,102,.18); }
+.swot-quad.weaknesses { background: rgba(255,68,68,.04);  border-color: rgba(255,68,68,.18); }
+.swot-quad.opportunities { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.1); }
+.swot-quad.threats    { background: rgba(255,153,0,.04); border-color: rgba(255,153,0,.18); }
+.swot-quad-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.swot-quad.strengths  .swot-quad-label { color: rgba(0,204,102,.7); }
+.swot-quad.weaknesses .swot-quad-label { color: rgba(255,100,100,.7); }
+.swot-quad.opportunities .swot-quad-label { color: rgba(255,255,255,.4); }
+.swot-quad.threats    .swot-quad-label { color: rgba(255,170,50,.7); }
+.swot-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,.68);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+.swot-item:last-child { margin-bottom: 0; }
+.swot-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.swot-quad.strengths  .swot-dot { background: rgba(0,204,102,.7); }
+.swot-quad.weaknesses .swot-dot { background: rgba(255,100,100,.7); }
+.swot-quad.opportunities .swot-dot { background: rgba(255,255,255,.3); }
+.swot-quad.threats    .swot-dot { background: rgba(255,170,50,.7); }
+
+/* ── CLOSE SECTION (Revenue Projection + CTA) ────────────────────── */
+.close-section {
+  padding: clamp(32px,5vw,56px) var(--px);
+  background: linear-gradient(180deg, var(--bg) 0%, rgba(255,255,255,.015) 100%);
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+.close-eyebrow {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  margin-bottom: 10px;
+}
+.close-headline {
+  font-size: clamp(22px, 3.5vw, 36px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1.08;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.close-headline em { font-style: normal; color: rgba(255,255,255,.45); }
+.close-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,.45);
+  line-height: 1.6;
+  margin-bottom: 28px;
+  max-width: 580px;
+}
+.close-math-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.close-math-col {
+  flex: 1;
+  min-width: 130px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 16px 14px;
+  text-align: center;
+}
+.close-math-col.highlight {
+  background: rgba(255,255,255,.07);
+  border-color: rgba(255,255,255,.18);
+}
+.close-math-amt {
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  color: #fff;
+  margin-bottom: 3px;
+}
+.close-math-col.highlight .close-math-amt { color: var(--green); }
+.close-math-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,.35);
+  text-transform: uppercase;
+}
+.close-fixes-list {
+  margin-bottom: 28px;
+}
+.close-fix-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255,255,255,.6);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  line-height: 1.4;
+}
+.close-fix-item:last-child { border-bottom: none; }
+.close-fix-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.close-trust-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.close-trust-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.close-trust-body { flex: 1; min-width: 200px; }
+.close-trust-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.close-trust-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.4);
+  line-height: 1.55;
+}
+.close-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity .15s, transform .1s;
+}
+.close-cta-btn:hover { opacity: .88; }
+.close-cta-btn:active { transform: scale(.98); }
+.close-steps-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.close-step {
+  flex: 1;
+  padding: 16px 14px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+.close-step:last-child { border-right: none; }
+.close-step-num {
+  font-size: 22px;
+  font-weight: 900;
+  color: rgba(255,255,255,.2);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.close-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.6);
+  margin-bottom: 3px;
+}
+.close-step-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,.3);
+  line-height: 1.4;
+}
+@media(max-width:560px) {
+  .close-steps-row { flex-direction: column; }
+  .close-step { border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .close-step:last-child { border-bottom: none; }
+}
+
 /* ── IG HEALTH SCORE ─────────────────────────────────────────────── */
 .igr-health-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.06); }
 .igr-health-circle { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -2726,17 +2959,28 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div id="igr-bio-variants-list" style="margin-top:12px"></div>
     </div>
 
+    <!-- SWOT Analysis (Instagram) -->
+    <div class="igr-section" id="igr-swot-section" style="display:none">
+      <div class="igr-section-label">SWOT Analysis</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px;line-height:1.5">An honest assessment of your Instagram presence — where you're strong, where you're vulnerable, and where the revenue opportunity lives.</div>
+      <div class="swot-grid" id="swot-grid-ig"></div>
+    </div>
+
     <!-- CTA -->
     <div class="igr-cta">
       <div class="igr-cta-headline">Your Instagram data is working against you.</div>
       <div class="igr-cta-sub">JRZ Ink Systems builds your content calendar, optimizes your bio and booking funnel, and runs paid ads to fill your calendar — with live performance tracking. We only win when you win.</div>
-      <button class="igr-cta-btn" onclick="window.open('https://jrzinksystems.com/home-577937','_blank')">Get a Free Strategy Call →</button>
-      <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:6px">$1,000/mo + 10% per session booked · No contracts</div>
+      <button class="igr-cta-btn" onclick="window.open('https://links.jrzmarketing.com/widget/bookings/jrz-marketing','_blank')">Schedule a Free Strategy Call →</button>
+      <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:6px">$1,000/mo + 10% of ALL your sessions · No contracts</div>
       <br>
       <button class="igr-run-again" onclick="runAgain()">← Audit a Different Account</button>
     </div>
 
   </div>
+
+  <!-- Revenue Close Section (IG Audit) -->
+  <div class="close-section" id="close-section-ig" style="display:none"></div>
+
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════
@@ -3060,6 +3304,15 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="roadmap-steps" id="roadmap-steps"></div>
       </div>
 
+      <!-- SWOT Analysis -->
+      <div class="main-section" id="swot-section-google" style="display:none">
+        <div class="main-section-title">SWOT Analysis</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+          A honest assessment of where you stand and where the opportunity is.
+        </div>
+        <div class="swot-grid" id="swot-grid-google"></div>
+      </div>
+
     </div>
 
     <!-- SIDEBAR -->
@@ -3091,11 +3344,11 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         <div class="cta-sub">
           JRZ Ink Systems handles your booking system, Instagram, local SEO, and review automation — so you stay focused on the art.
         </div>
-        <div class="cta-price">$1,000/MO + 10% PER SESSION BOOKED · PERFORMANCE-BASED</div>
-        <a href="https://jrzmarketing.com" target="_blank" rel="noopener" class="cta-btn">
-          Book a Free Strategy Call →
+        <div class="cta-price">$1,000/MO + 10% OF ALL SESSIONS · PERFORMANCE-BASED</div>
+        <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank" rel="noopener" class="cta-btn">
+          Schedule a Free Strategy Call →
         </a>
-        <div class="cta-note">No obligation. We show you exactly what's broken and what it's costing you. We only win when you win — that's why we take 10% per booking.</div>
+        <div class="cta-note">No contracts. No obligation. We show you exactly what's blocking your calendar and what we fix first. We charge 10% of ALL sessions you do — not just ones we book. We only win when you win.</div>
       </div>
 
       <!-- Competitors -->
@@ -3107,6 +3360,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
     </div>
   </div>
+
+  <!-- Revenue Close Section (Google Audit) -->
+  <div class="close-section" id="close-section-google" style="display:none"></div>
 
   <!-- Luis Farrera Proof -->
   <div class="luis-section" id="luis-section">
@@ -3265,11 +3521,11 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="cl-cta-feature"><span>✓</span> Facebook Ads launched</div>
       <div class="cl-cta-feature"><span>✓</span> Monthly performance reports</div>
     </div>
-    <a href="https://jrzmarketing.com" target="_blank" rel="noopener" class="cl-cta-btn">
+    <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank" rel="noopener" class="cl-cta-btn">
       Book Your Strategy Call
     </a>
     <div class="cl-cta-note">
-      $1,000/mo + 10% per session booked · No long-term contracts<br>
+      $1,000/mo + 10% of ALL your sessions · No long-term contracts<br>
       We only win when you win. We build and run your entire growth system — you stay focused on the art.
     </div>
   </div>
@@ -3370,6 +3626,13 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div id="gr-ads-list"></div>
     </div>
 
+    <!-- SWOT Analysis (Guest City) -->
+    <div class="guest-section" id="gr-swot-section" style="display:none">
+      <div class="guest-section-title">SWOT Analysis — <span id="gr-swot-city"></span></div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Your competitive position before you arrive — what works in your favor and what to prepare for.</div>
+      <div class="swot-grid" id="swot-grid-guest"></div>
+    </div>
+
   </div>
 
   <!-- CTA -->
@@ -3378,11 +3641,14 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     <div class="guest-cta-sub">
       JRZ Ink Systems runs city-targeted Meta Ads ahead of your arrival to pre-book your slots — so your calendar is full before you even show up. We only win when you win.
     </div>
-    <a href="https://jrzmarketing.com" target="_blank" rel="noopener" class="guest-cta-btn">
+    <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank" rel="noopener" class="guest-cta-btn">
       Book a Strategy Call →
     </a>
-    <div class="guest-cta-note">$1,000/mo + 10% per session booked · No long-term contracts</div>
+    <div class="guest-cta-note">$1,000/mo + 10% of ALL your sessions · No long-term contracts</div>
   </div>
+
+  <!-- Revenue Close Section (Guest City) -->
+  <div class="close-section" id="close-section-guest" style="display:none"></div>
 
   <div class="guest-run-again-bar">
     <button class="guest-run-again-btn" onclick="guestRunAgain()">← Audit a Different City</button>
@@ -5592,19 +5858,25 @@ function renderReport(d) {
     ctaDiv.innerHTML = `
       <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Your Next Step</div>
       <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.3">${urgLine}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:18px;max-width:480px;margin-left:auto;margin-right:auto">JRZ Ink Systems handles your Google profile, booking system, Instagram, and ads. We charge $1,000/month + 10% of every session we book for you. You only pay more when you earn more.</div>
-      <a href="https://jrzinksystems.com/home-577937" target="_blank"
+      <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:18px;max-width:480px;margin-left:auto;margin-right:auto">JRZ Ink Systems handles your Google profile, booking system, Instagram, and ads. $1,000/month + 10% of ALL sessions you do. You only pay more when you earn more.</div>
+      <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank"
         style="display:inline-block;padding:13px 28px;background:#fff;color:#000;font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:.5px;border-radius:8px;text-decoration:none;transition:opacity .15s"
         onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-        Book a Free Strategy Call →
+        Schedule a Free Strategy Call →
       </a>
-      <div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:10px">No contracts · Pay only when you get bookings</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:10px">No contracts · $1,000/mo + 10% of ALL your sessions</div>
     `;
     const roadmapSec = document.getElementById('roadmap-steps')?.parentElement;
     if (roadmapSec && roadmapSec.parentNode) {
       roadmapSec.parentNode.insertBefore(ctaDiv, roadmapSec.nextSibling);
     }
   })();
+
+  // ── SWOT Analysis ─────────────────────────────────────────────
+  if (d.swot) renderSWOT(d.swot, 'swot-grid-google', 'swot-section-google');
+
+  // ── Revenue Close Section ──────────────────────────────────────
+  renderCloseSection(d, 'google');
 
   // Store report globally (used by checklist + OAuth enhance)
   currentReport = d;
@@ -5863,6 +6135,14 @@ function renderGuestReport(d) {
     document.getElementById('gr-ads-list').innerHTML = '';
   }
 
+  // ── SWOT Analysis ─────────────────────────────────────────────
+  const swotCity = document.getElementById('gr-swot-city');
+  if (swotCity) swotCity.textContent = d.city_display || d.city || '';
+  if (d.swot) renderSWOT(d.swot, 'swot-grid-guest', 'gr-swot-section');
+
+  // ── Revenue Close Section ──────────────────────────────────────
+  renderCloseSection(d, 'guest');
+
   // Done — show guest report
   document.getElementById('search-section').style.display   = 'none';
   document.getElementById('loading-section').style.display  = 'none';
@@ -5891,11 +6171,11 @@ function showIGReport() {
   document.getElementById('search-section').style.display      = 'none';
   document.getElementById('loading-section').style.display     = 'none';
   document.getElementById('report-section').style.display      = 'none';
-  document.getElementById('checklist-section').style.display   = 'none';
   document.getElementById('guest-report-section').style.display = 'none';
   document.getElementById('oauth-interstitial').style.display  = 'none';
   document.getElementById('lead-gate-section').style.display   = 'none';
   document.getElementById('ig-report-section').style.display   = 'block';
+  document.getElementById('checklist-section').style.display   = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -6544,6 +6824,15 @@ function renderIGReport(d) {
     if (body && body.firstChild) body.insertBefore(banner, body.firstChild);
   }
 
+  // ── SWOT Analysis ─────────────────────────────────────────────
+  if (d.swot) renderSWOT(d.swot, 'swot-grid-ig', 'igr-swot-section');
+
+  // ── Revenue Close Section ──────────────────────────────────────
+  renderCloseSection(d, 'ig');
+
+  // ── Pre-launch Checklist ──────────────────────────────────────
+  renderChecklist(d);
+
   showIGReport();
 }
 
@@ -6695,6 +6984,277 @@ function copyHook(i) {
     document.execCommand('copy');
     document.body.removeChild(ta);
   });
+}
+
+// ═════════════════════════════════════════════════════════════════
+// SWOT RENDERER
+// ═════════════════════════════════════════════════════════════════
+function renderSWOT(swot, gridId, sectionId) {
+  if (!swot) return;
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+
+  const quads = [
+    { key: 'strengths',     cls: 'strengths',     label: 'STRENGTHS'    },
+    { key: 'weaknesses',    cls: 'weaknesses',     label: 'WEAKNESSES'   },
+    { key: 'opportunities', cls: 'opportunities',  label: 'OPPORTUNITIES'},
+    { key: 'threats',       cls: 'threats',        label: 'THREATS'      },
+  ];
+
+  grid.innerHTML = quads.map(q => {
+    const items = (swot[q.key] || []).filter(Boolean).slice(0, 4);
+    if (!items.length) return '';
+    return `
+      <div class="swot-quad ${q.cls}">
+        <div class="swot-quad-label">${q.label}</div>
+        ${items.map(item => `
+          <div class="swot-item">
+            <div class="swot-dot"></div>
+            <span>${item}</span>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+
+  if (sectionId) {
+    const sec = document.getElementById(sectionId);
+    if (sec) sec.style.display = 'block';
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════
+// REVENUE CLOSE SECTION RENDERER
+// ═════════════════════════════════════════════════════════════════
+function renderCloseSection(d, type) {
+  const SCHED    = 'https://links.jrzmarketing.com/widget/bookings/jrz-marketing';
+  const fmtDollar = n => '$' + Math.max(0, Math.round(n || 0)).toLocaleString();
+
+  let containerId, name, currentRev, potentialRev, fixes;
+
+  // ── GOOGLE / ARTIST AUDIT ──────────────────────────────────────
+  if (type === 'google') {
+    containerId  = 'close-section-google';
+    const rev    = d.revenue  || {};
+    const b      = d.business || {};
+    const sc     = d.scores   || {};
+    name         = b.name || 'Your Studio';
+    currentRev   = rev.current_base   || 0;
+    potentialRev = rev.potential_base || 0;
+
+    // Pull top 3 from roadmap — these are the actual JRZ fixes
+    const roadmap = d.roadmap || [];
+    fixes = roadmap.slice(0, 3).map(s => ({
+      title:  s.title   || '',
+      action: s.jrz_fix || s.result || '',
+    }));
+
+    // Fill missing slots with smart defaults based on scores
+    const defaults = [
+      { title: 'Google Business Profile Overhaul',
+        action: 'Claim + verify your listing, add 20+ portfolio photos, optimize for "tattoo artist [city]" keywords, and complete every field. This is step 1 in the Google algorithm.' },
+      { title: 'Online Booking System Integration',
+        action: 'Connect Vagaro, Booksy, or Calendly directly to your Google profile and website — so clients can book the moment they find you, with no DM back-and-forth.' },
+      { title: 'Instagram Growth + Content Calendar',
+        action: '30-day personalized content calendar, bio rewrite, hashtag strategy, and Reel hook templates — built from your actual style and city data.' },
+    ];
+    while (fixes.length < 3) fixes.push(defaults[fixes.length]);
+  }
+
+  // ── INSTAGRAM AUDIT ───────────────────────────────────────────
+  else if (type === 'ig') {
+    containerId  = 'close-section-ig';
+    const rg     = d.revenue_gap    || {};
+    const igc    = d.ig_competitive || {};
+    const handle = d.username || d.handle || '';
+    const city_ig = d.city || '';
+    name         = handle ? '@' + handle : 'Your Account';
+    currentRev   = rg.current_revenue_est || 0;
+    potentialRev = rg.optimal_revenue_est  || 0;
+    // Public/personal accounts have no revenue_gap — use city benchmark estimates
+    if (!potentialRev) {
+      const followers = (igc.followers || 0);
+      const avgPriceEst = city_ig && city_ig.toLowerCase().includes('miami') ? 280
+                        : city_ig && city_ig.toLowerCase().includes('new york') ? 350
+                        : city_ig && city_ig.toLowerCase().includes('orlando') ? 220
+                        : 200;
+      const sessEst = followers >= 5000 ? 20 : followers >= 1000 ? 12 : 8;
+      currentRev   = Math.round(sessEst * avgPriceEst * 0.75);
+      potentialRev = Math.round(sessEst * 1.45 * avgPriceEst);
+    }
+
+    // Pull top 3 from IG gaps
+    const gaps   = igc.gaps || [];
+    fixes = gaps.slice(0, 3).map(g => ({
+      title:  g.category || g.issue || '',
+      action: g.action   || g.fix   || '',
+    }));
+
+    const igDefaults = [
+      { title: 'Posting Consistency + Reel Strategy',
+        action: 'Build a 30-day content calendar personalized to your tattoo style. Reels are the discovery engine — they reach people who have never heard of you yet.' },
+      { title: 'Bio Optimization + Direct Booking Link',
+        action: 'Rewrite your bio with your specialty, city, and a direct booking link. Every profile visit should convert to a DM or direct booking.' },
+      { title: 'Hashtag & Timing Strategy',
+        action: 'Replace mega-tags (500M+ posts) with niche tattoo + city tags. Post on your highest-engagement days and hours — identified from your actual post history.' },
+    ];
+    while (fixes.length < 3) fixes.push(igDefaults[fixes.length]);
+  }
+
+  // ── GUEST CITY AUDIT ──────────────────────────────────────────
+  else if (type === 'guest') {
+    containerId  = 'close-section-guest';
+    const rev    = d.revenue_estimate || {};
+    const opp    = d.opportunity      || {};
+    const city   = d.city_display || d.city || 'this city';
+    name         = city;
+    currentRev   = 0;
+    potentialRev = rev.high || 0;
+    const score  = opp.total || 0;
+    fixes = [
+      { title: 'Pre-Arrival Meta Ads Campaign',
+        action: `JRZ launches city-targeted Instagram and Facebook ads 2 weeks before your arrival in ${city} — so your DMs are full before you even set up your station.` },
+      { title: 'Guest Booking Funnel + Deposit System',
+        action: 'Dedicated landing page, online deposit collection, and automated DM follow-up — zero manual coordination. You arrive to a confirmed, paid calendar.' },
+      { title: score >= 50 ? 'Local Market Visibility Setup' : 'Precision Niche Targeting',
+        action: score >= 50
+          ? `${city} shows solid demand. JRZ builds your local Instagram targeting and Google Maps presence before you land — so clients in the city already know your name.`
+          : `${city} has strong competition. JRZ runs a precision campaign focused on underserved style niches to carve out your calendar before the established artists notice.` },
+    ];
+  }
+  else { return; }
+
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // ── MATH ──────────────────────────────────────────────────────
+  const jrzFee = 1000;
+  const jrzPct = 0.10;
+
+  // For Google + IG: monthly math
+  // Net = 90% of optimized revenue - $1,000 base
+  const netOptimized = potentialRev * 0.90 - jrzFee;
+  const monthlyGain  = netOptimized - currentRev;
+
+  // For Guest: 2-week stint math
+  const guestJrzFee   = 500; // ~2 weeks of $1k/mo
+  const guestNet      = potentialRev * 0.90 - guestJrzFee;
+
+  // ── MATH COLUMNS HTML ─────────────────────────────────────────
+  let mathHTML;
+  if (type === 'guest') {
+    mathHTML = `
+      <div class="close-math-col">
+        <div class="close-math-amt">${fmtDollar(potentialRev)}</div>
+        <div class="close-math-lbl">2-Week Revenue (High Est.)</div>
+      </div>
+      <div class="close-math-col">
+        <div class="close-math-amt" style="color:rgba(255,100,100,.8)">${fmtDollar(guestJrzFee + jrzPct * potentialRev)}</div>
+        <div class="close-math-lbl">JRZ Investment (2 wks)</div>
+      </div>
+      <div class="close-math-col highlight">
+        <div class="close-math-amt">${fmtDollar(guestNet)}</div>
+        <div class="close-math-lbl">Your Net from This Stint</div>
+      </div>`;
+  } else {
+    mathHTML = `
+      <div class="close-math-col">
+        <div class="close-math-amt">${fmtDollar(currentRev)}</div>
+        <div class="close-math-lbl">Est. Current Monthly Rev</div>
+      </div>
+      <div class="close-math-col">
+        <div class="close-math-amt" style="color:rgba(255,100,100,.8)">${fmtDollar(jrzFee + jrzPct * potentialRev)}</div>
+        <div class="close-math-lbl">JRZ Investment/Month</div>
+      </div>
+      <div class="close-math-col highlight">
+        <div class="close-math-amt">${fmtDollar(netOptimized)}</div>
+        <div class="close-math-lbl">Your Net at Full Speed</div>
+      </div>`;
+  }
+
+  // ── HEADLINE + SUB ────────────────────────────────────────────
+  const headlines = {
+    google: `Here's what ${name} looks like<br><em>after 90 days with JRZ Ink Systems.</em>`,
+    ig:     `Here's what ${name} looks like<br><em>with a full Instagram growth system behind it.</em>`,
+    guest:  `Here's what your trip to ${name} looks like<br><em>with JRZ running your booking before you arrive.</em>`,
+  };
+  const subs = {
+    google: 'Every number below comes from your actual audit — current revenue, what we fix, and what stays in your pocket after our fee. No fluff.',
+    ig:     'Built from your live Instagram data — what you\'re earning now versus what a managed growth and booking system produces for artists at your stage.',
+    guest:  'Revenue model based on city pricing benchmarks and 2-week capacity data. JRZ runs your pre-arrival campaign so you show up to a booked calendar.',
+  };
+  const eyebrows = {
+    google: 'YOUR 90-DAY REVENUE PROJECTION',
+    ig:     'YOUR INSTAGRAM GROWTH PROJECTION',
+    guest:  'GUEST CITY REVENUE PROJECTION',
+  };
+
+  // ── FIX ITEMS ─────────────────────────────────────────────────
+  const fixesHTML = fixes.map((f, i) => `
+    <div class="close-fix-item">
+      <div class="close-fix-num">${i + 1}</div>
+      <div>
+        <strong style="display:block;color:rgba(255,255,255,.88);font-size:13px;margin-bottom:3px">${f.title}</strong>
+        <span style="font-size:12px;color:rgba(255,255,255,.42);line-height:1.55">${f.action}</span>
+      </div>
+    </div>`).join('');
+
+  // ── GAIN NOTE ─────────────────────────────────────────────────
+  let gainNote = '';
+  if (type !== 'guest' && monthlyGain > 0) {
+    gainNote = `<div style="font-size:12px;color:rgba(0,204,102,.7);margin-top:-14px;margin-bottom:24px;line-height:1.5">
+      That's <strong style="color:rgba(0,204,102,.9)">${fmtDollar(monthlyGain)}/month more</strong> in your pocket — even after the JRZ fee.
+      <span style="color:rgba(255,255,255,.3)"> (10% is charged on ALL sessions, not just ones we book. We only win when you win.)</span>
+    </div>`;
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div class="close-eyebrow">${eyebrows[type]}</div>
+    <h2 class="close-headline">${headlines[type]}</h2>
+    <p class="close-sub">${subs[type]}</p>
+
+    <div class="close-math-row">${mathHTML}</div>
+    ${gainNote}
+
+    <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.28);margin-bottom:14px;text-transform:uppercase">What JRZ Builds and Runs for You</div>
+    <div class="close-fixes-list">${fixesHTML}</div>
+
+    <div class="close-trust-row">
+      <div class="close-trust-icon" style="font-size:16px;font-weight:900;color:rgba(255,255,255,.6)">★</div>
+      <div class="close-trust-body">
+        <div class="close-trust-title">Psychology-trained booking managers. Industry-certified. Real people on your account daily.</div>
+        <div class="close-trust-sub">Every JRZ Ink Systems client is assigned a dedicated booking manager — bachelor's degree holders, psychology-tested, customer service experts trained specifically for the tattoo industry. They respond to every DM and inquiry within 60 seconds so you never lose a hot lead. You focus on the art. We own the calendar.</div>
+      </div>
+    </div>
+
+    <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.28);margin-bottom:14px;text-transform:uppercase">How It Works — 3 Steps</div>
+    <div class="close-steps-row">
+      <div class="close-step">
+        <div class="close-step-num">1</div>
+        <div class="close-step-label">Run Your Audit</div>
+        <div class="close-step-sub">See every gap that's blocking your calendar — done. You're already here.</div>
+      </div>
+      <div class="close-step">
+        <div class="close-step-num">2</div>
+        <div class="close-step-label">Review the 68-Point Checklist</div>
+        <div class="close-step-sub">See exactly what JRZ builds for you in 14 days — every system, every checkpoint.</div>
+      </div>
+      <div class="close-step">
+        <div class="close-step-num">3</div>
+        <div class="close-step-label">Start Onboarding</div>
+        <div class="close-step-sub">Done-for-you: booking system, Google profile, Instagram strategy, and ad launch. All live in 14 days.</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding-top:4px">
+      <a href="${SCHED}" target="_blank" rel="noopener" class="close-cta-btn">
+        Schedule Your Free Strategy Call →
+      </a>
+      <div style="font-size:11px;color:rgba(255,255,255,.22);margin-top:10px">
+        No contracts · $1,000/mo + 10% of ALL your sessions · We only win when you win.
+      </div>
+    </div>
+  `;
 }
 </script>
 </body>
