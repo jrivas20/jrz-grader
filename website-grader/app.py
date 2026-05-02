@@ -19,6 +19,8 @@ DFS_LOGIN     = os.environ.get('DATAFORSEO_LOGIN', '')
 DFS_PASSWORD  = os.environ.get('DATAFORSEO_PASSWORD', '')
 FB_TOKEN      = os.environ.get('FB_ACCESS_TOKEN', '')
 FB_APP_ID     = os.environ.get('FB_APP_ID', '')        # Public — used in OAuth popup URL
+SUPABASE_URL  = os.environ.get('SUPABASE_URL', '')     # https://xxxx.supabase.co
+SUPABASE_KEY  = os.environ.get('SUPABASE_ANON_KEY', '') # anon/public key
 
 CACHE = {}
 
@@ -3801,6 +3803,30 @@ def _grade_tattoo_internal(place_id):
     except Exception:
         pass
 
+    # ── Log market signals to Supabase (non-blocking) ─────────────────
+    try:
+        raw_review_texts = [r.get('text', '') for r in (place.get('reviews', []) or [])]
+        price_mentions   = extract_price_mentions(raw_review_texts)
+        active_comps     = [c for c in competitors if c.get('rating')]
+        avg_comp_rating  = (round(sum(c['rating'] for c in active_comps) / len(active_comps), 2)
+                            if active_comps else None)
+        avg_comp_reviews = (int(sum(c.get('user_ratings_total', 0) for c in active_comps) / len(active_comps))
+                            if active_comps else None)
+        log_audit_async('google', city, state, {
+            'competitor_count':       len(competitors),
+            'map_pack_density':       sum(m.get('pack_size', 0) for m in map_pack_data),
+            'avg_competitor_rating':  avg_comp_rating,
+            'avg_competitor_reviews': avg_comp_reviews,
+            'ad_count':               len(ad_library or []),
+            'has_booking_system':     bool(tattoo_extras.get('has_tattoo_booking')
+                                          or site_data.get('has_booking_widget')),
+            'est_session_price':      report['revenue'].get('adj_avg_price'),
+            'price_mentions':         price_mentions or None,
+            'overall_score':          report['scores']['overall'],
+        })
+    except Exception:
+        pass
+
     return report, None, None
 
 
@@ -4096,6 +4122,21 @@ def grade_ig_only():
             }, competitor_ig, tiktok_data, city),
         }
         CACHE[cache_key] = {'ts': time.time(), 'data': result}
+
+        # ── Log IG market signals to Supabase (non-blocking) ──────────
+        try:
+            log_audit_async('ig', city, '', {
+                'followers':       ig_info.get('followers_count', 0),
+                'posts_per_week':  round(posts_per_week, 1) if posts_per_week else None,
+                'engagement_rate': ig_competitive.get('engagement_rate'),
+                'competitor_count': len(competitor_ig),
+                'est_session_price': avg_price,
+                'has_booking_system': bool(ig_info.get('website', '')),
+                'style':           ', '.join(detected_styles[:2]) if detected_styles else '',
+            })
+        except Exception:
+            pass
+
         return jsonify(result)
 
     except Exception as e:
@@ -6028,6 +6069,160 @@ def fire_ghl_ink(report):
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  MARKET DATA ACCUMULATOR
+#  Logs every audit to Supabase so city benchmarks improve over time.
+#  Uses requests (already imported) — no new dependency.
+#
+#  One-time Supabase setup (run once in your project's SQL editor):
+#
+#  CREATE TABLE audit_logs (
+#    id                      BIGSERIAL PRIMARY KEY,
+#    audit_type              TEXT NOT NULL,          -- 'google' | 'ig' | 'guest'
+#    city                    TEXT NOT NULL,
+#    state                   TEXT    DEFAULT '',
+#    style                   TEXT    DEFAULT '',
+#    created_at              TIMESTAMPTZ DEFAULT NOW(),
+#    competitor_count        INT,
+#    map_pack_density        INT,
+#    avg_competitor_rating   NUMERIC(3,2),
+#    avg_competitor_reviews  INT,
+#    ad_count                INT,
+#    has_booking_system      BOOLEAN,
+#    est_session_price       INT,
+#    price_mentions          INT[],
+#    overall_score           INT,
+#    followers               INT,
+#    engagement_rate         NUMERIC(5,2),
+#    posts_per_week          NUMERIC(4,1),
+#    opp_score               INT,
+#    demand_score            INT,
+#    barrier_score           INT
+#  );
+#  CREATE INDEX idx_audit_city ON audit_logs(city, created_at DESC);
+# ═══════════════════════════════════════════════════════════════════
+
+def extract_price_mentions(review_texts):
+    """
+    Mine dollar amounts from Google review text — no artist input needed.
+    Catches: "$250", "paid 300", "charged me $150", "$200/hr", "only $180".
+    Returns a cleaned list of ints between $50–$2000 (filters noise).
+    """
+    prices = []
+    for text in (review_texts or []):
+        if not text:
+            continue
+        matches = re.findall(
+            r'\$\s?(\d{2,4})(?:/hr)?'          # $250 or $200/hr
+            r'|\bpaid\s+\$?(\d{2,4})\b'         # paid 300 or paid $300
+            r'|\bcharged\s+\$?(\d{2,4})\b'      # charged $150
+            r'|\bonly\s+\$(\d{2,4})\b'           # only $180
+            r'|\bcost\s+\$?(\d{2,4})\b',         # cost $220
+            text, re.IGNORECASE
+        )
+        for group in matches:
+            val = next((int(x) for x in group if x), None)
+            if val and 50 <= val <= 2000:
+                prices.append(val)
+    return prices
+
+
+def log_audit_async(audit_type, city, state, payload):
+    """
+    Non-blocking Supabase insert — runs in daemon thread.
+    NEVER blocks a report. Silently swallows all errors.
+    payload: dict of columns matching the audit_logs schema.
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return  # env vars not set — skip silently
+
+    def _write():
+        try:
+            row = {
+                'audit_type': audit_type,
+                'city':       city.lower().strip() if city else '',
+                'state':      (state or '').upper().strip(),
+                **{k: v for k, v in payload.items() if v is not None},
+            }
+            requests.post(
+                f'{SUPABASE_URL}/rest/v1/audit_logs',
+                headers={
+                    'apikey':        SUPABASE_KEY,
+                    'Authorization': f'Bearer {SUPABASE_KEY}',
+                    'Content-Type':  'application/json',
+                    'Prefer':        'return=minimal',
+                },
+                json=row,
+                timeout=6,
+            )
+        except Exception:
+            pass  # logging failure must NEVER affect a report
+
+    import threading
+    threading.Thread(target=_write, daemon=True).start()
+
+
+def get_city_baseline(city):
+    """
+    Returns live city benchmark from Supabase if >= 20 audits exist.
+    Falls back to TATTOO_CITY_BENCHMARKS static dict otherwise.
+    Confidence levels: static (0-19) → low (20-49) → medium (50-99) → high (100+)
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        key = (city or 'default').lower().strip()
+        return {**TATTOO_CITY_BENCHMARKS.get(key, TATTOO_CITY_BENCHMARKS['default']),
+                'confidence': 'static', 'sample_size': 0}
+
+    city_key = (city or '').lower().strip()
+    try:
+        # Aggregate last 90 days of audits for this city
+        resp = requests.get(
+            f'{SUPABASE_URL}/rest/v1/audit_logs',
+            headers={
+                'apikey':        SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+            },
+            params={
+                'select':     'est_session_price,avg_competitor_rating,'
+                              'avg_competitor_reviews,ad_count,map_pack_density',
+                'city':       f'eq.{city_key}',
+                'created_at': f'gte.{(datetime.datetime.utcnow() - datetime.timedelta(days=90)).isoformat()}',
+                'limit':      500,
+            },
+            timeout=4,
+        )
+        rows = resp.json() if resp.status_code == 200 else []
+        if not isinstance(rows, list):
+            rows = []
+
+        # Only use live data if we have enough samples
+        prices = [r['est_session_price'] for r in rows
+                  if r.get('est_session_price') and 50 <= r['est_session_price'] <= 2000]
+        n = len(prices)
+
+        if n >= 20:
+            avg_price = int(sum(prices) / n)
+            confidence = 'high' if n >= 100 else 'medium' if n >= 50 else 'low'
+            # Estimate high-end as 1.5x avg (matches static dict ratio)
+            high_price = int(avg_price * 1.5)
+            # Use static monthly_sessions as we don't track that yet
+            static = TATTOO_CITY_BENCHMARKS.get(city_key, TATTOO_CITY_BENCHMARKS['default'])
+            return {
+                'avg_price':        avg_price,
+                'high':             high_price,
+                'monthly_sessions': static['monthly_sessions'],
+                'confidence':       confidence,
+                'sample_size':      n,
+                'source':           'live',
+            }
+    except Exception:
+        pass
+
+    # Static fallback
+    static = TATTOO_CITY_BENCHMARKS.get(city_key, TATTOO_CITY_BENCHMARKS['default'])
+    return {**static, 'confidence': 'static', 'sample_size': 0, 'source': 'static'}
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  JRZ INK SYSTEMS — GUEST CITY AUDIT ENGINE
 #  A tattoo artist scouts a new city before booking a guest spot.
 #  Returns: market opportunity score, competition breakdown, revenue estimate.
@@ -6091,8 +6286,13 @@ def grade_guest_city():
 
     # ── Log this audit for city benchmarking ─────────────────────────
     try:
-        opp_score = report.get('opportunity', {}).get('total', 0)
-        avg_rev   = report.get('competition', {}).get('avg_reviews', 0)
+        opp       = report.get('opportunity', {})
+        comp      = report.get('competition', {})
+        opp_score = opp.get('total', 0)
+        avg_rev   = comp.get('avg_reviews', 0)
+        avg_rat   = comp.get('avg_rating', 0)
+
+        # In-memory fallback (survives without Supabase)
         CITY_AUDIT_LOG.append({
             'city':          city,
             'state':         state,
@@ -6105,6 +6305,20 @@ def grade_guest_city():
         })
         if len(CITY_AUDIT_LOG) > 500:
             CITY_AUDIT_LOG.pop(0)
+
+        # Persistent Supabase log
+        log_audit_async('guest', city, state, {
+            'style':                  style or '',
+            'competitor_count':       len(artists),
+            'avg_competitor_rating':  round(avg_rat, 2) if avg_rat else None,
+            'avg_competitor_reviews': int(avg_rev) if avg_rev else None,
+            'ad_count':               len(report.get('ad_activity', {}).get('ads', [])),
+            'est_session_price':      benchmarks.get('avg_price'),
+            'opp_score':              opp_score,
+            'demand_score':           opp.get('demand_score'),
+            'barrier_score':          opp.get('barrier_score'),
+            'map_pack_density':       len(report.get('map_pack', [])),
+        })
     except Exception:
         pass
 
@@ -6453,39 +6667,105 @@ def fire_ghl_guest_city(report):
 @app.route('/api/city-insights')
 def city_insights():
     """
-    Real market data accumulated from Guest City Audits run on this server instance.
-    Resets on server restart — data grows as more artists run audits.
-    Use this to progressively improve TATTOO_CITY_BENCHMARKS with real-world figures.
+    Real market data accumulated from all audit types.
+    Tries Supabase first (persistent), falls back to in-memory CITY_AUDIT_LOG.
+    Confidence tiers: static (0-19) → low (20-49) → medium (50-99) → high (100+)
     """
+    # ── Try Supabase ─────────────────────────────────────────────────
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            resp = requests.get(
+                f'{SUPABASE_URL}/rest/v1/audit_logs',
+                headers={
+                    'apikey':        SUPABASE_KEY,
+                    'Authorization': f'Bearer {SUPABASE_KEY}',
+                },
+                params={
+                    'select': 'city,state,audit_type,est_session_price,'
+                              'avg_competitor_reviews,avg_competitor_rating,'
+                              'ad_count,opp_score,created_at,price_mentions',
+                    'order':  'created_at.desc',
+                    'limit':  2000,
+                },
+                timeout=8,
+            )
+            rows = resp.json() if resp.status_code == 200 else []
+            if isinstance(rows, list) and rows:
+                from collections import defaultdict
+                city_buckets = defaultdict(list)
+                for r in rows:
+                    key = f"{(r.get('city') or '').lower().strip()}"
+                    city_buckets[key].append(r)
+
+                insights = {}
+                for city_key, entries in sorted(city_buckets.items()):
+                    n      = len(entries)
+                    prices = [e['est_session_price'] for e in entries
+                              if e.get('est_session_price') and 50 <= e['est_session_price'] <= 2000]
+                    mentions = []
+                    for e in entries:
+                        pm = e.get('price_mentions') or []
+                        if isinstance(pm, list):
+                            mentions.extend(pm)
+
+                    confidence = ('high'   if n >= 100 else
+                                  'medium' if n >= 50  else
+                                  'low'    if n >= 20  else 'static')
+
+                    insights[city_key] = {
+                        'audit_count':          n,
+                        'confidence':           confidence,
+                        'avg_price_benchmark':  round(sum(prices) / len(prices)) if prices else None,
+                        'price_mentions_count': len(mentions),
+                        'avg_price_from_reviews': round(sum(mentions) / len(mentions)) if mentions else None,
+                        'avg_opp_score':        round(sum(e['opp_score'] for e in entries
+                                                          if e.get('opp_score')) /
+                                                      max(1, sum(1 for e in entries if e.get('opp_score'))), 1),
+                        'last_audited':         max(e.get('created_at', '') for e in entries),
+                        'audit_types':          list({e.get('audit_type') for e in entries if e.get('audit_type')}),
+                    }
+
+                return jsonify({
+                    'source':         'supabase',
+                    'total_audits':   len(rows),
+                    'cities_tracked': len(insights),
+                    'city_insights':  insights,
+                    'note':           '20+ audits per city = live benchmarks. 50+ = medium confidence. 100+ = high confidence.',
+                })
+        except Exception:
+            pass
+
+    # ── Fall back to in-memory log ────────────────────────────────────
     if not CITY_AUDIT_LOG:
         return jsonify({
-            'message': 'No data yet. City insights accumulate as artists run Guest City Audits.',
-            'total_audits': 0,
-            'cities_tracked': 0
+            'source':         'none',
+            'message':        'No data yet. Audits accumulate as artists run the tool.',
+            'total_audits':   0,
+            'cities_tracked': 0,
         })
 
     from collections import defaultdict
     city_data = defaultdict(list)
     for entry in CITY_AUDIT_LOG:
-        key = f"{entry['city'].lower()}, {entry.get('state', '').upper()}".strip(', ')
+        key = entry['city'].lower().strip()
         city_data[key].append(entry)
 
     insights = {}
     for city_key, entries in sorted(city_data.items()):
         insights[city_key] = {
-            'audit_count':          len(entries),
-            'avg_artist_count':     round(sum(e['artist_count'] for e in entries) / len(entries), 1),
-            'avg_reviews_market':   round(sum(e['avg_reviews']  for e in entries) / len(entries), 1),
-            'avg_price_benchmark':  round(sum(e['avg_price']    for e in entries) / len(entries), 0),
-            'avg_opp_score':        round(sum(e['opp_score']    for e in entries) / len(entries), 1),
-            'last_audited':         max(e['ts'] for e in entries),
+            'audit_count':         len(entries),
+            'confidence':          'static',
+            'avg_price_benchmark': round(sum(e['avg_price'] for e in entries) / len(entries), 0),
+            'avg_opp_score':       round(sum(e['opp_score'] for e in entries) / len(entries), 1),
+            'last_audited':        max(e['ts'] for e in entries),
         }
 
     return jsonify({
+        'source':         'in-memory',
         'total_audits':   len(CITY_AUDIT_LOG),
         'cities_tracked': len(insights),
         'city_insights':  insights,
-        'note':           'Data accumulates in-memory. Resets on server restart. 50+ audits per city unlocks reliable real-world benchmark updates.',
+        'note':           'In-memory only — resets on server restart. Add SUPABASE_URL + SUPABASE_ANON_KEY env vars for persistent storage.',
     })
 
 

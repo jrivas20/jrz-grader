@@ -2521,7 +2521,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
             <div class="ig-oauth-note-sub">Log in with Facebook. We pull your real followers, engagement, and post data. Read-only. Takes 10 seconds.</div>
           </div>
         </div>
-        <button class="ig-connect-btn" onclick="startIGModeOAuth()">Connect &amp; Audit</button>
+        <button class="ig-connect-btn" onclick="startIGModeOAuth()" id="ig-connect-main-btn">Connect &amp; Audit</button>
       </div>
 
       <div id="ig-search-error" class="search-error-banner"></div>
@@ -3701,6 +3701,45 @@ let pendingIGToken  = null;   // stored after OAuth while page-selector is shown
 fetch(`${API}/api/config`).then(r => r.json()).then(c => {
   fbAppId      = c.fb_app_id || '';
   oauthEnabled = c.oauth_enabled || false;
+
+  // On mobile, replace the OAuth card with a direct handle input immediately
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+  if (isMobile || !oauthEnabled || !fbAppId) {
+    const card = document.querySelector('.ig-oauth-card');
+    if (card) {
+      card.style.display = 'none';
+    }
+    // Pre-render the manual input (hidden until tab is active)
+    const resEl = document.getElementById('ig-results-list');
+    if (resEl && resEl.innerHTML.trim() === '') {
+      resEl.innerHTML = `
+        <div style="padding:18px 20px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-transform:uppercase">Enter your Instagram handle</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <input id="ig-manual-input"
+              type="text"
+              placeholder="@yourtattoohandle"
+              autocapitalize="none"
+              autocorrect="off"
+              autocomplete="off"
+              spellcheck="false"
+              inputmode="text"
+              enterkeyhint="go"
+              style="flex:1;min-width:160px;padding:12px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:var(--font);font-size:15px;outline:none;-webkit-tap-highlight-color:transparent"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();(function(){var h=document.getElementById('ig-manual-input').value.trim().replace(/^@/,'');if(h)gradeIGPublic(h,'');})();}"
+            >
+            <button
+              onclick="(function(){var h=document.getElementById('ig-manual-input').value.trim().replace(/^@/,'');if(!h){var hint=document.getElementById('ig-manual-hint');if(hint){hint.textContent='Enter your handle first.';hint.style.color='rgba(255,100,80,.8)';}return;}gradeIGPublic(h,'');})()"
+              style="padding:12px 20px;background:#fff;color:#000;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">
+              Audit →
+            </button>
+          </div>
+          <div id="ig-manual-hint" style="font-size:11px;color:rgba(255,255,255,.28);line-height:1.5">Public profile audit — followers, bio, and post frequency. No login required.</div>
+        </div>
+      `;
+      resEl.style.display = 'block';
+    }
+  }
 }).catch(() => {});
 
 // Clear tokens if user closes or navigates away
@@ -3731,27 +3770,83 @@ function switchSearchMode(mode) {
   document.getElementById('smt-ig').classList.toggle('active', !isGmb);
   document.getElementById('search-mode-gmb').style.display = isGmb ? 'block' : 'none';
   document.getElementById('search-mode-ig').style.display  = isGmb ? 'none'  : 'block';
-  if (isGmb) document.getElementById('search-input').focus();
-  else        document.getElementById('ig-handle-input').focus();
+  if (isGmb) {
+    document.getElementById('search-input').focus();
+  } else {
+    // Focus manual input if visible, otherwise the hidden field (no-op on mobile)
+    const manual = document.getElementById('ig-manual-input');
+    if (manual) manual.focus();
+  }
 }
 // Backwards-compatible aliases used by inline onclick handlers
 function switchToIGMode()  { switchSearchMode('ig'); }
 function switchToGMBMode() { switchSearchMode('gmb'); }
 
+// ── INSTAGRAM MANUAL HANDLE FALLBACK ─────────────────────────────
+function showManualIGInput(prefill) {
+  const errEl = document.getElementById('ig-search-error');
+  const resEl = document.getElementById('ig-results-list');
+  errEl.style.display = 'none';
+  resEl.style.display = 'none';
+
+  function runManual() {
+    const val = (document.getElementById('ig-manual-input') || {}).value || '';
+    const h   = val.trim().replace(/^@/, '');
+    if (!h) {
+      const hint = document.getElementById('ig-manual-hint');
+      if (hint) { hint.textContent = 'Enter your Instagram handle first.'; hint.style.color = 'rgba(255,100,80,.8)'; }
+      return;
+    }
+    gradeIGPublic(h, '');
+  }
+
+  resEl.innerHTML = `
+    <div style="padding:18px 20px">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-transform:uppercase">Enter your Instagram handle</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <input id="ig-manual-input"
+          type="text"
+          placeholder="@yourtattoohandle"
+          autocapitalize="none"
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          inputmode="text"
+          enterkeyhint="go"
+          value="${prefill ? '@' + prefill : ''}"
+          style="flex:1;min-width:160px;padding:12px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:var(--font);font-size:15px;outline:none;-webkit-tap-highlight-color:transparent"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();(function(){var h=document.getElementById('ig-manual-input').value.trim().replace(/^@/,'');if(h)gradeIGPublic(h,'');})();}"
+        >
+        <button
+          onclick="(function(){var h=document.getElementById('ig-manual-input').value.trim().replace(/^@/,'');if(!h){var hint=document.getElementById('ig-manual-hint');if(hint){hint.textContent='Enter your handle first.';hint.style.color='rgba(255,100,80,.8)';}return;}gradeIGPublic(h,'');})()"
+          style="padding:12px 20px;background:#fff;color:#000;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">
+          Audit →
+        </button>
+      </div>
+      <div id="ig-manual-hint" style="font-size:11px;color:rgba(255,255,255,.28);line-height:1.5">Public profile audit — followers, bio, and post frequency. No login required.</div>
+    </div>
+  `;
+  resEl.style.display = 'block';
+  setTimeout(() => {
+    const inp = document.getElementById('ig-manual-input');
+    if (inp) { inp.focus(); if (prefill) { inp.setSelectionRange(inp.value.length, inp.value.length); } }
+  }, 80);
+}
+
 // ── INSTAGRAM OAUTH-FIRST SEARCH ─────────────────────────────────
 function startIGModeOAuth() {
-  const handle = document.getElementById('ig-handle-input').value.trim().replace(/^@/, '');
-  const city   = document.getElementById('ig-city-input').value.trim();
-  const errEl  = document.getElementById('ig-search-error');
-  const resEl  = document.getElementById('ig-results-list');
+  const handle  = document.getElementById('ig-handle-input').value.trim().replace(/^@/, '');
+  const city    = document.getElementById('ig-city-input').value.trim();
+  const errEl   = document.getElementById('ig-search-error');
+  const resEl   = document.getElementById('ig-results-list');
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
 
   errEl.style.display = 'none';
   resEl.style.display = 'none';
 
-  if (!oauthEnabled || !fbAppId) {
-    // OAuth not configured — show clear error
-    errEl.innerHTML = '<strong>Instagram connection not available.</strong> Please search by business name instead, or contact JRZ.';
-    errEl.style.display = 'block';
+  // No OAuth config, OR mobile browser where popups are always blocked
+  if (!oauthEnabled || !fbAppId || isMobile) {
+    showManualIGInput(handle);
     return;
   }
 
@@ -3778,10 +3873,9 @@ function startIGModeOAuth() {
 
   const popup = window.open(oauthUrl, 'meta_oauth', 'width=580,height=640,left=200,top=100');
   if (!popup) {
+    // Popup blocked even on desktop — fall back to manual input
     igSearchMode = false;
-    errEl.textContent = 'Popup blocked. Please allow popups for this page and try again.';
-    errEl.style.display = 'block';
-    resEl.style.display = 'none';
+    showManualIGInput(handle);
   }
 }
 
