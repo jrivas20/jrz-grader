@@ -3664,7 +3664,7 @@ const API = 'https://inksystems.jrzmarketing.com';
 let selectedPlaceId = '';
 let selectedName    = '';
 let selectedAddr    = '';
-let stepTimer       = null;
+let stepTimers      = [];   // array — holds ALL active step timeout IDs
 let currentReport   = null;  // holds the full report data for checklist pre-fill
 let metaToken         = null;  // in-memory only — cleared on close
 let fbAppId           = '';
@@ -4351,8 +4351,9 @@ function startStepAnimation() {
   }
 
   const bar = document.getElementById('loading-bar-fill');
+  stepTimers = [];  // clear any stale IDs from a previous audit
   STEP_DELAYS.forEach((delay, i) => {
-    stepTimer = setTimeout(() => {
+    stepTimers.push(setTimeout(() => {
       for (let j = 0; j < 9; j++) {
         const el = document.getElementById('ls-' + j);
         if (!el) continue;
@@ -4362,12 +4363,13 @@ function startStepAnimation() {
       }
       bar.style.width = STEP_PROGRESS[i] + '%';
       animateCounter(STEP_PROGRESS[i]);
-    }, delay);
+    }, delay));
   });
 }
 
 function stopStepAnimation() {
-  clearTimeout(stepTimer);
+  stepTimers.forEach(t => clearTimeout(t));
+  stepTimers = [];
   for (let i = 0; i < 9; i++) {
     const el = document.getElementById('ls-' + i);
     if (el) { el.classList.remove('active'); el.classList.add('done'); }
@@ -6112,8 +6114,6 @@ async function runGuestAudit() {
   }
 }
 
-function fmt$(n) { return '$' + (n || 0).toLocaleString(); }
-
 function renderGuestReport(d) {
   const opp   = d.opportunity  || {};
   const bench = d.benchmarks   || {};
@@ -6959,8 +6959,9 @@ async function gradeIGPublic(handle, city) {
   const pubStepDelays = [0, 2000, 4000, 6000, 8000];
   const pubStepPcts   = [15, 35, 55, 75, 90];
   const bar = document.getElementById('loading-bar-fill');
+  const pubStepTimers = [];
   pubStepDelays.forEach((delay, i) => {
-    setTimeout(() => {
+    pubStepTimers.push(setTimeout(() => {
       for (let j = 0; j < 5; j++) {
         const el = document.getElementById('ls-' + j);
         if (!el) continue;
@@ -6970,7 +6971,7 @@ async function gradeIGPublic(handle, city) {
       }
       bar.style.width = pubStepPcts[i] + '%';
       animateCounter(pubStepPcts[i]);
-    }, delay);
+    }, delay));
   });
 
   try {
@@ -6981,8 +6982,8 @@ async function gradeIGPublic(handle, city) {
     });
     const data = await r.json();
 
-    // Stop animation
-    clearTimeout(stepTimer);
+    // Stop animation — cancel all pubStep timers, not the main stepTimers array
+    pubStepTimers.forEach(t => clearTimeout(t));
     for (let i = 0; i < 5; i++) {
       const el = document.getElementById('ls-' + i);
       if (el) { el.classList.remove('active'); el.classList.add('done'); }
@@ -7026,7 +7027,7 @@ async function gradeIGPublic(handle, city) {
     renderIGReport(data);
 
   } catch(e) {
-    clearTimeout(stepTimer);
+    pubStepTimers.forEach(t => clearTimeout(t));
     showSearch();
     const errEl = document.getElementById('ig-search-error');
     errEl.textContent = 'Connection error. Please try again in a moment.';
