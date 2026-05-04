@@ -2407,9 +2407,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .close-sub {
   font-size: 14px;
   color: rgba(255,255,255,.45);
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 28px;
-  max-width: 580px;
+  max-width: 600px;
+  white-space: pre-line;
 }
 .close-math-row {
   display: flex;
@@ -2633,52 +2634,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <input id="ig-handle-input" type="hidden" value="">
       <input id="ig-city-input"   type="hidden" value="">
 
-      <!-- Tattoo-branded handle input card (no OAuth required) -->
+      <!-- Tattoo-branded IG audit card -->
       <div class="ig-handle-card">
         <div class="ig-handle-card-header">
           <div class="ig-handle-icon">IG</div>
           <div>
             <div class="ig-handle-card-title">Instagram Profile Audit</div>
-            <div class="ig-handle-card-sub">Followers · Engagement Rate · Posting Consistency · Bio Score · Revenue Gap · Competitor Comparison</div>
+            <div class="ig-handle-card-sub">Followers · Engagement · Bio Score · Revenue Gap · Competitor Comparison</div>
           </div>
         </div>
-
-        <div class="ig-handle-fields">
-          <div class="ig-handle-input-wrap">
-            <span class="ig-at-sign">@</span>
-            <input id="ig-direct-handle"
-              type="text"
-              placeholder="yourtattoohandle"
-              autocapitalize="none"
-              autocorrect="off"
-              autocomplete="off"
-              spellcheck="false"
-              inputmode="text"
-              enterkeyhint="go"
-              onkeydown="if(event.key==='Enter')runDirectIGAudit()">
-          </div>
-          <input id="ig-direct-city"
-            class="ig-city-direct"
-            type="text"
-            placeholder="City (optional — helps target competitors)"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="words"
-            onkeydown="if(event.key==='Enter')runDirectIGAudit()">
-        </div>
-
-        <button class="ig-audit-btn" onclick="runDirectIGAudit()">
+        <button class="ig-audit-btn" onclick="startIGModeOAuth()">
           Audit My Instagram Profile →
         </button>
-
-        <div class="ig-handle-pills">
-          <span>🎨 Reels Performance</span>
-          <span>✍️ Bio Score</span>
-          <span>📈 Posting Patterns</span>
-          <span>💀 Competitor Gap</span>
-          <span>💰 Revenue Gap</span>
-          <span>📅 30-Day Calendar</span>
-        </div>
       </div>
 
       <div id="ig-search-error" class="search-error-banner"></div>
@@ -2916,6 +2883,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
   <div class="igr-body">
 
+    <!-- Personalized Opener -->
+    <div id="igr-opener"></div>
+
     <!-- Profile Stats -->
     <div class="igr-section">
       <div class="igr-section-label">Profile Overview</div>
@@ -3125,10 +3095,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
     <!-- CTA -->
     <div class="igr-cta">
-      <div class="igr-cta-headline">Your Instagram data is working against you.</div>
-      <div class="igr-cta-sub">JRZ Ink Systems builds your content calendar, optimizes your bio and booking funnel, and runs paid ads to fill your calendar — with live performance tracking. We only win when you win.</div>
+      <div class="igr-cta-headline">Every DM sitting unanswered is a booking that went somewhere else.</div>
+      <div class="igr-cta-sub">JRZ assigns you a real booking manager — responding within 60 seconds, converting "how much?" into a deposit, managing your content schedule. With or without ads. 68 checkpoints. 14 days to launch. Luis A. Farrera: 84 leads in 30 days at $14.83/lead — waiting list in month one.</div>
       <button class="igr-cta-btn" onclick="window.open('https://links.jrzmarketing.com/widget/bookings/jrz-marketing','_blank')">Schedule a Free Strategy Call →</button>
-      <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:6px">$1,000/mo + 10% of ALL your sessions · No contracts</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:6px">$1,000/mo + 10% of ALL your sessions · No contracts · We only win when you win</div>
       <br>
       <button class="igr-run-again" onclick="runAgain()">← Audit a Different Account</button>
     </div>
@@ -3163,6 +3133,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     <div class="revenue-eyebrow">MONTHLY BOOKING OPPORTUNITY</div>
     <div class="revenue-headline">Instagram + Google gaps are costing you <span id="rev-opp-headline">$0</span>/month</div>
     <div class="revenue-sub" id="rev-sub-text"></div>
+    <div id="rev-formula-line" style="font-size:12px;font-weight:600;color:rgba(255,255,255,.35);margin:6px 0 16px;font-family:monospace;letter-spacing:.3px"></div>
     <div class="revenue-cols">
       <div class="rev-col">
         <div class="rev-col-label">Est. Current Revenue</div>
@@ -3239,6 +3210,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <div class="accuracy-note">That's what makes this 82% accurate. Real reviews, live keyword rankings, actual map pack position — not screenshots, not guesses. Connect Instagram via OAuth to reach 92%+.</div>
     </div>
   </div>
+
+  <!-- Personalized Opener -->
+  <div id="report-opener"></div>
 
   <!-- Score Bars -->
   <div class="scores-section">
@@ -3497,15 +3471,15 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
       <!-- CTA -->
       <div class="cta-card">
-        <div class="cta-heading">Ready to fill your calendar?</div>
+        <div class="cta-heading">Every unanswered DM is a booking someone else got.</div>
         <div class="cta-sub">
-          JRZ Ink Systems handles your booking system, Instagram, local SEO, and review automation — so you stay focused on the art.
+          JRZ assigns you a real booking manager — responding within 60 seconds, converting inquiries, managing your calendar. With or without ads. 68 checkpoints. 14 days to launch.
         </div>
-        <div class="cta-price">$1,000/MO + 10% OF ALL SESSIONS · PERFORMANCE-BASED</div>
+        <div class="cta-price">$1,000/MO + 10% OF ALL SESSIONS · WE ONLY WIN WHEN YOU WIN</div>
         <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank" rel="noopener" class="cta-btn">
           Schedule a Free Strategy Call →
         </a>
-        <div class="cta-note">No contracts. No obligation. We show you exactly what's blocking your calendar and what we fix first. We charge 10% of ALL sessions you do — not just ones we book. We only win when you win.</div>
+        <div class="cta-note">No contracts. No obligation. Luis A. Farrera: 84 leads in 30 days at $14.83/lead. Calendar went from half-booked to a waiting list. That's what the checklist below produces.</div>
       </div>
 
       <!-- Competitors -->
@@ -3623,22 +3597,22 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 
   <div class="checklist-hero">
     <div class="cl-hero-eyebrow">JRZ INK SYSTEMS · PRE-LAUNCH CHECKLIST · v1.0</div>
-    <h2 class="cl-hero-title">This is what<br>success looks like.</h2>
+    <h2 class="cl-hero-title">68 systems between you<br>and a full calendar.</h2>
     <p class="cl-hero-sub">
-      Every artist we work with goes through 68 checkpoints before going live. Here's where you stand right now — and what we build for you in 14 days.
+      This is not a guideline. This is the exact checklist every JRZ Ink Systems client runs through before going live. Every box represents infrastructure that either fills your calendar — or fails you when it matters most. Here's where you stand right now, and what we build for you in 14 days.
     </p>
     <div class="cl-hero-stats">
       <div class="cl-hero-stat">
         <div class="cl-hero-stat-val done" id="cl-done-count">0</div>
-        <div class="cl-hero-stat-label">Already Done</div>
+        <div class="cl-hero-stat-label">You Have Today</div>
       </div>
       <div class="cl-hero-stat">
         <div class="cl-hero-stat-val missing" id="cl-missing-count">68</div>
-        <div class="cl-hero-stat-label">JRZ Builds for You</div>
+        <div class="cl-hero-stat-label">JRZ Builds &amp; Runs</div>
       </div>
       <div class="cl-hero-stat">
         <div class="cl-hero-stat-val" style="color:var(--muted)">14</div>
-        <div class="cl-hero-stat-label">Days to Live</div>
+        <div class="cl-hero-stat-label">Days to Launch</div>
       </div>
     </div>
   </div>
@@ -3663,27 +3637,30 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   <div class="cl-sections" id="cl-sections" style="display:none"></div>
 
   <div class="checklist-cta">
-    <div class="cl-vip-tag">VIP CONCIERGE ONBOARDING</div>
-    <div class="cl-cta-eyebrow">DONE-FOR-YOU SETUP · EVERY CHECKPOINT · 14 DAYS</div>
-    <h3 class="cl-cta-title">Your brand.<br>Fully built. <span>Fully booked.</span></h3>
+    <div class="cl-vip-tag">PROOF — WHAT THIS LOOKS LIKE IN REAL LIFE</div>
+    <div class="cl-cta-eyebrow">EVERY CHECKPOINT · 14 DAYS · BOOKING MANAGER ASSIGNED DAY ONE</div>
+    <h3 class="cl-cta-title">Luis A. Farrera ran<br>every one of these. <span>Here's what happened.</span></h3>
     <p class="cl-cta-sub">
-      We don't hand you a template and wish you luck. JRZ Ink Systems builds every system on this list — your website, your booking flow, your automations, your ads — and then we run it for you month after month. You focus on the art. We fill your calendar.
+      JRZ Ink Systems built and launched Luis's full system — website, booking flow, CRM, Meta Pixel, automations, and a Meta Ads campaign. In 30 days: 84 booking leads at $14.83 per lead, 5.06% click-through rate. His calendar went from half-booked to a waiting list. That's not a case study we made up. That's the checklist above, executed to the last box.
+    </p>
+    <p class="cl-cta-sub" style="margin-top:0">
+      After launch, a real JRZ booking manager is on his account daily — responding to every DM within 60 seconds, converting inquiries into deposits, managing his content schedule. With or without ads. Every conversation maximized. You focus on the tattoo. We own everything else.
     </p>
     <div class="cl-cta-features">
       <div class="cl-cta-feature"><span>✓</span> Done-for-you website build</div>
-      <div class="cl-cta-feature"><span>✓</span> Booking system integrated</div>
-      <div class="cl-cta-feature"><span>✓</span> CRM + pipeline configured</div>
-      <div class="cl-cta-feature"><span>✓</span> Meta Pixel + GA4 tracked</div>
+      <div class="cl-cta-feature"><span>✓</span> Booking system + deposit flow</div>
+      <div class="cl-cta-feature"><span>✓</span> CRM + 7-stage pipeline live</div>
+      <div class="cl-cta-feature"><span>✓</span> Meta Pixel + GA4 verified</div>
       <div class="cl-cta-feature"><span>✓</span> Automated review requests</div>
-      <div class="cl-cta-feature"><span>✓</span> Facebook Ads launched</div>
-      <div class="cl-cta-feature"><span>✓</span> Monthly performance reports</div>
+      <div class="cl-cta-feature"><span>✓</span> Booking manager assigned</div>
+      <div class="cl-cta-feature"><span>✓</span> Ads launched (if in scope)</div>
     </div>
     <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank" rel="noopener" class="cl-cta-btn">
-      Book Your Strategy Call
+      Book Your Strategy Call →
     </a>
     <div class="cl-cta-note">
       $1,000/mo + 10% of ALL your sessions · No long-term contracts<br>
-      We only win when you win. We build and run your entire growth system — you stay focused on the art.
+      We charge 10% of every session you do — not just ones we book — because we only win when you win.
     </div>
   </div>
 
@@ -3998,14 +3975,13 @@ function startIGModeOAuth() {
   const city    = document.getElementById('ig-city-input').value.trim();
   const errEl   = document.getElementById('ig-search-error');
   const resEl   = document.getElementById('ig-results-list');
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
-
   errEl.style.display = 'none';
   resEl.style.display = 'none';
 
-  // No OAuth config, OR mobile browser where popups are always blocked
-  if (!oauthEnabled || !fbAppId || isMobile) {
-    showManualIGInput(handle);
+  // OAuth not configured — can't proceed
+  if (!oauthEnabled || !fbAppId) {
+    errEl.textContent = 'Instagram login not configured. Contact JRZ to enable this feature.';
+    errEl.style.display = 'block';
     return;
   }
 
@@ -4014,7 +3990,11 @@ function startIGModeOAuth() {
   pendingIGCity   = city;
   igSearchMode    = true;
 
-  // Show connecting state in the results area
+  const redirectUri = encodeURIComponent(`${API}/oauth-callback`);
+  const scope       = encodeURIComponent('instagram_basic,pages_show_list,pages_read_engagement');
+  const oauthUrl    = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&display=popup`;
+
+  // Show connecting state
   resEl.innerHTML = `
     <div style="padding:18px 20px;display:flex;align-items:center;gap:14px">
       <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;flex-shrink:0">IG</div>
@@ -4026,15 +4006,19 @@ function startIGModeOAuth() {
   `;
   resEl.style.display = 'block';
 
-  const redirectUri = encodeURIComponent(`${API}/oauth-callback`);
-  const scope       = encodeURIComponent('instagram_basic,pages_show_list,pages_read_engagement');
-  const oauthUrl    = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&display=popup`;
-
   const popup = window.open(oauthUrl, 'meta_oauth', 'width=580,height=640,left=200,top=100');
   if (!popup) {
-    // Popup blocked even on desktop — fall back to manual input
+    // Popup blocked (common on mobile) — show a direct tap-to-open link
     igSearchMode = false;
-    showManualIGInput(handle);
+    resEl.innerHTML = `
+      <div style="padding:20px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85);margin-bottom:10px">Your browser blocked the popup.</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:16px">Tap the button below to open Facebook login directly.</div>
+        <a href="${oauthUrl}" target="_blank" style="display:inline-block;padding:13px 26px;background:#fff;color:#000;font-size:14px;font-weight:800;border-radius:10px;text-decoration:none">
+          → Open Facebook Login
+        </a>
+      </div>
+    `;
   }
 }
 
@@ -5667,6 +5651,50 @@ function renderReport(d) {
   document.getElementById('grade-letter').style.color =
     sc.overall >= 75 ? 'var(--green)' : sc.overall >= 55 ? 'var(--gold)' : 'var(--crimson)';
 
+  // ── Personalized Opener ────────────────────────────────────────
+  (function renderGoogleOpener() {
+    const opEl = document.getElementById('report-opener');
+    if (!opEl) return;
+    const bizName    = b.name    || 'Your Studio';
+    const reviews    = b.reviews || 0;
+    const rating     = b.rating  || 0;
+    const overall    = sc.overall || 0;
+    const inPack     = (d.map_pack || []).some(mp => mp.in_pack);
+    const revGap     = rev.opportunity_base || 0;
+
+    let hook, body;
+    if (!inPack && reviews < 30) {
+      hook = `${rating ? rating + '★' : 'Unrated'} · ${reviews} Google reviews · Not showing in the local Map Pack.`;
+      body = `Right now, when someone searches "tattoo artist near me" in your area, your name doesn't appear in the top 3 results — the spots that capture 68% of all clicks. Combined with ${reviews} reviews, new clients have almost no way to find you organically. Here's exactly what that gap costs you every month, and what it takes to close it.`;
+    } else if (!inPack) {
+      hook = `${rating ? rating + '★' : ''} · ${reviews.toLocaleString()} reviews · Not appearing in the Google Map Pack.`;
+      body = `You have reviews and a real reputation — but you're invisible in the search results that matter most. Clients searching for tattoo artists in your city are finding your competitors, not you. Here's the full picture of what's blocking your map pack position and what changes first.`;
+    } else if (overall < 55) {
+      hook = `${rating ? rating + '★' : ''} · ${reviews.toLocaleString()} reviews · In the Map Pack — with critical gaps in your booking system.`;
+      body = `You're visible on Google, which is more than most artists can say. But visibility without a booking system is just free advertising for the artists who do have one. When a client finds you and can't book instantly, they go back and choose someone who can. Here's every gap the audit found.`;
+    } else {
+      hook = `${rating ? rating + '★' : ''} · ${reviews.toLocaleString()} reviews · Solid Google presence.`;
+      body = `Your digital foundation is stronger than most. The audit found the specific gaps between where you are and a calendar that runs itself — places where bookings are leaking that are invisible unless you know what to look for. Here's the full picture.`;
+    }
+
+    opEl.innerHTML = `
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 20px;margin:0 var(--px) 16px">
+        <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">WHAT WE FOUND · ${bizName.toUpperCase()}</div>
+        <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.4">${hook}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.48);line-height:1.65">${body}</div>
+      </div>`;
+  })();
+
+  // ── Revenue Formula Line ───────────────────────────────────────
+  (function renderFormulaLine() {
+    const fEl = document.getElementById('rev-formula-line');
+    if (!fEl || !rev.avg_tattoo_value || !rev.est_sessions_month) return;
+    const avgPrice    = rev.avg_tattoo_value;
+    const benchSess   = rev.est_sessions_month;
+    const curSess     = rev.current_base ? Math.round(rev.current_base / avgPrice) : '?';
+    fEl.textContent   = `Math: ~${curSess} sessions/mo × $${avgPrice} avg = ${fmt$(rev.current_base)} now  →  ${benchSess} sessions/mo × $${avgPrice} avg = ${fmt$(rev.potential_base)} at full capacity`;
+  })();
+
   // ── Sidebar Overall ────────────────────────────────────────────
   document.getElementById('sb-overall').textContent  = sc.overall;
   document.getElementById('sb-grade-msg').textContent = sc.grade_message || '';
@@ -6137,7 +6165,7 @@ function renderReport(d) {
     ctaDiv.innerHTML = `
       <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px">Your Next Step</div>
       <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.3">${urgLine}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:18px;max-width:480px;margin-left:auto;margin-right:auto">JRZ Ink Systems handles your Google profile, booking system, Instagram, and ads. $1,000/month + 10% of ALL sessions you do. You only pay more when you earn more.</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:18px;max-width:480px;margin-left:auto;margin-right:auto">JRZ assigns you a real booking manager — responding to every inquiry within 60 seconds, managing your content, filling your calendar with or without ads. 68 checkpoints. 14 days to launch. $1,000/mo + 10% of ALL sessions. We only win when you win.</div>
       <a href="https://links.jrzmarketing.com/widget/bookings/jrz-marketing" target="_blank"
         style="display:inline-block;padding:13px 28px;background:#fff;color:#000;font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:.5px;border-radius:8px;text-decoration:none;transition:opacity .15s"
         onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
@@ -6481,6 +6509,33 @@ function renderIGReport(d) {
     totalPosts != null ? Number(totalPosts).toLocaleString() : '—';
   document.getElementById('igr-last-post').textContent =
     lastDay != null ? lastDay + 'd' : '—';
+
+  // ── Personalized Opener ───────────────────────────────────────
+  (function renderIGOpener() {
+    const opEl  = document.getElementById('igr-opener');
+    if (!opEl) return;
+    const folStr = followers != null ? Number(followers).toLocaleString() + ' followers' : null;
+    const h      = handle ? '@' + handle : 'Your profile';
+
+    let hook, body;
+    if (lastDay != null && lastDay > 21) {
+      hook = `${folStr ? folStr + ' · ' : ''}last post ${lastDay} days ago.`;
+      body = `When a potential client lands here and sees a post from ${lastDay} days ago, they assume you're not taking bookings — and they message the artist who posted yesterday. That's a booking you'll never know you lost. Here's the full picture of what this gap is costing you every month.`;
+    } else if (lastDay != null && lastDay > 7) {
+      hook = `${folStr ? folStr + ' · ' : ''}${lastDay} days since your last post.`;
+      body = `You're close to the consistency threshold that keeps the algorithm pushing your work to new clients. Below is what your current numbers mean for bookings — and where the leaks are.`;
+    } else {
+      hook = `${folStr ? folStr + ' · ' : ''}posting actively.`;
+      body = `Your content is going out. The audit found the gaps between your current presence and a calendar that's consistently full. Here's exactly where bookings are slipping through.`;
+    }
+
+    opEl.innerHTML = `
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px">WHAT WE FOUND · ${h.toUpperCase()}</div>
+        <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.4">${hook}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.48);line-height:1.65">${body}</div>
+      </div>`;
+  })();
 
   // Bio block — API returns profile.biography (not profile.bio)
   const bio     = profile.biography || profile.bio || '';
@@ -7451,17 +7506,17 @@ function renderCloseSection(d, type) {
   // ── HEADLINE + SUB ────────────────────────────────────────────
   const headlines = {
     google: `Here's what ${name} looks like<br><em>after 90 days with JRZ Ink Systems.</em>`,
-    ig:     `Here's what ${name} looks like<br><em>with a full Instagram growth system behind it.</em>`,
+    ig:     `Here's what ${name} looks like<br><em>when someone is actually running the business behind it.</em>`,
     guest:  `Here's what your trip to ${name} looks like<br><em>with JRZ running your booking before you arrive.</em>`,
   };
   const subs = {
-    google: 'Every number below comes from your actual audit — current revenue, what we fix, and what stays in your pocket after our fee. No fluff.',
-    ig:     'Built from your live Instagram data — what you\'re earning now versus what a managed growth and booking system produces for artists at your stage.',
+    google: `These numbers come directly from your audit — not industry averages. Your actual profile, your actual market, your actual gap.\n\nWhat you see above is the difference between what your digital presence produces today and what it produces when every system is working: Google profile fully optimized, booking form live, automated review requests running, and a real person managing every inquiry within 60 seconds — with or without ads.\n\nWe build this through a 68-checkpoint launch process. Every client goes through it, no exceptions. Luis A. Farrera ran this exact system and generated 84 booking leads in 30 days at $14.83 per lead — his calendar went from half-booked to a waiting list. The numbers below are what that same system produces for ${name}.`,
+    ig:     `The difference between an artist with a packed calendar and one always chasing the next client isn't talent — it's who answers the DMs.\n\nRight now, every time someone messages your profile asking about a piece, what happens? If the answer is "I get to it when I can," you're losing bookings every single week. The artists running full calendars in your market have a real person — not a bot, not automation — responding within 60 seconds, turning "how much?" into a deposit before the client messages someone else.\n\nThat's what JRZ builds and runs for you. A dedicated booking manager. Your content on schedule. Every inquiry followed up — with or without ads — until they're on your calendar or they explicitly say no. We've done this through a 68-checkpoint launch system built for serious artists. Luis A. Farrera went from half-booked to a waiting list in 30 days. The numbers below are what that system produces for ${name || 'your account'}.`,
     guest:  'Revenue model based on city pricing benchmarks and 2-week capacity data. JRZ runs your pre-arrival campaign so you show up to a booked calendar.',
   };
   const eyebrows = {
     google: 'YOUR 90-DAY REVENUE PROJECTION',
-    ig:     'YOUR INSTAGRAM GROWTH PROJECTION',
+    ig:     'YOUR BOOKING REVENUE PROJECTION',
     guest:  'GUEST CITY REVENUE PROJECTION',
   };
 
@@ -7484,52 +7539,89 @@ function renderCloseSection(d, type) {
     </div>`;
   }
 
+  // ── SECTION-SPECIFIC COPY ─────────────────────────────────────
+  const buildsLabel = type === 'ig'
+    ? 'WHAT JRZ RUNS FOR YOU EVERY SINGLE DAY'
+    : 'WHAT JRZ BUILDS AND RUNS FOR YOU';
+
+  const trustTitle = type === 'ig'
+    ? 'A real person on your account daily — not a bot, not a template, not "AI automation."'
+    : 'A real booking manager assigned to your account. Not automation. A person who treats your calendar like their livelihood.';
+
+  const trustBody = type === 'ig'
+    ? 'Your dedicated JRZ booking manager responds to every DM and inquiry within 60 seconds — 7 days a week. They know how to move "how much?" into a deposit before the client messages someone else. They schedule your content at the right time with the right hooks. With or without ads. Every conversation that hits your profile gets maximized. You tattoo. We handle everything else — and we only win when your calendar is full.'
+    : 'Every JRZ Ink Systems client is assigned a dedicated booking manager — bachelor\'s degree holders, psychology-tested, trained specifically for the tattoo industry. They respond to every inquiry within 60 seconds, qualify leads, collect deposits, and keep your pipeline moving with or without a paid ads budget. 68 checkpoints. 14 days to launch. You focus on the art. We fill the calendar — and we charge 10% of your sessions because we only win when you win.';
+
+  const stepsHTML = type === 'ig' ? `
+    <div class="close-step">
+      <div class="close-step-num">1</div>
+      <div class="close-step-label">You Got the Audit</div>
+      <div class="close-step-sub">You now know exactly where your bookings are leaking. Most artists see this and do nothing. The ones with full calendars don't.</div>
+    </div>
+    <div class="close-step">
+      <div class="close-step-num">2</div>
+      <div class="close-step-label">We Run the 68-Point Launch</div>
+      <div class="close-step-sub">Booking system, DM flow, content schedule, CRM pipeline, review automation — every checkpoint live in 14 days. We don't hand you a template. We build it and run it.</div>
+    </div>
+    <div class="close-step">
+      <div class="close-step-num">3</div>
+      <div class="close-step-label">You Tattoo. We Fill Your Calendar.</div>
+      <div class="close-step-sub">Every DM managed. Every inquiry followed up. Every conversation maximized — with or without ads. You show up and do the work you actually love.</div>
+    </div>` : `
+    <div class="close-step">
+      <div class="close-step-num">1</div>
+      <div class="close-step-label">You Ran the Audit</div>
+      <div class="close-step-sub">You now see the exact gaps between where you are and a full calendar. Most artists see this and do nothing. The ones who win book a call.</div>
+    </div>
+    <div class="close-step">
+      <div class="close-step-num">2</div>
+      <div class="close-step-label">We Run the 68-Point Launch</div>
+      <div class="close-step-sub">CRM built, pipeline configured, booking form live, Meta Pixel firing, automations running, booking manager assigned. Every checkpoint. 14 days. No shortcuts.</div>
+    </div>
+    <div class="close-step">
+      <div class="close-step-num">3</div>
+      <div class="close-step-label">You Tattoo. We Fill Your Calendar.</div>
+      <div class="close-step-sub">Booking manager on your account daily. Every inquiry within 60 seconds. With or without ads. You focus on the art — we make sure every conversation converts.</div>
+    </div>`;
+
   // ── RENDER ────────────────────────────────────────────────────
   container.style.display = 'block';
   container.innerHTML = `
     <div class="close-eyebrow">${eyebrows[type]}</div>
     <h2 class="close-headline">${headlines[type]}</h2>
-    <p class="close-sub">${subs[type]}</p>
+    <p class="close-sub" style="white-space:pre-line">${subs[type]}</p>
 
     <div class="close-math-row">${mathHTML}</div>
     ${gainNote}
 
-    <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.28);margin-bottom:14px;text-transform:uppercase">What JRZ Builds and Runs for You</div>
+    <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.28);margin-bottom:14px;text-transform:uppercase">${buildsLabel}</div>
     <div class="close-fixes-list">${fixesHTML}</div>
 
     <div class="close-trust-row">
       <div class="close-trust-icon" style="font-size:16px;font-weight:900;color:rgba(255,255,255,.6)">★</div>
       <div class="close-trust-body">
-        <div class="close-trust-title">Psychology-trained booking managers. Industry-certified. Real people on your account daily.</div>
-        <div class="close-trust-sub">Every JRZ Ink Systems client is assigned a dedicated booking manager — bachelor's degree holders, psychology-tested, customer service experts trained specifically for the tattoo industry. They respond to every DM and inquiry within 60 seconds so you never lose a hot lead. You focus on the art. We own the calendar.</div>
+        <div class="close-trust-title">${trustTitle}</div>
+        <div class="close-trust-sub">${trustBody}</div>
       </div>
     </div>
 
     <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.28);margin-bottom:14px;text-transform:uppercase">How It Works — 3 Steps</div>
-    <div class="close-steps-row">
-      <div class="close-step">
-        <div class="close-step-num">1</div>
-        <div class="close-step-label">Run Your Audit</div>
-        <div class="close-step-sub">See every gap that's blocking your calendar — done. You're already here.</div>
-      </div>
-      <div class="close-step">
-        <div class="close-step-num">2</div>
-        <div class="close-step-label">Review the 68-Point Checklist</div>
-        <div class="close-step-sub">See exactly what JRZ builds for you in 14 days — every system, every checkpoint.</div>
-      </div>
-      <div class="close-step">
-        <div class="close-step-num">3</div>
-        <div class="close-step-label">Start Onboarding</div>
-        <div class="close-step-sub">Done-for-you: booking system, Google profile, Instagram strategy, and ad launch. All live in 14 days.</div>
+    <div class="close-steps-row">${stepsHTML}</div>
+
+    <div style="background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.15);border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center">
+      <div style="font-size:12px;font-weight:700;color:rgba(255,140,140,.85);line-height:1.6">
+        Every DM that sits unanswered for more than a few hours is a booking that goes to another artist.<br>
+        <span style="color:rgba(255,255,255,.4);font-weight:400">That's not a theory — it's what the data from every artist we've managed shows.</span>
       </div>
     </div>
 
     <div style="text-align:center;padding-top:4px">
       <a href="${SCHED}" target="_blank" rel="noopener" class="close-cta-btn">
-        Schedule Your Free Strategy Call →
+        Book a Free Strategy Call →
       </a>
-      <div style="font-size:11px;color:rgba(255,255,255,.22);margin-top:10px">
-        No contracts · $1,000/mo + 10% of ALL your sessions · We only win when you win.
+      <div style="font-size:12px;color:rgba(255,255,255,.3);margin-top:12px;line-height:1.7">
+        No contracts · $1,000/mo + 10% of ALL your sessions<br>
+        <span style="color:rgba(255,255,255,.18)">We only charge 10% because we only win when you win. With or without ads.</span>
       </div>
     </div>
   `;
