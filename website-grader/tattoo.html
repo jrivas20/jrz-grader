@@ -6180,7 +6180,11 @@ function renderReport(d) {
   })();
 
   // ── SWOT Analysis ─────────────────────────────────────────────
-  if (d.swot) renderSWOT(d.swot, 'swot-grid-google', 'swot-section-google');
+  // Always render — use backend data if complete, fallback generator if not
+  const swotGoogle = (d.swot && (d.swot.strengths?.length || d.swot.weaknesses?.length))
+    ? d.swot
+    : generateSWOTFromAudit(d);
+  renderSWOT(swotGoogle, 'swot-grid-google', 'swot-section-google');
 
   // ── Revenue Close Section ──────────────────────────────────────
   renderCloseSection(d, 'google');
@@ -7157,7 +7161,10 @@ function renderIGReport(d) {
   }
 
   // ── SWOT Analysis ─────────────────────────────────────────────
-  if (d.swot) renderSWOT(d.swot, 'swot-grid-ig', 'igr-swot-section');
+  const swotIG = (d.swot && (d.swot.strengths?.length || d.swot.weaknesses?.length))
+    ? d.swot
+    : generateSWOTFromAudit(d);
+  renderSWOT(swotIG, 'swot-grid-ig', 'igr-swot-section');
 
   // ── Revenue Close Section ──────────────────────────────────────
   renderCloseSection(d, 'ig');
@@ -7320,10 +7327,81 @@ function copyHook(i) {
 }
 
 // ═════════════════════════════════════════════════════════════════
+// SWOT FALLBACK GENERATOR — builds from audit scores when backend
+// doesn't return d.swot or returns it with incomplete quadrants
+// ═════════════════════════════════════════════════════════════════
+function generateSWOTFromAudit(d) {
+  const sc  = d.scores       || {};
+  const b   = d.business     || {};
+  const sp  = d.social_presence || {};
+  const ri  = d.review_intel || {};
+  const rev = d.revenue      || {};
+  const mp  = d.map_pack     || [];
+
+  const rating    = b.rating    || 0;
+  const reviews   = b.reviews   || 0;
+  const inPack    = mp.some(m => m.in_pack);
+  const igFol     = sp.instagram_followers;
+  const igLast    = sp.instagram_last_post_days;
+  const hasBooking= (sc.booking_funnel || 0) >= 10;
+  const hasWeb    = !!b.website;
+  const revGap    = rev.opportunity_base || 0;
+  const compAds   = (d.competitor_ads || []).length > 0;
+
+  // ── STRENGTHS ─────────────────────────────────────────────────
+  const strengths = [];
+  if (rating >= 4.5 && reviews >= 20) strengths.push(`Strong Google reputation — ${rating}★ across ${reviews} reviews`);
+  else if (rating >= 4.0)             strengths.push(`Solid ${rating}★ Google rating — above industry average`);
+  if (inPack)                         strengths.push('Appearing in local Google Map Pack for tattoo searches');
+  if (igFol && igFol >= 5000)         strengths.push(`Established Instagram following — ${igFol.toLocaleString()} followers`);
+  if (hasWeb)                         strengths.push('Website present — digital storefront is live');
+  if ((sc.trust || 0) >= 14)         strengths.push('Strong trust signals — reviews, portfolio, and social proof are solid');
+  if ((sc.followup || 0) >= 10)      strengths.push('Active review response — signals engagement to Google');
+  if (strengths.length === 0)        strengths.push('Profile is live and findable — foundation exists to build on');
+
+  // ── WEAKNESSES ────────────────────────────────────────────────
+  const weaknesses = [];
+  if (!hasBooking)                                   weaknesses.push('No online booking system — clients have no way to book or deposit instantly');
+  if (!inPack)                                       weaknesses.push('Not in the Google Map Pack — invisible in the searches that drive 68% of clicks');
+  if (reviews < 25)                                  weaknesses.push(`Only ${reviews} Google reviews — not enough social proof to convert cold traffic`);
+  if (igLast && igLast > 14)                         weaknesses.push(`Instagram inactive — last post ${igLast} days ago, algorithm is deprioritizing your account`);
+  if ((sc.followup || 0) < 8)                        weaknesses.push('No automated follow-up — inquiries go cold without a system to re-engage them');
+  if ((sc.booking_funnel || 0) < 8)                  weaknesses.push('Conversion path is broken — traffic lands but has nowhere to book');
+  if (weaknesses.length === 0)                       weaknesses.push('Core gaps are operational — systems exist but need optimization');
+
+  // ── OPPORTUNITIES ─────────────────────────────────────────────
+  const opportunities = [];
+  if (!inPack && reviews >= 15)    opportunities.push('Map pack entry is within reach — targeted Google profile fixes can get you in top 3');
+  if (revGap > 0)                  opportunities.push(`${rev.city_benchmark || 'Local market'} booking demand supports ${fmt$(rev.potential_base)}/mo — gap is systems, not demand`);
+  if (!hasBooking)                 opportunities.push('Adding an online booking form typically converts 20–35% of profile visitors who would otherwise leave');
+  if (igFol && igLast && igLast > 7) opportunities.push('Consistent Instagram posting at your follower count directly increases inbound DM inquiries');
+  if (!compAds)                    opportunities.push('No competitor ads detected — first mover advantage in paid acquisition is available right now');
+  else                             opportunities.push('Competitors are running ads — a better-targeted campaign can outcompete them for the same audience');
+  if (reviews < 50)                opportunities.push(`Review growth from ${reviews} → 50+ would significantly improve map pack ranking and click-through rate`);
+
+  // ── THREATS ───────────────────────────────────────────────────
+  const threats = [];
+  if (compAds)                     threats.push('Competitors are running paid ads — they are actively taking clients who searched for artists like you');
+  if (!inPack)                     threats.push('Map pack competitors are capturing local search traffic you're not visible for');
+  if (!hasBooking)                 threats.push('Artists with instant booking convert the same client you lose when they can't book immediately');
+  if (igLast && igLast > 21)       threats.push(`47-day content silence signals to the algorithm and clients that you may not be taking bookings`);
+  if ((ri.velocity || '').toLowerCase().includes('slow') || (ri.velocity || '').toLowerCase().includes('stagnant')) {
+    threats.push('Slowing review velocity hurts map pack ranking over time — competitors with fresh reviews will outrank you');
+  }
+  threats.push('Artists who build booking systems and automations now will be increasingly difficult to compete with as they scale');
+
+  return {
+    strengths:     strengths.slice(0, 4),
+    weaknesses:    weaknesses.slice(0, 4),
+    opportunities: opportunities.slice(0, 4),
+    threats:       threats.slice(0, 4),
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════
 // SWOT RENDERER
 // ═════════════════════════════════════════════════════════════════
 function renderSWOT(swot, gridId, sectionId) {
-  if (!swot) return;
   const grid = document.getElementById(gridId);
   if (!grid) return;
 
