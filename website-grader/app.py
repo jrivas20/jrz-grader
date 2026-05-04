@@ -48,6 +48,63 @@ def config():
     })
 
 
+@app.route('/api/supabase-check')
+def supabase_check():
+    """
+    Verifies Supabase connection + returns row count from audit_logs.
+    Use this to confirm env vars are set correctly after deploy.
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return jsonify({
+            'connected': False,
+            'error':     'Env vars missing — SUPABASE_URL or SUPABASE_ANON_KEY not set in Render',
+            'supabase_url_set': bool(SUPABASE_URL),
+            'supabase_key_set': bool(SUPABASE_KEY),
+        })
+
+    # Detect common misconfiguration: URL ending in /rest/v1/ or /rest/v1
+    if '/rest/v1' in SUPABASE_URL:
+        return jsonify({
+            'connected':    False,
+            'error':        'SUPABASE_URL contains /rest/v1 — set it to the base URL only: https://banhtaoqwpsxyfinadxe.supabase.co',
+            'url_set_to':   SUPABASE_URL,
+            'fix':          'In Render → Environment → SUPABASE_URL → remove /rest/v1 from the value',
+        })
+
+    try:
+        resp = requests.get(
+            f'{SUPABASE_URL}/rest/v1/audit_logs',
+            headers={
+                'apikey':        SUPABASE_KEY,
+                'Authorization': f'Bearer {SUPABASE_KEY}',
+            },
+            params={'select': 'id', 'limit': 1000},
+            timeout=6,
+        )
+        if resp.status_code == 200:
+            rows = resp.json()
+            return jsonify({
+                'connected':   True,
+                'row_count':   len(rows) if isinstance(rows, list) else '?',
+                'status_code': resp.status_code,
+                'message':     'Supabase is connected and audit_logs table exists.',
+                'url_used':    f'{SUPABASE_URL}/rest/v1/audit_logs',
+            })
+        else:
+            return jsonify({
+                'connected':   False,
+                'status_code': resp.status_code,
+                'error':       resp.text[:300],
+                'hint':        ('401 = bad key · 404 = table missing (run CREATE TABLE) · '
+                                '406 = RLS blocking (disable RLS or use service key)'),
+            })
+    except Exception as e:
+        return jsonify({
+            'connected': False,
+            'error':     str(e),
+        })
+
+
 @app.route('/oauth-callback')
 def oauth_callback():
     """
