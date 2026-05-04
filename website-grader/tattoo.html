@@ -2013,32 +2013,153 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .igr-cal-brief { font-size:12px;color:rgba(255,255,255,.45);line-height:1.5 }
 .igr-cal-cta { font-size:11px;color:rgba(131,58,180,.7);margin-top:6px;font-style:italic }
 
-/* ── IG MODE OAUTH CARD ─────────────────────────────────────────── */
-.ig-oauth-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
-  background: rgba(255,255,255,.04);
+/* ── IG HANDLE CARD (direct input — no OAuth required) ──────────── */
+.ig-handle-card {
+  background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.1);
-  border-radius: 12px;
-  margin-bottom: 12px;
-  text-align: left;
-}
-.ig-oauth-card {
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 16px;
-  padding: 20px 20px 18px;
-  text-align: left;
-  max-width: 620px;
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  max-width: 520px;
   margin: 0 auto;
 }
-.ig-oauth-card-top {
+.ig-handle-card-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   margin-bottom: 20px;
+}
+.ig-handle-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -.5px;
+}
+.ig-handle-card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+  letter-spacing: -.3px;
+}
+.ig-handle-card-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.38);
+  line-height: 1.5;
+}
+.ig-handle-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.ig-handle-input-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.ig-handle-input-wrap:focus-within {
+  border-color: rgba(255,255,255,.3);
+  background: rgba(255,255,255,.08);
+}
+.ig-at-sign {
+  padding: 0 8px 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255,255,255,.35);
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+#ig-direct-handle {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 14px 14px 0;
+  width: 100%;
+  -webkit-appearance: none;
+}
+#ig-direct-handle::placeholder { color: rgba(255,255,255,.2); font-weight: 400; }
+.ig-city-direct {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 10px;
+  padding: 13px 14px;
+  color: rgba(255,255,255,.65);
+  font-family: var(--font);
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.ig-city-direct:focus { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.06); }
+.ig-city-direct::placeholder { color: rgba(255,255,255,.2); }
+.ig-audit-btn {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  margin-bottom: 14px;
+}
+.ig-audit-btn:hover { opacity: .88; }
+.ig-audit-btn:active { transform: scale(.98); }
+.ig-handle-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.ig-handle-pills span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: rgba(255,255,255,.25);
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.03);
+  white-space: nowrap;
+}
+@media(max-width:480px) {
+  .ig-handle-card { padding: 18px 16px 16px; border-radius: 14px; }
+  .ig-handle-card-title { font-size: 14px; }
+  .ig-handle-card-sub { font-size: 10px; }
+  #ig-direct-handle { font-size: 14px; padding: 13px 12px 13px 0; }
+  .ig-audit-btn { font-size: 14px; padding: 14px; }
+}
+
+/* keep .ig-oauth-note for backward compat (hidden now) */
+.ig-oauth-note {
+  display: none;
+}
+.ig-oauth-card {
+  display: none; /* OAuth card replaced by ig-handle-card */
 }
 .ig-oauth-note-icon {
   width: 40px;
@@ -2512,16 +2633,52 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
       <input id="ig-handle-input" type="hidden" value="">
       <input id="ig-city-input"   type="hidden" value="">
 
-      <!-- Unified card: info + button -->
-      <div class="ig-oauth-card">
-        <div class="ig-oauth-card-top">
-          <div class="ig-oauth-note-icon">IG</div>
-          <div class="ig-oauth-note-body">
-            <div class="ig-oauth-note-title">Connects directly to your Instagram account</div>
-            <div class="ig-oauth-note-sub">Log in with Facebook. We pull your real followers, engagement, and post data. Read-only. Takes 10 seconds.</div>
+      <!-- Tattoo-branded handle input card (no OAuth required) -->
+      <div class="ig-handle-card">
+        <div class="ig-handle-card-header">
+          <div class="ig-handle-icon">IG</div>
+          <div>
+            <div class="ig-handle-card-title">Instagram Profile Audit</div>
+            <div class="ig-handle-card-sub">Followers · Engagement Rate · Posting Consistency · Bio Score · Revenue Gap · Competitor Comparison</div>
           </div>
         </div>
-        <button class="ig-connect-btn" onclick="startIGModeOAuth()" id="ig-connect-main-btn">Connect &amp; Audit</button>
+
+        <div class="ig-handle-fields">
+          <div class="ig-handle-input-wrap">
+            <span class="ig-at-sign">@</span>
+            <input id="ig-direct-handle"
+              type="text"
+              placeholder="yourtattoohandle"
+              autocapitalize="none"
+              autocorrect="off"
+              autocomplete="off"
+              spellcheck="false"
+              inputmode="text"
+              enterkeyhint="go"
+              onkeydown="if(event.key==='Enter')runDirectIGAudit()">
+          </div>
+          <input id="ig-direct-city"
+            class="ig-city-direct"
+            type="text"
+            placeholder="City (optional — helps target competitors)"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="words"
+            onkeydown="if(event.key==='Enter')runDirectIGAudit()">
+        </div>
+
+        <button class="ig-audit-btn" onclick="runDirectIGAudit()">
+          Audit My Instagram Profile →
+        </button>
+
+        <div class="ig-handle-pills">
+          <span>🎨 Reels Performance</span>
+          <span>✍️ Bio Score</span>
+          <span>📈 Posting Patterns</span>
+          <span>💀 Competitor Gap</span>
+          <span>💰 Revenue Gap</span>
+          <span>📅 30-Day Calendar</span>
+        </div>
       </div>
 
       <div id="ig-search-error" class="search-error-banner"></div>
@@ -3773,9 +3930,11 @@ function switchSearchMode(mode) {
   if (isGmb) {
     document.getElementById('search-input').focus();
   } else {
-    // Focus manual input if visible, otherwise the hidden field (no-op on mobile)
-    const manual = document.getElementById('ig-manual-input');
-    if (manual) manual.focus();
+    // Focus the direct handle input (new card — no OAuth)
+    setTimeout(() => {
+      const inp = document.getElementById('ig-direct-handle');
+      if (inp) inp.focus();
+    }, 50);
   }
 }
 // Backwards-compatible aliases used by inline onclick handlers
@@ -4221,6 +4380,7 @@ function _warmup() {
 }
 input.addEventListener('focus', _warmup);
 document.getElementById('ig-handle-input').addEventListener('focus', _warmup);
+document.getElementById('ig-direct-handle')?.addEventListener('focus', _warmup);
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) acList.style.display = 'none';
 });
@@ -4464,6 +4624,10 @@ function runAgain() {
   input.value = '';
   document.getElementById('ig-handle-input').value = '';
   document.getElementById('ig-city-input').value   = '';
+  const _dh = document.getElementById('ig-direct-handle');
+  const _dc = document.getElementById('ig-direct-city');
+  if (_dh) _dh.value = '';
+  if (_dc) _dc.value = '';
   document.getElementById('ig-results-list').style.display = 'none';
   document.getElementById('ig-search-error').style.display = 'none';
   clearError();
@@ -4732,6 +4896,25 @@ async function submitManualToken() {
     statusEl.textContent = 'Network error. Check your connection and try again.';
     statusEl.style.color = '#ff6666';
   }
+}
+
+// ── DIRECT IG HANDLE AUDIT (no OAuth) ────────────────────────────
+// Called by the handle input card — skips OAuth entirely
+function runDirectIGAudit() {
+  const handleRaw = (document.getElementById('ig-direct-handle')?.value || '').trim();
+  const handle    = handleRaw.replace(/^@/, ''); // strip @ if user typed it
+  const city      = (document.getElementById('ig-direct-city')?.value   || '').trim();
+  const errEl     = document.getElementById('ig-search-error');
+
+  if (!handle) {
+    errEl.textContent = '⚠️ Enter your Instagram handle to run the audit.';
+    errEl.style.display = 'block';
+    document.getElementById('ig-direct-handle')?.focus();
+    return;
+  }
+  errEl.style.display = 'none';
+  selectedName = '@' + handle;
+  gradeIGPublic(handle, city);
 }
 
 // ── IG PAGES FETCH WITH AUTO-RETRY ───────────────────────────────
