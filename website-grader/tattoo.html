@@ -2578,6 +2578,20 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .igr-hb-score { width: 30px; text-align: right; flex-shrink: 0; font-weight: 600; }
 
 /* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≤768px)
+══════════════════════════════════════════════════════════════════ */
+@media(max-width:768px) {
+  /* Sidebar goes static at 768 too, not just 960 */
+  .report-sidebar { position: static; }
+  /* Modal padding */
+  .modal-box { padding: 28px 22px; }
+  /* Upgrade bar wraps */
+  .upgrade-bar { flex-direction: column; gap: 14px; }
+  .upgrade-bar-actions { width: 100%; }
+  .upgrade-btn-meta, .upgrade-btn-skip { width: 100%; justify-content: center; text-align: center; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
    MOBILE — COMPREHENSIVE RESPONSIVE PASS (≤560px)
 ══════════════════════════════════════════════════════════════════ */
 @media(max-width:560px) {
@@ -2587,7 +2601,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   .search-sub { font-size: 14px; margin-bottom: 32px; }
   .search-logo { margin-bottom: 36px; }
 
-  /* ── SEARCH INPUT: STACK BUTTON BELOW ──────────────────────── */
+  /* ── GMB SEARCH: STACK BUTTON BELOW INPUT ───────────────── */
   .search-wrap {
     display: flex;
     flex-direction: column;
@@ -2595,11 +2609,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   }
   #search-input {
     height: 56px;
-    padding: 0 18px; /* remove reserved-space for absolute button */
+    padding: 0 18px;   /* remove reserved right space — button is now below */
     border-radius: 12px;
     font-size: 15px;
   }
-  /* button leaves absolute flow → becomes full-width block */
   .search-btn {
     position: static !important;
     transform: none !important;
@@ -2608,47 +2621,32 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
     border-radius: 10px;
     font-size: 15px;
     padding: 0;
-    margin-top: 0;
   }
   .search-btn:hover  { transform: none !important; }
   .search-btn:active { transform: scale(.98) !important; }
+  /* autocomplete: pin to bottom of input, not bottom of whole wrap */
+  #autocomplete-list { top: 64px; }
 
-  /* autocomplete list: now relative to input, not wrap bottom */
-  #autocomplete-list {
-    top: calc(56px + 8px + 8px); /* input height + gap + offset */
-  }
-
-  /* ── IG HANDLE MODE: REMOVE OVERSIZED RIGHT PADDING ──────── */
-  .ig-handle-field {
-    padding: 0 18px 0 38px !important;
-    border-radius: 14px !important;   /* restore full radius */
-  }
-  .ig-city-field {
-    padding: 0 18px !important;
-    border-radius: 12px !important;
-    border-top: 1.5px solid rgba(255,255,255,.14) !important;
-    margin-top: 6px;
-    height: 52px;
-  }
-  /* IG button: leave absolute flow on IG mode too */
-  #search-mode-ig .search-btn {
-    position: static !important;
-    top: auto !important;
-    transform: none !important;
-    width: 100%;
-    height: 52px;
-    border-radius: 10px;
-    padding: 0;
-    display: block;
-    margin-top: 8px;
-  }
+  /* ── IG HANDLE CARD: ALREADY MOBILE-FRIENDLY ─────────────── */
+  /* #ig-direct-handle has padding:0 16px 0 38px — no fix needed */
+  /* .ig-city-direct has padding:13px 14px — no fix needed */
+  /* .ig-audit-btn is display:block;width:100% — no fix needed */
+  #ig-direct-handle { height: 52px; font-size: 15px; }
+  .ig-city-direct   { font-size: 14px; padding: 13px 12px; }
+  .ig-audit-btn     { font-size: 15px; padding: 15px; min-height: 52px; }
+  .ig-handle-icon   { width: 36px; height: 36px; font-size: 11px; }
+  .ig-handle-card-title { font-size: 14px; }
+  .ig-handle-card   { padding: 18px 16px 14px; border-radius: 14px; }
 
   /* ── SEARCH MODE TABS ────────────────────────────────────── */
-  .smt-tab { font-size: 11px; padding: 9px 8px; letter-spacing: 0; }
-  .audit-type-tab { font-size: 11px; padding: 9px 10px; }
+  .smt-tab        { font-size: 11px; padding: 11px 8px; letter-spacing: 0; min-height: 44px; }
+  .audit-type-tab { font-size: 11px; padding: 11px 10px; min-height: 44px; }
+
+  /* ── MODE TOGGLE BTN (small tap target fix) ───────────────── */
+  .mode-toggle-btn { padding: 4px 2px; font-size: 12px; }
 
   /* ── PROOF STRIP ─────────────────────────────────────────── */
-  .proof-strip { gap: 8px; margin-top: 36px; }
+  .proof-strip { gap: 8px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
   .proof-dot   { display: none; }
   .proof-label { font-size: 10px; }
 
@@ -2661,8 +2659,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   .sbh-name  { font-size: 13px; }
   .sbh-score { font-size: 16px; min-width: 32px; }
   .sbh-max   { display: none; }
+  .score-bar-header { padding: 14px 14px; }
 
-  /* ── IG REPORT: TYPE ROW 3-COL (drop sub) ───────────────── */
+  /* ── IG REPORT: TYPE ROW 3-COL (drop sub column) ──────────── */
   .igr-type-row { grid-template-columns: 68px 1fr 52px; }
   .igr-type-sub { display: none; }
 
@@ -2674,42 +2673,63 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   .igr-health-breakdown { min-width: 0; }
   .igr-hb-label { width: 72px; }
 
+  /* ── IG COMPETITOR ROW ───────────────────────────────────── */
+  .igr-comp-row { flex-wrap: wrap; }
+  .igr-comp-fol { min-width: 0; }
+
   /* ── ACCURACY BANNER ─────────────────────────────────────── */
   .accuracy-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
   .accuracy-divider { width: 100%; height: 1px; }
 
-  /* ── REPORT COLS SIDEBAR ─────────────────────────────────── */
+  /* ── REPORT SIDEBAR ──────────────────────────────────────── */
   .report-sidebar { padding: clamp(20px,3vw,32px) var(--px); }
-
-  /* ── COMP GAP TABLE ──────────────────────────────────────── */
-  .comp-gap-table { font-size: 12px; }
 
   /* ── LEAD GATE ───────────────────────────────────────────── */
   .lg-score-teaser { gap: 14px; }
   .lg-grade-letter { font-size: 28px; }
   .lg-score-val    { font-size: 22px; }
+  .lg-unlock-btn   { font-size: 15px; min-height: 52px; }
+
+  /* ── GUEST CITY FORM ─────────────────────────────────────── */
+  .guest-input-row  { flex-direction: column; gap: 6px; }
+  .guest-state-field { width: 100%; }
+  .guest-run-btn    { font-size: 15px; min-height: 52px; }
 
   /* ── GUEST REPORT ────────────────────────────────────────── */
-  .guest-opp-row { gap: 16px; }
+  .guest-opp-row    { gap: 16px; }
   .guest-opp-circle { width: 100px; height: 100px; }
   .guest-opp-score  { font-size: 34px; }
-  .guest-rev-cols { flex-direction: column; }
+  .guest-rev-cols   { flex-direction: column; }
+  .guest-cta-btn    { width: 100%; justify-content: center; padding: 18px 24px; }
 
-  /* ── CLOSE SECTION MATH ROW ──────────────────────────────── */
+  /* ── CLOSE SECTION ───────────────────────────────────────── */
   .close-math-row { flex-direction: column; }
   .close-math-col { min-width: 0; }
+  .close-cta-btn  { width: 100%; justify-content: center; }
+
+  /* ── IG CTA BUTTON ───────────────────────────────────────── */
+  .igr-cta-btn { display: block; width: 100%; text-align: center; padding: 15px 20px; }
 
   /* ── SWOT GRID ───────────────────────────────────────────── */
   .swot-grid { grid-template-columns: 1fr !important; }
+
+  /* ── OAUTH INTERSTITIAL ──────────────────────────────────── */
+  .oi-connect-btn { font-size: 14px; min-height: 52px; }
+  .oi-skip-btn    { font-size: 13px; min-height: 48px; }
+
+  /* ── CHECKLIST CTA ───────────────────────────────────────── */
+  .cl-hero-stats { gap: 20px; }
 }
 
-/* very small phones (≤380px) */
+/* ── VERY SMALL PHONES (≤380px) ──────────────────────────────── */
 @media(max-width:380px) {
-  .igr-type-row { grid-template-columns: 58px 1fr 46px; }
+  .igr-type-row   { grid-template-columns: 58px 1fr 46px; }
   .igr-timing-day { width: 58px; font-size: 11px; }
-  .smt-tab { font-size: 10px; padding: 8px 6px; }
-  .audit-type-tab { font-size: 10px; padding: 8px 8px; }
-  .ig-handle-field { padding: 0 14px 0 34px !important; }
+  .smt-tab        { font-size: 10px; padding: 10px 5px; }
+  .audit-type-tab { font-size: 10px; padding: 10px 6px; }
+  #ig-direct-handle { font-size: 14px; }
+  .ig-handle-card { padding: 16px 14px 12px; }
+  .search-h1      { letter-spacing: -1px; }
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -2778,9 +2798,42 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
             <div class="ig-handle-card-sub">Followers · Engagement · Bio Score · Revenue Gap · Competitor Comparison</div>
           </div>
         </div>
-        <button class="ig-audit-btn" onclick="startIGModeOAuth()">
-          Audit My Instagram Profile →
+
+        <!-- Handle input -->
+        <div style="position:relative;margin-bottom:8px">
+          <span class="ig-handle-prefix">@</span>
+          <input id="ig-direct-handle"
+            type="text"
+            placeholder="yourtattoohandle"
+            autocapitalize="none"
+            autocorrect="off"
+            autocomplete="off"
+            spellcheck="false"
+            inputmode="text"
+            enterkeyhint="go"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();runDirectIGAudit();}">
+        </div>
+
+        <!-- City input -->
+        <input id="ig-direct-city"
+          class="ig-city-direct"
+          type="text"
+          placeholder="City (e.g. Miami, Orlando) — optional"
+          autocomplete="off"
+          style="margin-bottom:10px;display:block"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();runDirectIGAudit();}">
+
+        <!-- Audit button -->
+        <button class="ig-audit-btn" onclick="runDirectIGAudit()">
+          Audit My Instagram →
         </button>
+
+        <!-- Trust pills -->
+        <div class="ig-handle-pills">
+          <span>No login required</span>
+          <span>Works with public profiles</span>
+          <span>Instant results</span>
+        </div>
       </div>
 
       <div id="ig-search-error" class="search-error-banner"></div>
