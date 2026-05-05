@@ -4601,21 +4601,41 @@ async function startGrade() {
       showError('Type your studio or artist name + city to search.');
       return;
     }
-    // No dropdown selection yet — try autocomplete now (catches server cold-start)
+    // No dropdown selection yet — fetch autocomplete now with a hard timeout
+    // so the button NEVER looks frozen (catches Render cold-start hang)
+    const btn = document.querySelector('.search-btn');
+    const origText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Searching…'; btn.disabled = true; }
+
+    const ctrl = new AbortController();
+    const tOut = setTimeout(() => ctrl.abort(), 8000);  // 8s max wait
     let preds = [];
     try {
-      const r = await fetch(`${API}/api/autocomplete-tattoo?input=${encodeURIComponent(q)}`);
+      const r = await fetch(
+        `${API}/api/autocomplete-tattoo?input=${encodeURIComponent(q)}`,
+        { signal: ctrl.signal }
+      );
+      clearTimeout(tOut);
       const d = await r.json();
       preds = d.predictions || [];
     } catch(e) {
-      showError('Server is waking up — this usually takes 15–20 seconds on the first request. Try again in a moment.');
+      clearTimeout(tOut);
+      if (btn) { btn.textContent = origText; btn.disabled = false; }
+      if (e.name === 'AbortError') {
+        showError('Server is warming up — takes about 20 seconds on the first request. Click Run Audit again in a moment.');
+      } else {
+        showError('Connection error. Check your internet and try again.');
+      }
       return;
     }
+
+    if (btn) { btn.textContent = origText; btn.disabled = false; }
+
     if (preds.length) {
       renderAC(preds);
       showError('Select an artist from the list below, then click Run Audit.');
     } else {
-      showError('No artists found for "' + q + '". Try adding the city name — for example: "Fine Ink Miami".');
+      showError('No results for "' + q + '". Try adding the city — for example: "Fine Ink Miami".');
     }
     return;
   }
