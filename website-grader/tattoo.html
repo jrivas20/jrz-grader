@@ -2803,7 +2803,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
         </div>
 
         <!-- Handle input -->
-        <div style="position:relative;margin-bottom:8px">
+        <div style="position:relative;margin-bottom:12px">
           <span class="ig-handle-prefix">@</span>
           <input id="ig-direct-handle"
             type="text"
@@ -2817,14 +2817,8 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
             onkeydown="if(event.key==='Enter'){event.preventDefault();runDirectIGAudit();}">
         </div>
 
-        <!-- City input -->
-        <input id="ig-direct-city"
-          class="ig-city-direct"
-          type="text"
-          placeholder="City (e.g. Miami, Orlando) — optional"
-          autocomplete="off"
-          style="margin-bottom:10px;display:block"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();runDirectIGAudit();}">
+        <!-- Hidden city field — kept so JS references don't break -->
+        <input id="ig-direct-city" type="hidden" value="">
 
         <!-- Audit button -->
         <button class="ig-audit-btn" onclick="runDirectIGAudit()">
@@ -4162,22 +4156,30 @@ function showManualIGInput(prefill) {
 
 // ── INSTAGRAM OAUTH-FIRST SEARCH ─────────────────────────────────
 function startIGModeOAuth() {
-  const handle  = document.getElementById('ig-handle-input').value.trim().replace(/^@/, '');
-  const city    = document.getElementById('ig-city-input').value.trim();
+  // Read handle from whichever input is visible — direct card takes priority
+  const directHandle = (document.getElementById('ig-direct-handle')?.value || '').trim().replace(/^@/, '');
+  const hiddenHandle = (document.getElementById('ig-handle-input')?.value  || '').trim().replace(/^@/, '');
+  const handle = directHandle || hiddenHandle || pendingIGHandle || '';
+  const city   = (document.getElementById('ig-city-input')?.value || '').trim();
+
   const errEl   = document.getElementById('ig-search-error');
   const resEl   = document.getElementById('ig-results-list');
   errEl.style.display = 'none';
   resEl.style.display = 'none';
 
-  // OAuth not configured — can't proceed
+  // OAuth not configured — fall back to public scrape so it never dead-ends
   if (!oauthEnabled || !fbAppId) {
-    errEl.textContent = 'Instagram login not configured. Contact JRZ to enable this feature.';
-    errEl.style.display = 'block';
+    if (handle) {
+      gradeIGPublic(handle, city);
+    } else {
+      errEl.textContent = 'Instagram login not configured. Contact JRZ to enable this feature.';
+      errEl.style.display = 'block';
+    }
     return;
   }
 
   // Store handle + city, flag we're in IG mode, open OAuth popup
-  pendingIGHandle = handle;
+  pendingIGHandle = handle || pendingIGHandle;
   pendingIGCity   = city;
   igSearchMode    = true;
 
@@ -4323,7 +4325,10 @@ async function showIGPageSelector(token, pages) {
 
   resEl.innerHTML = `
     <div style="padding:14px 18px 10px;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Select your account to audit</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3)">Select your account to audit</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.25)">${pagesWithIG.length} page${pagesWithIG.length === 1 ? '' : 's'} found</div>
+      </div>
       <input id="ig-page-filter" type="text" placeholder="Filter by handle or page name..."
         value="${pendingIGHandle || ''}"
         style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
@@ -4331,7 +4336,7 @@ async function showIGPageSelector(token, pages) {
                padding:9px 12px;outline:none;box-sizing:border-box"
         oninput="filterIGPages(this.value)">
     </div>
-    <div id="ig-page-rows" style="max-height:320px;overflow-y:auto">
+    <div id="ig-page-rows" style="max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch">
       ${buildRows(pagesWithIG, handleLower)}
     </div>
   `;
@@ -5112,23 +5117,29 @@ async function submitManualToken() {
   }
 }
 
-// ── DIRECT IG HANDLE AUDIT (no OAuth) ────────────────────────────
-// Called by the handle input card — skips OAuth entirely
+// ── DIRECT IG HANDLE AUDIT ───────────────────────────────────────
+// Validates handle, then launches Facebook OAuth so the user can
+// see ALL connected Instagram pages and pick one for a real-data audit.
 function runDirectIGAudit() {
   const handleRaw = (document.getElementById('ig-direct-handle')?.value || '').trim();
-  const handle    = handleRaw.replace(/^@/, ''); // strip @ if user typed it
-  const city      = (document.getElementById('ig-direct-city')?.value   || '').trim();
+  const handle    = handleRaw.replace(/^@/, '');
   const errEl     = document.getElementById('ig-search-error');
 
   if (!handle) {
-    errEl.textContent = '⚠️ Enter your Instagram handle to run the audit.';
+    errEl.textContent = 'Enter your Instagram handle first.';
     errEl.style.display = 'block';
     document.getElementById('ig-direct-handle')?.focus();
     return;
   }
   errEl.style.display = 'none';
-  selectedName = '@' + handle;
-  gradeIGPublic(handle, city);
+
+  // Pre-set pending handle so OAuth flow pre-filters the page list to this handle
+  pendingIGHandle = handle;
+  pendingIGCity   = '';
+  selectedName    = '@' + handle;
+
+  // Launch OAuth → shows ALL connected IG pages → user picks one → real data audit
+  startIGModeOAuth();
 }
 
 // ── IG PAGES FETCH WITH AUTO-RETRY ───────────────────────────────
