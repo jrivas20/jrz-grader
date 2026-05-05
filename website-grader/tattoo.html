@@ -7612,8 +7612,8 @@ function generateSWOTFromAudit(d) {
   // ── THREATS ───────────────────────────────────────────────────
   const threats = [];
   if (compAds)                     threats.push('Competitors are running paid ads — they are actively taking clients who searched for artists like you');
-  if (!inPack)                     threats.push('Map pack competitors are capturing local search traffic you're not visible for');
-  if (!hasBooking)                 threats.push('Artists with instant booking convert the same client you lose when they can't book immediately');
+  if (!inPack)                     threats.push("Map pack competitors are capturing local search traffic you're not visible for");
+  if (!hasBooking)                 threats.push("Artists with instant booking convert the same client you lose when they can't book immediately");
   if (igLast && igLast > 21)       threats.push(`47-day content silence signals to the algorithm and clients that you may not be taking bookings`);
   if ((ri.velocity || '').toLowerCase().includes('slow') || (ri.velocity || '').toLowerCase().includes('stagnant')) {
     threats.push('Slowing review velocity hurts map pack ranking over time — competitors with fresh reviews will outrank you');
