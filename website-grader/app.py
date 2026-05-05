@@ -5,7 +5,7 @@ import json
 import hashlib
 import datetime
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from bs4 import BeautifulSoup
 
@@ -28,6 +28,13 @@ CACHE = {}
 # ─────────────────────────────────────────────────────────────────
 #  ROUTES
 # ─────────────────────────────────────────────────────────────────
+
+@app.route('/')
+@app.route('/grader')
+def serve_grader():
+    """Serve tattoo.html directly — auto-updates on every Render deploy."""
+    return send_from_directory(os.path.dirname(__file__), 'tattoo.html')
+
 
 @app.route('/health')
 def health():
