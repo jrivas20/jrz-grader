@@ -9170,7 +9170,7 @@ app.get('/authors', (_req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// GOOGLE ADS — LIVE PERFORMANCE ENDPOINT
+// GOOGLE ADS — LIVE PERFORMANCE ENDPOINT v2
 // GET /google-ads/stats?customerId=5192590797&campaignIds=22447873137,23772794832&period=LAST_30_DAYS
 // Returns: clicks, impressions, calls, cost, conversions per campaign + daily breakdown
 // ═══════════════════════════════════════════════════════════
