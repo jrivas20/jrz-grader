@@ -60,7 +60,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   background: var(--bg);
 }
 .hero-video {
@@ -2596,6 +2596,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 ══════════════════════════════════════════════════════════════════ */
 @media(max-width:560px) {
 
+  /* ── SEARCH SECTION: pad top+bottom so content is never clipped ── */
+  #search-section { padding: 72px 0 56px; justify-content: flex-start; }
+
   /* ── HERO HEADING ──────────────────────────────────────────── */
   .search-h1 { letter-spacing: -1.5px; }
   .search-sub { font-size: 14px; margin-bottom: 32px; }
@@ -4031,9 +4034,9 @@ fetch(`${API}/api/config`).then(r => r.json()).then(c => {
     if (card) {
       card.style.display = 'none';
     }
-    // Pre-render the manual input (hidden until tab is active)
+    // Pre-render the manual input only if the new ig-handle-card inputs are absent
     const resEl = document.getElementById('ig-results-list');
-    if (resEl && resEl.innerHTML.trim() === '') {
+    if (resEl && resEl.innerHTML.trim() === '' && !document.getElementById('ig-direct-handle')) {
       resEl.innerHTML = `
         <div style="padding:18px 20px">
           <div style="font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-transform:uppercase">Enter your Instagram handle</div>
@@ -4542,13 +4545,12 @@ document.getElementById('ig-handle-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') startIGModeOAuth();
 });
 
-// ── FIX 6: WARMUP PING — fires on first focus to wake Render free tier ──
-let warmupSent = false;
+// ── WARMUP PING — fires immediately on page load to wake Render free tier ──
+// (Also fires on first input focus as a backup in case page loaded before JS ran)
+fetch(`${API}/health`).catch(() => {});
+let warmupSent = true;
 function _warmup() {
-  if (!warmupSent) {
-    warmupSent = true;
-    fetch(`${API}/health`).catch(() => {});
-  }
+  if (!warmupSent) { warmupSent = true; fetch(`${API}/health`).catch(() => {}); }
 }
 input.addEventListener('focus', _warmup);
 document.getElementById('ig-handle-input').addEventListener('focus', _warmup);
@@ -4594,7 +4596,27 @@ async function startGrade() {
   clearError();
 
   if (!selectedPlaceId) {
-    showError('Please select an artist or studio from the dropdown before grading.');
+    const q = input.value.trim();
+    if (!q) {
+      showError('Type your studio or artist name + city to search.');
+      return;
+    }
+    // No dropdown selection yet — try autocomplete now (catches server cold-start)
+    let preds = [];
+    try {
+      const r = await fetch(`${API}/api/autocomplete-tattoo?input=${encodeURIComponent(q)}`);
+      const d = await r.json();
+      preds = d.predictions || [];
+    } catch(e) {
+      showError('Server is waking up — this usually takes 15–20 seconds on the first request. Try again in a moment.');
+      return;
+    }
+    if (preds.length) {
+      renderAC(preds);
+      showError('Select an artist from the list below, then click Run Audit.');
+    } else {
+      showError('No artists found for "' + q + '". Try adding the city name — for example: "Fine Ink Miami".');
+    }
     return;
   }
 
