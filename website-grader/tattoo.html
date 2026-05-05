@@ -2576,6 +2576,141 @@ body::after{content:'';position:fixed;inset:0;z-index:9990;opacity:.025;pointer-
 .igr-hb-track { flex: 1; height: 4px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; }
 .igr-hb-fill { height: 100%; border-radius: 99px; transition: width .9s var(--ease); }
 .igr-hb-score { width: 30px; text-align: right; flex-shrink: 0; font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════════
+   MOBILE — COMPREHENSIVE RESPONSIVE PASS (≤560px)
+══════════════════════════════════════════════════════════════════ */
+@media(max-width:560px) {
+
+  /* ── HERO HEADING ──────────────────────────────────────────── */
+  .search-h1 { letter-spacing: -1.5px; }
+  .search-sub { font-size: 14px; margin-bottom: 32px; }
+  .search-logo { margin-bottom: 36px; }
+
+  /* ── SEARCH INPUT: STACK BUTTON BELOW ──────────────────────── */
+  .search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #search-input {
+    height: 56px;
+    padding: 0 18px; /* remove reserved-space for absolute button */
+    border-radius: 12px;
+    font-size: 15px;
+  }
+  /* button leaves absolute flow → becomes full-width block */
+  .search-btn {
+    position: static !important;
+    transform: none !important;
+    width: 100%;
+    height: 52px;
+    border-radius: 10px;
+    font-size: 15px;
+    padding: 0;
+    margin-top: 0;
+  }
+  .search-btn:hover  { transform: none !important; }
+  .search-btn:active { transform: scale(.98) !important; }
+
+  /* autocomplete list: now relative to input, not wrap bottom */
+  #autocomplete-list {
+    top: calc(56px + 8px + 8px); /* input height + gap + offset */
+  }
+
+  /* ── IG HANDLE MODE: REMOVE OVERSIZED RIGHT PADDING ──────── */
+  .ig-handle-field {
+    padding: 0 18px 0 38px !important;
+    border-radius: 14px !important;   /* restore full radius */
+  }
+  .ig-city-field {
+    padding: 0 18px !important;
+    border-radius: 12px !important;
+    border-top: 1.5px solid rgba(255,255,255,.14) !important;
+    margin-top: 6px;
+    height: 52px;
+  }
+  /* IG button: leave absolute flow on IG mode too */
+  #search-mode-ig .search-btn {
+    position: static !important;
+    top: auto !important;
+    transform: none !important;
+    width: 100%;
+    height: 52px;
+    border-radius: 10px;
+    padding: 0;
+    display: block;
+    margin-top: 8px;
+  }
+
+  /* ── SEARCH MODE TABS ────────────────────────────────────── */
+  .smt-tab { font-size: 11px; padding: 9px 8px; letter-spacing: 0; }
+  .audit-type-tab { font-size: 11px; padding: 9px 10px; }
+
+  /* ── PROOF STRIP ─────────────────────────────────────────── */
+  .proof-strip { gap: 8px; margin-top: 36px; }
+  .proof-dot   { display: none; }
+  .proof-label { font-size: 10px; }
+
+  /* ── REPORT HEADER ───────────────────────────────────────── */
+  .biz-title { font-size: clamp(20px, 5.5vw, 28px); }
+  .biz-meta  { gap: 10px; font-size: 12px; }
+  .biz-meta-item { gap: 4px; }
+
+  /* ── SCORE BAR HEADER ────────────────────────────────────── */
+  .sbh-name  { font-size: 13px; }
+  .sbh-score { font-size: 16px; min-width: 32px; }
+  .sbh-max   { display: none; }
+
+  /* ── IG REPORT: TYPE ROW 3-COL (drop sub) ───────────────── */
+  .igr-type-row { grid-template-columns: 68px 1fr 52px; }
+  .igr-type-sub { display: none; }
+
+  /* ── IG REPORT: TIMING ROW ───────────────────────────────── */
+  .igr-timing-day { width: 68px; font-size: 12px; }
+  .igr-timing-val { width: 56px; font-size: 11px; }
+
+  /* ── IG HEALTH SCORE BREAKDOWN ───────────────────────────── */
+  .igr-health-breakdown { min-width: 0; }
+  .igr-hb-label { width: 72px; }
+
+  /* ── ACCURACY BANNER ─────────────────────────────────────── */
+  .accuracy-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .accuracy-divider { width: 100%; height: 1px; }
+
+  /* ── REPORT COLS SIDEBAR ─────────────────────────────────── */
+  .report-sidebar { padding: clamp(20px,3vw,32px) var(--px); }
+
+  /* ── COMP GAP TABLE ──────────────────────────────────────── */
+  .comp-gap-table { font-size: 12px; }
+
+  /* ── LEAD GATE ───────────────────────────────────────────── */
+  .lg-score-teaser { gap: 14px; }
+  .lg-grade-letter { font-size: 28px; }
+  .lg-score-val    { font-size: 22px; }
+
+  /* ── GUEST REPORT ────────────────────────────────────────── */
+  .guest-opp-row { gap: 16px; }
+  .guest-opp-circle { width: 100px; height: 100px; }
+  .guest-opp-score  { font-size: 34px; }
+  .guest-rev-cols { flex-direction: column; }
+
+  /* ── CLOSE SECTION MATH ROW ──────────────────────────────── */
+  .close-math-row { flex-direction: column; }
+  .close-math-col { min-width: 0; }
+
+  /* ── SWOT GRID ───────────────────────────────────────────── */
+  .swot-grid { grid-template-columns: 1fr !important; }
+}
+
+/* very small phones (≤380px) */
+@media(max-width:380px) {
+  .igr-type-row { grid-template-columns: 58px 1fr 46px; }
+  .igr-timing-day { width: 58px; font-size: 11px; }
+  .smt-tab { font-size: 10px; padding: 8px 6px; }
+  .audit-type-tab { font-size: 10px; padding: 8px 8px; }
+  .ig-handle-field { padding: 0 14px 0 34px !important; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://links.jrzmarketing.com/js/form_embed.js"></script>
