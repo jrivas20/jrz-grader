@@ -123,83 +123,68 @@ def supabase_check():
 @app.route('/oauth-callback')
 def oauth_callback():
     """
-    OAuth redirect landing page for the Meta popup flow.
-    Supports both:
-      - response_type=code  → server-side token exchange using FB_APP_SECRET
-      - response_type=token → client-side hash reading (implicit flow fallback)
-    Sends access_token to parent window via postMessage, then closes.
+    OAuth redirect landing page.
+    Handles response_type=code (server-side exchange) and implicit fallback.
     """
-    code      = request.args.get('code', '').strip()
-    error     = request.args.get('error', '').strip()
-    error_desc= request.args.get('error_description', error).strip()
+    code       = request.args.get('code', '').strip()
+    error      = request.args.get('error', '').strip()
+    error_desc = request.args.get('error_description', error).strip()
 
-    def _render(js_body):
-        return f'''<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Connecting...</title></head>
-<body style="background:#0a0a0a;color:#fff;font-family:sans-serif;
-             display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
-<script>
-try {{
-  {js_body}
-}} catch(e) {{ if(window.opener) window.opener.postMessage({{type:'meta_error',error:'JS error: '+e.message}},'*'); }}
-setTimeout(function(){{ window.close(); }}, 900);
-</script>
-<div style="text-align:center">
-  <div style="font-size:22px;margin-bottom:8px">Connecting…</div>
-  <div style="font-size:12px;opacity:.45">This window will close automatically.</div>
-</div>
-</body></html>'''
+    def send(js):
+        return (
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Connecting...</title></head>'
+            '<body style="background:#0a0a0a;color:#fff;font-family:sans-serif;'
+            'display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">'
+            '<script>try{' + js + '}catch(ex){if(window.opener)window.opener.postMessage({type:"meta_error",error:"JS:"+ex.message},"*");}'
+            'setTimeout(function(){window.close();},1000);</script>'
+            '<div style="text-align:center"><div style="font-size:22px">Connecting…</div>'
+            '<div style="font-size:12px;opacity:.45">This window will close automatically.</div>'
+            '</div></body></html>'
+        )
 
-    # ── Error from Facebook ────────────────────────────────────────────
+    # 1. Error from Facebook
     if error:
-        js = f"if(window.opener) window.opener.postMessage({{type:'meta_error',error:{repr(error_desc)}}},'*');"
-        return _render(js)
+        msg = (error_desc or error).replace("'", "\\'")
+        return send("if(window.opener)window.opener.postMessage({type:'meta_error',error:'" + msg + "'},'*');")
 
-    # ── Code flow: exchange code server-side ───────────────────────────
-    if code and FB_APP_SECRET:
-        redirect_uri = request.url_root.rstrip('/') + '/oauth-callback'
+    # 2. Code flow: exchange server-side
+    if code:
+        if not FB_APP_SECRET:
+            return send("if(window.opener)window.opener.postMessage({type:'meta_error',error:'Server config error: FB_APP_SECRET missing in Render'},'*');")
         try:
             resp = requests.post(
                 'https://graph.facebook.com/v18.0/oauth/access_token',
-                data={{
+                data={
                     'client_id':     FB_APP_ID,
                     'client_secret': FB_APP_SECRET,
-                    'redirect_uri':  redirect_uri,
+                    'redirect_uri':  'https://inksystems.jrzmarketing.com/oauth-callback',
                     'code':          code,
-                }},
-                timeout=10
+                },
+                timeout=12
             )
             td = resp.json()
             token = td.get('access_token', '')
             if token:
-                js = f"if(window.opener) window.opener.postMessage({{type:'meta_token',token:{repr(token)},access_token:{repr(token)}}},'*');"
-                return _render(js)
+                safe = token.replace("'", "\\'")
+                return send("if(window.opener)window.opener.postMessage({type:'meta_token',token:'" + safe + "',access_token:'" + safe + "'},'*');")
             else:
-                err_msg = td.get('error', {{}}).get('message', 'Token exchange failed') if isinstance(td.get('error'), dict) else str(td.get('error', 'Token exchange failed'))
-                js = f"if(window.opener) window.opener.postMessage({{type:'meta_error',error:{repr(err_msg)}}},'*');"
-                return _render(js)
+                err_obj = td.get('error', {})
+                err_msg = err_obj.get('message', str(td))[:100] if isinstance(err_obj, dict) else str(err_obj)[:100]
+                err_msg = err_msg.replace("'", "\\'")
+                return send("if(window.opener)window.opener.postMessage({type:'meta_error',error:'FB API: " + err_msg + "'},'*');")
         except Exception as ex:
-            js = f"if(window.opener) window.opener.postMessage({{type:'meta_error',error:'Exchange error: {{}}'.format(str(ex)[:80])}},'*');"
-            return _render(js)
+            ex_msg = str(ex)[:80].replace("'", "\\'")
+            return send("if(window.opener)window.opener.postMessage({type:'meta_error',error:'Exchange failed: " + ex_msg + "'},'*');")
 
-    # ── Implicit flow fallback: read hash client-side ──────────────────
-    js = """
-  var hash = window.location.hash.slice(1);
-  var params = {};
-  hash.split('&').forEach(function(p){
-    var kv = p.split('=');
-    if(kv[0]) params[kv[0]] = decodeURIComponent(kv[1] || '');
-  });
-  if (params.access_token && window.opener) {
-    window.opener.postMessage({ type: 'meta_token', token: params.access_token, access_token: params.access_token }, '*');
-  } else if (params.error && window.opener) {
-    window.opener.postMessage({ type: 'meta_error', error: params.error_description || params.error }, '*');
-  } else if (window.opener) {
-    // No code, no token, no error — tell parent
-    window.opener.postMessage({ type: 'meta_error', error: 'No authorization received. Make sure popups are allowed.' }, '*');
-  }
-"""
-    return _render(js)
+    # 3. Fallback: implicit flow — read access_token from URL hash
+    hash_js = (
+        "var h=window.location.hash.slice(1),p={};"
+        "h.split('&').forEach(function(kv){var a=kv.split('=');if(a[0])p[a[0]]=decodeURIComponent(a[1]||'');});"
+        "if(p.access_token&&window.opener){window.opener.postMessage({type:'meta_token',token:p.access_token,access_token:p.access_token},'*');}"
+        "else if(p.error&&window.opener){window.opener.postMessage({type:'meta_error',error:p.error_description||p.error},'*');}"
+        "else if(window.opener){window.opener.postMessage({type:'meta_error',error:'No authorization received from Facebook'},'*');}"
+    )
+    return send(hash_js)
 
 
 def analyze_ig_competitive(ig_profile, media_list, competitors=None):
