@@ -36,6 +36,13 @@ def serve_grader():
     return send_from_directory(os.path.dirname(__file__), 'tattoo.html')
 
 
+@app.route('/legacy-ink')
+@app.route('/legacy-ink/audit')
+def serve_legacy_ink():
+    """Serve Legacy Ink branded tattoo grader — same engine, own branding."""
+    return send_from_directory(os.path.dirname(__file__), 'legacy-ink.html')
+
+
 @app.route('/health')
 def health():
     return jsonify({
