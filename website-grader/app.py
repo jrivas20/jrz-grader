@@ -19,6 +19,7 @@ DFS_LOGIN     = os.environ.get('DATAFORSEO_LOGIN', '')
 DFS_PASSWORD  = os.environ.get('DATAFORSEO_PASSWORD', '')
 FB_TOKEN      = os.environ.get('FB_ACCESS_TOKEN', '')
 FB_APP_ID     = os.environ.get('FB_APP_ID', '')        # Public — used in OAuth popup URL
+FB_APP_SECRET = os.environ.get('FB_APP_SECRET', '')   # Required for server-side code exchange
 SUPABASE_URL  = os.environ.get('SUPABASE_URL', '')     # https://xxxx.supabase.co
 SUPABASE_KEY  = os.environ.get('SUPABASE_ANON_KEY', '') # anon/public key
 
@@ -123,34 +124,82 @@ def supabase_check():
 def oauth_callback():
     """
     OAuth redirect landing page for the Meta popup flow.
-    Facebook sends the user here after auth. The hash fragment (#access_token=...)
-    is read by JS and posted to the parent window, then the popup closes itself.
+    Supports both:
+      - response_type=code  → server-side token exchange using FB_APP_SECRET
+      - response_type=token → client-side hash reading (implicit flow fallback)
+    Sends access_token to parent window via postMessage, then closes.
     """
-    return '''<!DOCTYPE html>
+    code      = request.args.get('code', '').strip()
+    error     = request.args.get('error', '').strip()
+    error_desc= request.args.get('error_description', error).strip()
+
+    def _render(js_body):
+        return f'''<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Connecting...</title></head>
 <body style="background:#0a0a0a;color:#fff;font-family:sans-serif;
              display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
 <script>
-  try {
-    var hash = window.location.hash.slice(1);
-    var params = {};
-    hash.split('&').forEach(function(p){
-      var kv = p.split('=');
-      params[kv[0]] = decodeURIComponent(kv[1] || '');
-    });
-    if (params.access_token && window.opener) {
-      window.opener.postMessage({ type: 'meta_token', token: params.access_token }, '*');
-    } else if (params.error && window.opener) {
-      window.opener.postMessage({ type: 'meta_error', error: params.error_description || params.error }, '*');
-    }
-  } catch(e) {}
-  setTimeout(function(){ window.close(); }, 800);
+try {{
+  {js_body}
+}} catch(e) {{ if(window.opener) window.opener.postMessage({{type:'meta_error',error:'JS error: '+e.message}},'*'); }}
+setTimeout(function(){{ window.close(); }}, 900);
 </script>
 <div style="text-align:center">
-  <div style="font-size:24px;margin-bottom:8px">Connecting...</div>
-  <div style="font-size:13px;opacity:.5">This window will close automatically.</div>
+  <div style="font-size:22px;margin-bottom:8px">Connecting…</div>
+  <div style="font-size:12px;opacity:.45">This window will close automatically.</div>
 </div>
 </body></html>'''
+
+    # ── Error from Facebook ────────────────────────────────────────────
+    if error:
+        js = f"if(window.opener) window.opener.postMessage({{type:'meta_error',error:{repr(error_desc)}}},'*');"
+        return _render(js)
+
+    # ── Code flow: exchange code server-side ───────────────────────────
+    if code and FB_APP_SECRET:
+        redirect_uri = request.url_root.rstrip('/') + '/oauth-callback'
+        try:
+            resp = requests.post(
+                'https://graph.facebook.com/v18.0/oauth/access_token',
+                data={{
+                    'client_id':     FB_APP_ID,
+                    'client_secret': FB_APP_SECRET,
+                    'redirect_uri':  redirect_uri,
+                    'code':          code,
+                }},
+                timeout=10
+            )
+            td = resp.json()
+            token = td.get('access_token', '')
+            if token:
+                js = f"if(window.opener) window.opener.postMessage({{type:'meta_token',token:{repr(token)},access_token:{repr(token)}}},'*');"
+                return _render(js)
+            else:
+                err_msg = td.get('error', {{}}).get('message', 'Token exchange failed') if isinstance(td.get('error'), dict) else str(td.get('error', 'Token exchange failed'))
+                js = f"if(window.opener) window.opener.postMessage({{type:'meta_error',error:{repr(err_msg)}}},'*');"
+                return _render(js)
+        except Exception as ex:
+            js = f"if(window.opener) window.opener.postMessage({{type:'meta_error',error:'Exchange error: {{}}'.format(str(ex)[:80])}},'*');"
+            return _render(js)
+
+    # ── Implicit flow fallback: read hash client-side ──────────────────
+    js = """
+  var hash = window.location.hash.slice(1);
+  var params = {};
+  hash.split('&').forEach(function(p){
+    var kv = p.split('=');
+    if(kv[0]) params[kv[0]] = decodeURIComponent(kv[1] || '');
+  });
+  if (params.access_token && window.opener) {
+    window.opener.postMessage({ type: 'meta_token', token: params.access_token, access_token: params.access_token }, '*');
+  } else if (params.error && window.opener) {
+    window.opener.postMessage({ type: 'meta_error', error: params.error_description || params.error }, '*');
+  } else if (window.opener) {
+    // No code, no token, no error — tell parent
+    window.opener.postMessage({ type: 'meta_error', error: 'No authorization received. Make sure popups are allowed.' }, '*');
+  }
+"""
+    return _render(js)
 
 
 def analyze_ig_competitive(ig_profile, media_list, competitors=None):
