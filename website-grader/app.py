@@ -4094,7 +4094,7 @@ def grade_ig_only():
                     'fields': (
                         'id,username,name,biography,website,'
                         'profile_picture_url,followers_count,follows_count,media_count,'
-                        'media.limit(25){id,timestamp,media_type,like_count,comments_count,permalink,caption}'
+                        'media.limit(25){id,timestamp,media_type,like_count,comments_count,permalink,caption,media_url,thumbnail_url}'
                     )
                 },
                 timeout=10
@@ -4130,6 +4130,22 @@ def grade_ig_only():
 
         # ── Step 4: Deep IG analysis ──────────────────────────────────
         ig_competitive = analyze_ig_competitive(ig_info, media_list, [])
+
+        # Extract top posts for visual feed audit (sorted by engagement)
+        def _get_thumb(m):
+            return m.get('thumbnail_url') or m.get('media_url') or ''
+        top_posts_out = [{
+            'media_url':      _get_thumb(m),
+            'permalink':      m.get('permalink', ''),
+            'media_type':     m.get('media_type', ''),
+            'like_count':     m.get('like_count', 0),
+            'comments_count': m.get('comments_count', 0),
+            'timestamp':      m.get('timestamp', ''),
+        } for m in sorted(
+            [m for m in media_list if _get_thumb(m)],
+            key=lambda m: m.get('like_count', 0),
+            reverse=True
+        )[:6]]
 
         # ── Step 5: Revenue opportunity from posting frequency gap ────
         ig_username   = ig_info.get('username', '') or handle
@@ -4220,6 +4236,7 @@ def grade_ig_only():
             'tiktok_data':          tiktok_data,
             'competitor_ig':        competitor_ig,
             'content_calendar':     content_calendar,
+            'top_posts':       top_posts_out,
             'reel_hooks':           reel_hooks,
             'swot': generate_swot_ig(ig_competitive, {
                 'missing_sessions_month': missing_sessions_mo,
